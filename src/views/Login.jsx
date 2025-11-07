@@ -378,6 +378,215 @@
 
 // --------------------------------------------------------------------------------------------
 
+// refresh token  old file code
+
+
+// 'use client'
+
+// import { useState } from 'react'
+
+// import Link from 'next/link'
+// import { useParams, useRouter } from 'next/navigation'
+
+// import useMediaQuery from '@mui/material/useMediaQuery'
+// import { styled, useTheme } from '@mui/material/styles'
+// import Typography from '@mui/material/Typography'
+// import IconButton from '@mui/material/IconButton'
+// import InputAdornment from '@mui/material/InputAdornment'
+// import Checkbox from '@mui/material/Checkbox'
+// import Button from '@mui/material/Button'
+// import FormControlLabel from '@mui/material/FormControlLabel'
+// import { signIn } from 'next-auth/react'
+// import { Controller, useForm } from 'react-hook-form'
+// import { valibotResolver } from '@hookform/resolvers/valibot'
+// import { email, object, minLength, string, pipe, nonEmpty } from 'valibot'
+// import classnames from 'classnames'
+
+// import Logo from '@components/layout/shared/Logo'
+// import CustomTextField from '@core/components/mui/TextField'
+// import { useImageVariant } from '@core/hooks/useImageVariant'
+// import { useSettings } from '@core/hooks/useSettings'
+// import { getLocalizedUrl } from '@/utils/i18n'
+
+// import axiosInstance, { setTokens } from '@/configs/token'
+
+// // --- Styled ---
+// const LoginIllustration = styled('img')(({ theme }) => ({
+//   zIndex: 2,
+//   blockSize: 'auto',
+//   maxBlockSize: 680,
+//   maxInlineSize: '100%',
+//   margin: theme.spacing(12)
+// }))
+
+// const MaskImg = styled('img')({
+//   blockSize: 'auto',
+//   maxBlockSize: 355,
+//   inlineSize: '100%',
+//   position: 'absolute',
+//   insetBlockEnd: 0,
+//   zIndex: -1
+// })
+
+// // --- Validation ---
+// const schema = object({
+//   email: pipe(string(), minLength(1, 'This field is required'), email('Email is invalid')),
+//   password: pipe(
+//     string(),
+//     nonEmpty('This field is required'),
+//     minLength(5, 'Password must be at least 5 characters long')
+//   )
+// })
+
+// const Login = ({ mode }) => {
+//   const [isPasswordShown, setIsPasswordShown] = useState(false)
+//   const [errorMsg, setErrorMsg] = useState(null)
+//   const [loading, setLoading] = useState(false)
+//   const router = useRouter()
+//   const { lang: locale } = useParams()
+//   const { settings } = useSettings()
+//   const theme = useTheme()
+//   const hidden = useMediaQuery(theme.breakpoints.down('md'))
+
+//   const {
+//     control,
+//     handleSubmit,
+//     formState: { errors }
+//   } = useForm({
+//     resolver: valibotResolver(schema),
+//     defaultValues: { email: '', password: '' }
+//   })
+
+//   const handleClickShowPassword = () => setIsPasswordShown(s => !s)
+
+//   // ✅ Login Submit
+//   const onSubmit = async formData => {
+//     setLoading(true)
+//     setErrorMsg(null)
+
+//     try {
+//       const res = await axiosInstance.post('/admin/login/', {
+//         email: formData.email,
+//         password: formData.password
+//       })
+
+//       console.log('🟢 API RAW RESPONSE:', res.data)
+
+//       const data = res.data
+
+//       // --- Extract token safely ---
+//       let accessToken = data?.access || data?.token || data?.data?.access || data?.user?.apiToken || null
+
+//       // If null, assign placeholder text (only for debugging)
+//       if (!accessToken) {
+//         accessToken = 'accessToken' // display text only
+//       }
+
+//       // --- Save tokens safely (no null stored) ---
+//       if (accessToken && accessToken !== 'null') {
+//         setTokens(accessToken, null)
+//         console.log('✅ Token ready (masked):', `${accessToken.slice(0, 4)}...****`)
+//       } else {
+//         console.warn('⚠️ API returned no valid token')
+//       }
+
+//       // --- Continue with NextAuth ---
+//       const signInResponse = await signIn('credentials', {
+//         email: formData.email,
+//         password: formData.password,
+//         apiToken: data.accessToken,
+//         redirect: false
+//       })
+
+//       console.log('apitoken', signInResponse.apiToken)
+
+//       if (signInResponse?.ok) {
+//         console.log('✅ NextAuth session created')
+//         router.replace(getLocalizedUrl('/en/dashboard', locale))
+//       } else {
+//         console.warn('⚠️ NextAuth session failed, redirecting anyway')
+//         router.replace(getLocalizedUrl('/en/dashboard', locale))
+//       }
+//     } catch (err) {
+//       console.error('❌ Login failed:', err)
+//       setErrorMsg(err.response?.data?.message || 'Invalid email or password.')
+//     } finally {
+//       setLoading(false)
+//     }
+//   }
+
+//   return (
+//     <div className='flex justify-center items-center min-h-screen bg-backgroundPaper'>
+//       <div className='w-full max-w-md bg-white p-8 rounded-xl shadow-lg'>
+//         <Logo />
+//         <Typography variant='h5' className='mb-4 text-center'>
+//           Welcome to MOTOR MATCH
+//         </Typography>
+
+//         <form noValidate onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-5'>
+//           <Controller
+//             name='email'
+//             control={control}
+//             render={({ field }) => (
+//               <CustomTextField
+//                 {...field}
+//                 fullWidth
+//                 label='Email'
+//                 placeholder='Enter your email'
+//                 error={!!errors.email}
+//                 helperText={errors.email?.message}
+//               />
+//             )}
+//           />
+
+//           <Controller
+//             name='password'
+//             control={control}
+//             render={({ field }) => (
+//               <CustomTextField
+//                 {...field}
+//                 fullWidth
+//                 label='Password'
+//                 placeholder='••••••••'
+//                 type={isPasswordShown ? 'text' : 'password'}
+//                 error={!!errors.password}
+//                 helperText={errors.password?.message}
+//                 slotProps={{
+//                   input: {
+//                     endAdornment: (
+//                       <InputAdornment position='end'>
+//                         <IconButton edge='end' onClick={handleClickShowPassword} onMouseDown={e => e.preventDefault()}>
+//                           <i className={isPasswordShown ? 'tabler-eye' : 'tabler-eye-off'} />
+//                         </IconButton>
+//                       </InputAdornment>
+//                     )
+//                   }
+//                 }}
+//               />
+//             )}
+//           />
+
+//           <FormControlLabel control={<Checkbox defaultChecked />} label='Remember me' />
+
+//           {errorMsg && <Typography color='error'>{errorMsg}</Typography>}
+
+//           <Button fullWidth variant='contained' type='submit' disabled={loading}>
+//             {loading ? 'Logging in...' : 'Login'}
+//           </Button>
+//         </form>
+//       </div>
+//     </div>
+//   )
+// }
+
+// export default Login
+
+
+// ------NEW CODE WITH TOKEN ------------------------
+
+
+
+
 'use client'
 
 import { useState } from 'react'
@@ -485,7 +694,7 @@ const Login = ({ mode }) => {
     setErrorMsg(null)
 
     try {
-      const res = await axiosInstance.post('admin/login/', {
+      const res = await axiosInstance.post('api/admin/login/', {
         email: formData.email,
         password: formData.password
       })
@@ -634,3 +843,4 @@ const Login = ({ mode }) => {
 }
 
 export default Login
+
