@@ -3,7 +3,7 @@ import axiosInstance from '@/configs/token' // Assuming this correctly handles y
 
 // 📦 Get All SubCategories
 export const getSubCategories = async () => {
-  const res = await axiosInstance.get('/subcategory-list/')
+  const res = await axiosInstance.get('api/subcategory-list/')
 
   // Adjust the return structure based on your API response
   return res.data?.data || res.data || []
@@ -12,7 +12,7 @@ export const getSubCategories = async () => {
 // 📦 Get All Categories (Included for completeness, often needed in the modal)
 // 💡 FIXED: Renamed from getCategoriess to getCategories
 export const getCategories = async () => {
-  const res = await axiosInstance.get('/category-list/') // ✅ correct endpoint
+  const res = await axiosInstance.get('api/category-list/') // ✅ correct endpoint
 
   console.log('category list response:', res)
 
@@ -23,7 +23,7 @@ export const getCategories = async () => {
 // ➕ Add SubCategory
 export const addSubCategory = async payload => {
   // NOTE: Assuming the add endpoint is /subcategory-add/
-  const res = await axiosInstance.post('/subcategory-add/', payload)
+  const res = await axiosInstance.post('api/subcategory-add/', payload)
 
   return res.data
 }
@@ -31,7 +31,7 @@ export const addSubCategory = async payload => {
 // ✏️ Update SubCategory
 export const updateSubCategory = async (id, payload) => {
   // NOTE: Assuming the update endpoint is /subcategory-update/{id}/
-  const res = await axiosInstance.put(`/subcategory-update/${id}/`, payload)
+  const res = await axiosInstance.put(`api/subcategory-update/${id}/`, payload)
 
   return res.data
 }
@@ -39,7 +39,7 @@ export const updateSubCategory = async (id, payload) => {
 // ❌ Delete SubCategory
 export const deleteSubCategory = async id => {
   // NOTE: Assuming the delete endpoint is /subcategory-delete/{id}/
-  const res = await axiosInstance.delete(`/subcategory-delete/${id}/`)
+  const res = await axiosInstance.delete(`api/subcategory-delete/${id}/`)
 
   return res.data
 }

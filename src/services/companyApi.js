@@ -5,7 +5,7 @@ import axiosInstance from '@/configs/token'
 export const getCompanyData = async () => {
   try {
     // Corrected endpoint based on typical Django REST Framework list/detail views
-    const res = await axiosInstance.get('/company-list/')
+    const res = await axiosInstance.get('api/company-list/')
 
     // Assuming the response for a single company setup is an array with one item,
     // or the single item itself, potentially nested under 'data'.
@@ -30,7 +30,7 @@ export const updateCompanyData = async (id, payload) => {
   try {
     // Note: axios automatically sets the Content-Type header to 'multipart/form-data'
     // with the correct boundary when a FormData object is provided as the body.
-    const res = await axiosInstance.put(`/company-update/${id}/`, payload)
+    const res = await axiosInstance.put(`api/company-update/${id}/`, payload)
 
     return res.data
   } catch (err) {

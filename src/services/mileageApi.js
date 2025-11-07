@@ -4,7 +4,7 @@ import axiosInstance from '@/configs/token'
 // 📦 Get All
 export const getMileage = async () => {
   // Corrected: Removed the payload argument from GET request
-  const res = await axiosInstance.get('/mileage-list/')
+  const res = await axiosInstance.get('api/mileage-list/')
 
   // Assuming data structure: { data: { results: [...] } } or just { data: [...] }
   return res.data?.data?.results || res.data?.data || res.data || []
@@ -19,7 +19,7 @@ export const addMileage = async payload => {
 
 // ✏️ Update
 export const updateMileage = async (id, payload) => {
-  const res = await axiosInstance.put(`/mileage-update/${id}/`, payload)
+  const res = await axiosInstance.put(`api/mileage-update/${id}/`, payload)
 
   return res.data
 }
@@ -29,7 +29,7 @@ export const updateMileage = async (id, payload) => {
 export const deleteMileage= async id => {
   try {
     // The endpoint is correct for a Django-like REST framework
-    const res = await axiosInstance.delete(`/mileage-delete/${id}/`);
+    const res = await axiosInstance.delete(`api/mileage-delete/${id}/`);
 
     console.log('Delete response:', res.data);
 

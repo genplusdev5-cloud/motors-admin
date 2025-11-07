@@ -43,7 +43,7 @@ const preparePayload = data => {
 
 // 📦 Get All
 export const getMake = async () => {
-  const res = await axiosInstance.get('/make-list/')
+  const res = await axiosInstance.get('api/make-list/')
 
   return res.data?.data?.results || res.data?.data || res.data || []
 }
@@ -54,7 +54,7 @@ export const addMake = async payload => {
   const finalPayload = preparePayload(payload)
 
   // When sending FormData, axios automatically sets the Content-Type to multipart/form-data
-  const res = await axiosInstance.post('/make-add/', finalPayload)
+  const res = await axiosInstance.post('api/make-add/', finalPayload)
 
   return res.data
 }
@@ -65,7 +65,7 @@ export const updateMake = async (id, payload) => {
   const finalPayload = preparePayload(payload)
 
   // When sending FormData, axios automatically sets the Content-Type to multipart/form-data
-  const res = await axiosInstance.put(`/make-update/${id}/`, finalPayload)
+  const res = await axiosInstance.put(`api/make-update/${id}/`, finalPayload)
 
   return res.data
 }
@@ -80,7 +80,7 @@ export const deleteMake = async id => {
     if (!token) throw new Error('Missing access token.')
 
     // ✅ Call API cleanly with proper headers
-    const res = await axiosInstance.delete(`/make-delete/${id}/`, {
+    const res = await axiosInstance.delete(`api/make-delete/${id}/`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'

@@ -4,7 +4,7 @@ import axiosInstance from '@/configs/token'
 // 📦 Get All
 export const getYear = async () => {
   // Corrected: Removed the payload argument from GET request
-  const res = await axiosInstance.get('/year-list/')
+  const res = await axiosInstance.get('api/year-list/')
 
   // Assuming data structure: { data: { results: [...] } } or just { data: [...] }
   return res.data?.data?.results || res.data?.data || res.data || []
@@ -12,14 +12,14 @@ export const getYear = async () => {
 
 // ➕ Add
 export const addYear = async payload => {
-  const res = await axiosInstance.post('/year-add/', payload)
+  const res = await axiosInstance.post('api/year-add/', payload)
 
   return res.data
 }
 
 // ✏️ Update
 export const updateYear= async (id, payload) => {
-  const res = await axiosInstance.put(`/year-update/${id}/`, payload)
+  const res = await axiosInstance.put(`api/year-update/${id}/`, payload)
 
   return res.data
 }
@@ -29,7 +29,7 @@ export const updateYear= async (id, payload) => {
 export const deleteYear= async id => {
   try {
     // The endpoint is correct for a Django-like REST framework
-    const res = await axiosInstance.delete(`/year-delete/${id}/`);
+    const res = await axiosInstance.delete(`api/year-delete/${id}/`);
 
     console.log('Delete response:', res.data);
 

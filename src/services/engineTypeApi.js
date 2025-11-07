@@ -4,7 +4,7 @@ import axiosInstance from '@/configs/token'
 // 📦 Get All
 export const getEngineType  = async () => {
   // Corrected: Removed the payload argument from GET request
-  const res = await axiosInstance.get('/engine-type-list/')
+  const res = await axiosInstance.get('api/engine-type-list/')
 
   // Assuming data structure: { data: { results: [...] } } or just { data: [...] }
   return res.data?.data?.results || res.data?.data || res.data || []
@@ -12,14 +12,14 @@ export const getEngineType  = async () => {
 
 // ➕ Add
 export const addEngineType = async payload => {
-  const res = await axiosInstance.post('/engine-type-add/', payload)
+  const res = await axiosInstance.post('api/engine-type-add/', payload)
 
   return res.data
 }
 
 // ✏️ Update
 export const updateEngineType  = async (id, payload) => {
-  const res = await axiosInstance.put(`/engine-type-update/${id}/`, payload)
+  const res = await axiosInstance.put(`api/engine-type-update/${id}/`, payload)
 
   return res.data
 }
@@ -28,9 +28,9 @@ export const updateEngineType  = async (id, payload) => {
 
 export const deleteEngineType  = async id => {
   try {
-    const res = await axiosInstance.put(`/engine-type-delete/${id}`) // ✅ DELETE method
+    const res = await axiosInstance.put(`api/engine-type-delete/${id}`) // ✅ DELETE method
 
-   console.log('🛰️ Deleting Body Type URL:', `/engine-type-delete/${id}`)
+   console.log('🛰️ Deleting Body Type URL:', `api/engine-type-delete/${id}`)
 
 
     return res.data

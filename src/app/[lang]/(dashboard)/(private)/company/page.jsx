@@ -1,4 +1,5 @@
-/ ✅ src/app/company/page.jsx
+// ✅ src/app/company/page.jsx - Note: Ensure the line below is properly commented out or removed if causing parser errors
+// / ✅ src/app/company/page.jsx
 
 'use client'
 
@@ -10,7 +11,6 @@ import { openDB } from 'idb'
 import { toast } from 'react-toastify'
 
 // 💡 NEW: Import the API functions from the service file
-import { getCompanyData, updateCompanyData } from '@/services/companyApi'
 
 // MUI imports
 import { styled, useTheme } from '@mui/material/styles'
@@ -20,6 +20,8 @@ import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import { Box } from '@mui/material'
+
+import { getCompanyData, updateCompanyData } from '@/services/companyApi'
 
 import Link from '@/components/Link'
 import CustomTextField from '@core/components/mui/TextField'
@@ -44,8 +46,6 @@ const getCompanyDB = async () => {
     }
   })
 }
-
-// NOTE: API_BASE_URL and API_ENDPOINTS removed as they are now in companyApi.js
 
 const Company = () => {
   const theme = useTheme()
@@ -82,6 +82,7 @@ const Company = () => {
   // ... Refs and Keyboard Navigation (UNCHANGED)
   const inputRefs = useRef([])
   const submitButtonRef = useRef(null)
+
   const fieldOrder = [
     'name',
     'company_code',
@@ -114,13 +115,17 @@ const Company = () => {
     }
   }
 
-  const requiredFields = ['name', 'company_code', 'email', 'address_line_1', 'city', 'state', 'gst', 'mobile', 'fax']
+  const requiredFields = ['name', 'company_code', 'email', 'address_line_1', 'city', 'state', 'gst', 'mobile', 'fax', 'logo', 'logo_small', 'logo_invoice']
 
   // ... Validation Functions (UNCHANGED)
   const validateRequired = value => {
     if (value === null || value === undefined) return false
     if (typeof value === 'string') return value.trim() !== ''
     if (typeof value === 'object' && value instanceof File) return true
+
+    // Also check if existing logo data is a non-empty string URL (i.e., already uploaded)
+    if (typeof value === 'string') return value.trim() !== ''
+
 
     return false
   }
@@ -144,7 +149,10 @@ const Company = () => {
   const handleChange = (field, value) => setData(prev => ({ ...prev, [field]: value }))
 
   const handleFileChange = (field, file) => {
-    setData(prev => ({ ...prev, [field]: file }))
+    // If files is an array (from FileUploaderSingle), take the first item, otherwise it's the file object itself
+    const actualFile = Array.isArray(file) ? file[0] : file
+
+    setData(prev => ({ ...prev, [field]: actualFile }))
   }
 
   const handleBlur = field => setTouched(prev => ({ ...prev, [field]: true }))
@@ -157,6 +165,7 @@ const Company = () => {
       const existing = await db.get('companies', id)
 
       if (existing) {
+        // Important: When loading from DB, URLs (strings) for logos should be treated as valid existing files
         setData(existing)
         setEditCompanyId(existing.id)
       }
@@ -189,9 +198,10 @@ const Company = () => {
           phone: data.phone || '',
           mobile: data.mobile || '',
           fax: data.fax || '',
-          logo: data.logo || null,
-          logo_small: data.logo_small || null,
-          logo_invoice: data.logo_invoice || null
+
+          logo: data.logo || '',
+          logo_small: data.logo_small || '',
+          logo_invoice: data.logo_invoice || ''
         }))
         setEditCompanyId(data.id)
         console.log('Fetched from API')
@@ -204,7 +214,8 @@ const Company = () => {
       if (err.response?.status === 401) {
         toast.error('Session expired. Please login again.')
         router.push('/login')
-        return
+
+return
       }
 
       console.error('API fetch failed:', err)
@@ -226,8 +237,10 @@ const Company = () => {
 
   const handleSubmit = async () => {
     const newTouched = requiredFields.reduce((acc, f) => ({ ...acc, [f]: true }), {})
+
     setTouched(newTouched)
 
+    // Check validity of text fields and existing/new files
     const isFormValid = requiredFields.every(field => getErrorMessage(field, data[field]) === '')
 
     if (!isFormValid) return toast.error('Please fill all required fields correctly.')
@@ -254,6 +267,7 @@ const Company = () => {
       formData.append('mobile', data.mobile)
       formData.append('fax', data.fax)
 
+      // Only append if it's a new File object for upload
       if (data.logo instanceof File) formData.append('logo', data.logo)
       if (data.logo_small instanceof File) formData.append('logo_small', data.logo_small)
       if (data.logo_invoice instanceof File) formData.append('logo_invoice', data.logo_invoice)
@@ -262,7 +276,9 @@ const Company = () => {
       // 💡 REFACTORED: Use the imported service function
       const updatedData = await updateCompanyData(editCompanyId || 1, formData)
 
+      // Update local state with fresh data/URLs returned from the server
       setData(prev => ({ ...prev, ...updatedData }))
+
       // Update IndexedDB after successful API call
       await db.put('companies', { ...data, ...updatedData, id: editCompanyId || 1 })
 
@@ -326,8 +342,10 @@ const Company = () => {
                       <LabelWithStar />
                     </>
                   }
-                  disabled
+
+                  // disabled // Removed disabled tag for a fully editable form
                   value={data.name}
+                  disabled
                   onChange={e => handleChange('name', e.target.value)}
                   onBlur={() => handleBlur('name')}
                   error={touched.name && getErrorMessage('name', data.name) !== ''}
@@ -569,14 +587,14 @@ const Company = () => {
               {/* Logo (Required File) */}
               <Grid size={{ xs: 12, sm: 4 }}>
                 <Typography
-                  value={data.logo}
                   variant='caption'
                   component='label'
                   sx={{ display: 'block', fontWeight: 400, color: 'text.primary' }}
                 >
                   <LabelWithStar /> Logo
                 </Typography>
-                <FileUploaderSingle onFileChange={files => handleFileChange('logo', files)} />
+                {/* FileUploaderSingle must handle initial data display if data.logo is a URL string */}
+                <FileUploaderSingle onFileChange={files => handleFileChange('logo', files)} initialFile={data.logo} />
                 {touched.logo && getErrorMessage('logo', data.logo) && (
                   <Typography variant='caption' color='error'>
                     {getErrorMessage('logo', data.logo)}
@@ -593,7 +611,7 @@ const Company = () => {
                 >
                   <LabelWithStar /> Logo Small
                 </Typography>
-                <FileUploaderSingle onFileChange={files => handleFileChange('logo_small', files)} />
+                <FileUploaderSingle onFileChange={files => handleFileChange('logo_small', files)} initialFile={data.logo_small} />
                 {touched.logo_small && getErrorMessage('logo_small', data.logo_small) && (
                   <Typography variant='caption' color='error'>
                     {getErrorMessage('logo_small', data.logo_small)}
@@ -610,7 +628,7 @@ const Company = () => {
                 >
                   <LabelWithStar /> Logo Invoice
                 </Typography>
-                <FileUploaderSingle onFileChange={files => handleFileChange('logo_invoice', files)} />
+                <FileUploaderSingle onFileChange={files => handleFileChange('logo_invoice', files)} initialFile={data.logo_invoice} />
                 {touched.logo_invoice && getErrorMessage('logo_invoice', data.logo_invoice) && (
                   <Typography variant='caption' color='error'>
                     {getErrorMessage('logo_invoice', data.logo_invoice)}

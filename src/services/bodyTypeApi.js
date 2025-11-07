@@ -4,7 +4,7 @@ import axiosInstance from '@/configs/token'
 // 📦 Get All
 export const getBodyType = async () => {
   // Corrected: Removed the payload argument from GET request
-  const res = await axiosInstance.get('/body-type-list/')
+  const res = await axiosInstance.get('api/body-type-list/')
 
   // Assuming data structure: { data: { results: [...] } } or just { data: [...] }
   return res.data?.data?.results || res.data?.data || res.data || []
@@ -12,14 +12,14 @@ export const getBodyType = async () => {
 
 // ➕ Add
 export const addBodyType = async payload => {
-  const res = await axiosInstance.post('/body-type-add/', payload)
+  const res = await axiosInstance.post('api/body-type-add/', payload)
 
   return res.data
 }
 
 // ✏️ Update
 export const updateBodyType = async (id, payload) => {
-  const res = await axiosInstance.put(`/body-type-update/${id}/`, payload)
+  const res = await axiosInstance.put(`api/body-type-update/${id}/`, payload)
 
   return res.data
 }
@@ -28,9 +28,9 @@ export const updateBodyType = async (id, payload) => {
 
 export const deleteBodyType = async id => {
   try {
-    const res = await axiosInstance.put(`/body-type-delete/${id}`) // ✅ DELETE method
+    const res = await axiosInstance.put(`api/body-type-delete/${id}`) // ✅ DELETE method
 
-   console.log('🛰️ Deleting Body Type URL:', `/body-type-delete/${id}`)
+   console.log('🛰️ Deleting Body Type URL:', `api/body-type-delete/${id}`)
 
 
     return res.data

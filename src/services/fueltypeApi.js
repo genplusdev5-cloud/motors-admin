@@ -4,7 +4,7 @@ import axiosInstance from '@/configs/token'
 // 📦 Get All
 export const getFuel = async () => {
   // Corrected: Removed the payload argument from GET request
-  const res = await axiosInstance.get('/fuel-list/')
+  const res = await axiosInstance.get('api/fuel-list/')
 
   // Assuming data structure: { data: { results: [...] } } or just { data: [...] }
   return res.data?.data?.results || res.data?.data || res.data || []
@@ -12,14 +12,14 @@ export const getFuel = async () => {
 
 // ➕ Add
 export const addFuel = async payload => {
-  const res = await axiosInstance.post('/fuel-add/', payload)
+  const res = await axiosInstance.post('api/fuel-add/', payload)
 
   return res.data
 }
 
 // ✏️ Update
 export const updateFuel= async (id, payload) => {
-  const res = await axiosInstance.put(`/fuel-update/${id}/`, payload)
+  const res = await axiosInstance.put(`api/fuel-update/${id}/`, payload)
 
   return res.data
 }
@@ -29,7 +29,7 @@ export const updateFuel= async (id, payload) => {
 export const deleteFuel = async id => {
   try {
     // The endpoint is correct for a Django-like REST framework
-    const res = await axiosInstance.delete(`/fuel-delete/${id}/`);
+    const res = await axiosInstance.delete(`api/fuel-delete/${id}/`);
 
     console.log('Delete response:', res.data);
 
