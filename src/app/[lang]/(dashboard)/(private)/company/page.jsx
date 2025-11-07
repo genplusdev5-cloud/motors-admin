@@ -1,3 +1,5 @@
+/ ✅ src/app/company/page.jsx
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -5,8 +7,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { openDB } from 'idb'
-import axios from 'axios'
 import { toast } from 'react-toastify'
+
+// 💡 NEW: Import the API functions from the service file
+import { getCompanyData, updateCompanyData } from '@/services/companyApi'
 
 // MUI imports
 import { styled, useTheme } from '@mui/material/styles'
@@ -21,22 +25,7 @@ import Link from '@/components/Link'
 import CustomTextField from '@core/components/mui/TextField'
 import FileUploaderSingle from './FileUploaderSingle'
 
-// ✅ Fetch with Auth helper
-async function fetchWithAuth(url, options = {}) {
-  const token =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYyNDk2NDk1LCJpYXQiOjE3NjE4OTE2OTUsImp0aSI6IjE5OTFmZDQzM2ExNDRkODFhMjY3NzViNTlmMWQ2YTFmIiwidXNlcl9pZCI6MX0.0DIgCY39dTnMjcnYa7u42QLkYtBI4c28tasI7no2q8M'
-
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  }
-
-  const response = await fetch(url, { ...options, headers })
-
-  return response
-}
-
-// 🔹 Label with required star
+// 🔹 Label with required star (UNCHANGED)
 const LabelWithStar = styled('span')({
   '&::before': {
     content: '"*"',
@@ -45,7 +34,7 @@ const LabelWithStar = styled('span')({
   }
 })
 
-// IndexedDB setup
+// IndexedDB setup (UNCHANGED)
 const getCompanyDB = async () => {
   return openDB('companyDB', 1, {
     upgrade(db) {
@@ -56,20 +45,16 @@ const getCompanyDB = async () => {
   })
 }
 
-const API_BASE_URL = 'http://motor-match.genplusinnovations.com:7023/api/company/'
-
-const API_ENDPOINTS = {
-  list: `${API_BASE_URL}list/`,
-  update: id => `${API_BASE_URL}update/${id}/`
-}
+// NOTE: API_BASE_URL and API_ENDPOINTS removed as they are now in companyApi.js
 
 const Company = () => {
   const theme = useTheme()
-  const router = ''
+  const router = useRouter() // Fixed: Using useRouter hook
   const [loading, setLoading] = useState(false)
   const [editCompanyId, setEditCompanyId] = useState(null)
 
   const [data, setData] = useState({
+    // ... data state initialization (UNCHANGED)
     name: '',
     company_code: '',
     prefix: '',
@@ -94,11 +79,9 @@ const Company = () => {
 
   const [touched, setTouched] = useState({})
 
-  // ✅ Refs for focus handling
+  // ... Refs and Keyboard Navigation (UNCHANGED)
   const inputRefs = useRef([])
   const submitButtonRef = useRef(null)
-
-  // ✅ Field index map for keyboard navigation
   const fieldOrder = [
     'name',
     'company_code',
@@ -133,7 +116,7 @@ const Company = () => {
 
   const requiredFields = ['name', 'company_code', 'email', 'address_line_1', 'city', 'state', 'gst', 'mobile', 'fax']
 
-  // --- Validation ---
+  // ... Validation Functions (UNCHANGED)
   const validateRequired = value => {
     if (value === null || value === undefined) return false
     if (typeof value === 'string') return value.trim() !== ''
@@ -157,7 +140,7 @@ const Company = () => {
     return ''
   }
 
-  // --- Input Handlers ---
+  // ... Input Handlers (UNCHANGED)
   const handleChange = (field, value) => setData(prev => ({ ...prev, [field]: value }))
 
   const handleFileChange = (field, file) => {
@@ -165,6 +148,7 @@ const Company = () => {
   }
 
   const handleBlur = field => setTouched(prev => ({ ...prev, [field]: true }))
+
 
   // --- IndexedDB & API ---
   const loadFromIndexedDB = async id => {
@@ -183,36 +167,16 @@ const Company = () => {
 
   const fetchCompanyData = async () => {
     try {
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYyNDk2NDk1LCJpYXQiOjE3NjE4OTE2OTUsImp0aSI6IjE5OTFmZDQzM2ExNDRkODFhMjY3NzViNTlmMWQ2YTFmIiwidXNlcl9pZCI6MX0.0DIgCY39dTnMjcnYa7u42QLkYtBI4c28tasI7no2q8M'
-
-      if (!token) {
-        toast.error('Authentication token missing. Please login again.')
-        router.push('/login')
-
-        return
-      }
-
       setLoading(true)
-      const response = await fetchWithAuth(API_ENDPOINTS.list, { method: 'GET' })
 
-      if (response.status === 401) {
-        toast.error('Session expired. Please login again.')
-        router.push('/login')
-
-        return
-      }
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-
-      const responseData = await response.json()
-      const data = responseData?.[0] || responseData?.data?.[0] || {}
+      // 💡 REFACTORED: Use the imported service function
+      const data = await getCompanyData()
 
       if (Object.keys(data).length) {
         setData(prev => ({
           ...prev,
-          name: data.name || data.name || '',
-          company_code: data.company_code || data.company_code || '',
+          name: data.name || '',
+          company_code: data.company_code || '',
           email: data.email || '',
           gst: data.gst || '',
           cin: data.cin || '',
@@ -236,6 +200,13 @@ const Company = () => {
         loadFromIndexedDB(1)
       }
     } catch (err) {
+      // Check for common auth errors (based on what axios/instance handles)
+      if (err.response?.status === 401) {
+        toast.error('Session expired. Please login again.')
+        router.push('/login')
+        return
+      }
+
       console.error('API fetch failed:', err)
       toast.error('Failed to fetch company data.')
       loadFromIndexedDB(1)
@@ -255,7 +226,6 @@ const Company = () => {
 
   const handleSubmit = async () => {
     const newTouched = requiredFields.reduce((acc, f) => ({ ...acc, [f]: true }), {})
-
     setTouched(newTouched)
 
     const isFormValid = requiredFields.every(field => getErrorMessage(field, data[field]) === '')
@@ -263,10 +233,11 @@ const Company = () => {
     if (!isFormValid) return toast.error('Please fill all required fields correctly.')
 
     try {
+      setLoading(true)
       const db = await getCompanyDB()
-
       const formData = new FormData()
 
+      // ... FormData population logic (UNCHANGED)
       formData.append('id', editCompanyId || 1)
       formData.append('name', data.name)
       formData.append('company_code', data.company_code)
@@ -283,40 +254,24 @@ const Company = () => {
       formData.append('mobile', data.mobile)
       formData.append('fax', data.fax)
 
-      // ✅ Append images only if user selected them
       if (data.logo instanceof File) formData.append('logo', data.logo)
       if (data.logo_small instanceof File) formData.append('logo_small', data.logo_small)
       if (data.logo_invoice instanceof File) formData.append('logo_invoice', data.logo_invoice)
 
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYyNDk2NDk1LCJpYXQiOjE3NjE4OTE2OTUsImp0aSI6IjE5OTFmZDQzM2ExNDRkODFhMjY3NzViNTlmMWQ2YTFmIiwidXNlcl9pZCI6MX0.0DIgCY39dTnMjcnYa7u42QLkYtBI4c28tasI7no2q8M'
 
-      const response = await fetch(API_ENDPOINTS.update(editCompanyId || 1), {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`
-
-          // ❌ Don't set 'Content-Type' — browser sets it automatically for FormData
-        },
-        body: formData
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-
-        console.error('Update failed body:', errorText)
-        throw new Error(`Update failed: ${response.status}`)
-      }
-
-      const updatedData = await response.json()
+      // 💡 REFACTORED: Use the imported service function
+      const updatedData = await updateCompanyData(editCompanyId || 1, formData)
 
       setData(prev => ({ ...prev, ...updatedData }))
+      // Update IndexedDB after successful API call
       await db.put('companies', { ...data, ...updatedData, id: editCompanyId || 1 })
 
       toast.success('Company updated successfully!')
     } catch (err) {
       console.error('Error updating company:', err)
-      toast.error(`Error updating company: ${err.message}`)
+      toast.error(err.message || 'Error updating company.')
+    } finally {
+      setLoading(false)
     }
   }
 
