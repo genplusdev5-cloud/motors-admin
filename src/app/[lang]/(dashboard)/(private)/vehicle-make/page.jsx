@@ -78,49 +78,41 @@ const VehicleMake = () => {
   }, [])
 
   // Save category (handles both add and update by calling API)
-const handleSaveCategory = async (categoryData, id) => {
-  try {
-    // ✅ FRONTEND DUPLICATE CHECK
-    const isDuplicate = data.some(
-      item =>
-        item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() &&
-        item.id !== id // allow same name for editing same record
-    )
+  const handleSaveCategory = async (categoryData, id) => {
+    try {
+      // ✅ FRONTEND DUPLICATE CHECK
+      const isDuplicate = data.some(
+        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id // allow same name for editing same record
+      )
 
-    if (isDuplicate) {
-      toast.warning('Vehicle Make name already exists. ')
-      return // ❌ Stop — don’t send to backend
+      if (isDuplicate) {
+        toast.warning('Vehicle Make name already exists. ')
+
+        return // ❌ Stop — don’t send to backend
+      }
+
+      // ✅ Proceed if not duplicate
+      if (id) {
+        await updateMake(id, categoryData)
+        toast.success('Vehicle Make updated successfully!')
+      } else {
+        await addMake(categoryData)
+        toast.success('Vehicle Make added successfully!')
+      }
+
+      handleCloseModal() // Close modal after success
+      await fetchMake() // Refresh data in the table
+    } catch (error) {
+      console.error('Save vehicle make error:', error)
+
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        'An error occurred while saving the vehicle make.'
+
+      toast.error(errorMsg)
     }
-
-    // ✅ Proceed if not duplicate
-    if (id) {
-      await updateMake(id, categoryData)
-      toast.success('Vehicle Make updated successfully!')
-    } else {
-      await addMake(categoryData)
-      toast.success('Vehicle Make added successfully!')
-    }
-
-    handleCloseModal() // Close modal after success
-    await fetchMake() // Refresh data in the table
-  } catch (error) {
-    console.error('Save vehicle make error:', error)
-
-    const errorMsg =
-      error.response?.data?.message ||
-      error.response?.data?.detail ||
-      'An error occurred while saving the vehicle make.'
-
-    toast.error(errorMsg)
   }
-}
-
-
-
-
-
-
-
 
   const handleDelete = async id => {
     if (!id) {
@@ -305,7 +297,7 @@ const handleSaveCategory = async (categoryData, id) => {
       }
     }),
 
- columnHelper.accessor('is_active', {
+    columnHelper.accessor('is_active', {
       header: 'STATUS',
       enableSorting: false,
       cell: info => {

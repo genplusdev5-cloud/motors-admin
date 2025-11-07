@@ -119,43 +119,38 @@ const Features = () => {
   }, [fetchSubCategories])
 
   // 2. SAVE/UPDATE DATA (using service functions)
- const handleSaveCategory = async (payload, id) => {
-  try {
-    // ✅ FRONTEND DUPLICATE CHECK
-    const isDuplicate = data.some(
-      item =>
-        item.name?.trim().toLowerCase() === payload.name?.trim().toLowerCase() &&
-        item.id !== id // allow same name for editing same record
-    )
+  const handleSaveCategory = async (payload, id) => {
+    try {
+      // ✅ FRONTEND DUPLICATE CHECK
+      const isDuplicate = data.some(
+        item => item.name?.trim().toLowerCase() === payload.name?.trim().toLowerCase() && item.id !== id // allow same name for editing same record
+      )
 
-    if (isDuplicate) {
-      toast.warning('Feature name already exists.')
-      return 
+      if (isDuplicate) {
+        toast.warning('Feature name already exists.')
+
+        return
+      }
+
+      // ✅ Proceed if no duplicate
+      if (id) {
+        await updateSubCategory(id, payload)
+        toast.success('Feature updated successfully!')
+      } else {
+        await addSubCategory(payload)
+        toast.success('Feature added successfully!')
+      }
+
+      handleCloseModal()
+      await fetchSubCategories() // Refresh table
+    } catch (error) {
+      console.error('Save subcategory error:', error)
+
+      const errorMsg = error.response?.data?.message || error.message || 'An error occurred while saving the feature.'
+
+      toast.error(errorMsg)
     }
-
-    // ✅ Proceed if no duplicate
-    if (id) {
-      await updateSubCategory(id, payload)
-      toast.success('Feature updated successfully!')
-    } else {
-      await addSubCategory(payload)
-      toast.success('Feature added successfully!')
-    }
-
-    handleCloseModal()
-    await fetchSubCategories() // Refresh table
-  } catch (error) {
-    console.error('Save subcategory error:', error)
-
-    const errorMsg =
-      error.response?.data?.message ||
-      error.message ||
-      'An error occurred while saving the feature.'
-
-    toast.error(errorMsg)
   }
-}
-
 
   // 3. DELETE DATA (using service function and SweetAlert)
 
@@ -383,7 +378,7 @@ const Features = () => {
               Add
             </Button>
 
-             <Button
+            <Button
               onClick={fetchCategories}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
@@ -418,7 +413,7 @@ const Features = () => {
             </Link>
             {' / '}
             <Link href='/features' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-             Features
+              Features
             </Link>
           </div>
         </div>

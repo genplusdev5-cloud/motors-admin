@@ -112,8 +112,8 @@ const BodyType = () => {
       console.error('Save category error:', error)
 
       const errorMsg = error.response?.data?.message || 'An error occurred while saving the body type.'
-
-      toast.error(errorMsg)
+      
+    toast.error(errorMsg)
     }
   }
 

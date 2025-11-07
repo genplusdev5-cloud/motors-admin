@@ -119,42 +119,40 @@ const SubCategory = () => {
   }, [fetchSubCategories])
 
   // 2. SAVE/UPDATE DATA (using service functions)
-const handleSaveCategory = async (payload, id) => {
-  try {
-    // ✅ FRONTEND DUPLICATE CHECK
-    const isDuplicate = data.some(
-      item =>
-        item.name?.trim().toLowerCase() === payload.name?.trim().toLowerCase() &&
-        item.id !== id // allow same name for editing the same record
-    )
+  const handleSaveCategory = async (payload, id) => {
+    try {
+      // ✅ FRONTEND DUPLICATE CHECK
+      const isDuplicate = data.some(
+        item => item.name?.trim().toLowerCase() === payload.name?.trim().toLowerCase() && item.id !== id // allow same name for editing the same record
+      )
 
-    if (isDuplicate) {
-      toast.warning('SubCategory name already exists')
-      return // ❌ Stop here — don’t call the API
+      if (isDuplicate) {
+        toast.warning('SubCategory name already exists')
+
+        return // ❌ Stop here — don’t call the API
+      }
+
+      // ✅ Proceed with API call if not duplicate
+      if (id) {
+        await updateSubCategory(id, payload)
+        toast.success('SubCategory updated successfully!')
+      } else {
+        await addSubCategory(payload)
+        toast.success('SubCategory added successfully!')
+      }
+
+      handleCloseModal()
+      await fetchSubCategories() // Refresh data in the table
+    } catch (error) {
+      console.error('Save subcategory error:', error)
+
+      // Get appropriate error message from backend
+      const errorMsg =
+        error.response?.data?.message || error.message || 'An error occurred while saving the subcategory.'
+
+      toast.error(errorMsg)
     }
-
-    // ✅ Proceed with API call if not duplicate
-    if (id) {
-      await updateSubCategory(id, payload)
-      toast.success('SubCategory updated successfully!')
-    } else {
-      await addSubCategory(payload)
-      toast.success('SubCategory added successfully!')
-    }
-
-    handleCloseModal()
-    await fetchSubCategories() // Refresh data in the table
-  } catch (error) {
-    console.error('Save subcategory error:', error)
-
-    // Get appropriate error message from backend
-    const errorMsg =
-      error.response?.data?.message || error.message || 'An error occurred while saving the subcategory.'
-
-    toast.error(errorMsg)
   }
-}
-
 
   // 3. DELETE DATA (using service function and SweetAlert)
 
@@ -388,8 +386,7 @@ const handleSaveCategory = async (payload, id) => {
               Add
             </Button>
 
-
-             <Button
+            <Button
               onClick={fetchCategories}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
