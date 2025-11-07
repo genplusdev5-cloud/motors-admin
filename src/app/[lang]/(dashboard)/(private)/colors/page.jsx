@@ -84,44 +84,41 @@ const Color = () => {
   }, [])
 
   // Save category (handles both add and update by calling API)
- const handleSaveCategory = async (categoryData, id) => {
-  try {
-    // ✅ FRONTEND DUPLICATE CHECK
-    const isDuplicate = data.some(
-      item =>
-        item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() &&
-        item.id !== id // allow same name for editing same record
-    )
+  const handleSaveCategory = async (categoryData, id) => {
+    try {
+      // ✅ FRONTEND DUPLICATE CHECK
+      const isDuplicate = data.some(
+        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id // allow same name for editing same record
+      )
 
-    if (isDuplicate) {
-      toast.warning('Color name already exists. ')
-      return // ❌ Stop — don’t call backend
+      if (isDuplicate) {
+        toast.warning('Color name already exists. ')
+
+        return // ❌ Stop — don’t call backend
+      }
+
+      // ✅ Proceed if not duplicate
+      if (id) {
+        await updateColor(id, categoryData)
+        toast.success('Color updated successfully!')
+      } else {
+        await addColor(categoryData)
+        toast.success('Color added successfully!')
+      }
+
+      handleCloseModal() // Close modal after success
+      await fetchCategories() // Refresh data in the table
+    } catch (error) {
+      console.error('Save category error:', error)
+
+      const errorMsg = error.response?.data?.message || 'An error occurred while saving the color.'
+
+      toast.error(errorMsg)
     }
-
-    // ✅ Proceed if not duplicate
-    if (id) {
-      await updateColor(id, categoryData)
-      toast.success('Color updated successfully!')
-    } else {
-      await addColor(categoryData)
-      toast.success('Color added successfully!')
-    }
-
-    handleCloseModal() // Close modal after success
-    await fetchCategories() // Refresh data in the table
-  } catch (error) {
-    console.error('Save category error:', error)
-
-    const errorMsg = error.response?.data?.message || 'An error occurred while saving the color.'
-    toast.error(errorMsg)
   }
-}
-
-
-
 
   // Delete category handler
- const handleDelete = async id => {
+  const handleDelete = async id => {
     if (!id) {
       toast.error('Invalid color ID')
 
@@ -370,7 +367,7 @@ const Color = () => {
               Add
             </Button>
 
-             <Button
+            <Button
               onClick={fetchCategories}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}

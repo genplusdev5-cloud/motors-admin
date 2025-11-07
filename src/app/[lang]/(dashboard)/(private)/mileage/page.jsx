@@ -32,7 +32,7 @@ import {
 } from '@tanstack/react-table'
 
 // Updated import from corrected service file
-import { getMileage, addMileage, updateMileage , deleteMileage  } from '@/services/mileageApi'
+import { getMileage, addMileage, updateMileage, deleteMileage } from '@/services/mileageApi'
 
 // import axiosInstance, { setTokens } from '@/configs/token' // token config is not directly used here
 
@@ -71,7 +71,7 @@ const Mileage = () => {
     setLoading(true)
 
     try {
-      const categoryData = await getMileage ()
+      const categoryData = await getMileage()
 
       setData(categoryData)
     } catch (error) {
@@ -84,40 +84,38 @@ const Mileage = () => {
   }, [])
 
   // Save category (handles both add and update by calling API)
- const handleSaveCategory = async (categoryData, id) => {
-  try {
-    // ✅ FRONTEND DUPLICATE CHECK
-    const isDuplicate = data.some(
-      item =>
-        item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() &&
-        item.id !== id // allow same name for editing same record
-    )
+  const handleSaveCategory = async (categoryData, id) => {
+    try {
+      // ✅ FRONTEND DUPLICATE CHECK
+      const isDuplicate = data.some(
+        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id // allow same name for editing same record
+      )
 
-    if (isDuplicate) {
-      toast.warning('Mileage name already exists.')
-      return // ❌ Stop — don’t send API call
+      if (isDuplicate) {
+        toast.warning('Mileage name already exists.')
+
+        return // ❌ Stop — don’t send API call
+      }
+
+      // ✅ Proceed if not duplicate
+      if (id) {
+        await updateMileage(id, categoryData)
+        toast.success('Mileage updated successfully!')
+      } else {
+        await addMileage(categoryData)
+        toast.success('Mileage added successfully!')
+      }
+
+      handleCloseModal() // Close modal after success
+      await fetchMileage() // Refresh data in the table
+    } catch (error) {
+      console.error('Save mileage error:', error)
+
+      const errorMsg = error.response?.data?.message || 'An error occurred while saving the mileage.'
+
+      toast.error(errorMsg)
     }
-
-    // ✅ Proceed if not duplicate
-    if (id) {
-      await updateMileage(id, categoryData)
-      toast.success('Mileage updated successfully!')
-    } else {
-      await addMileage(categoryData)
-      toast.success('Mileage added successfully!')
-    }
-
-    handleCloseModal() // Close modal after success
-    await fetchMileage() // Refresh data in the table
-  } catch (error) {
-    console.error('Save mileage error:', error)
-
-    const errorMsg = error.response?.data?.message || 'An error occurred while saving the mileage.'
-    toast.error(errorMsg)
   }
-}
-
-
 
   const handleDelete = async id => {
     if (!id) {
@@ -127,7 +125,7 @@ const Mileage = () => {
     }
 
     Swal.fire({
-      text: "",
+      text: '',
       showCancelButton: true,
       confirmButtonText: 'Delete ',
       cancelButtonText: 'Cancel',
@@ -368,8 +366,7 @@ const Mileage = () => {
               Add
             </Button>
 
-
-             <Button
+            <Button
               onClick={fetchMileage}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}

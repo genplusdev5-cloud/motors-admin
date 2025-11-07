@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState , useRef  } from 'react'
+import { useState, useRef } from 'react'
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -18,6 +18,7 @@ import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 
 import { Menu, MenuItem } from '@mui/material'
+
 // TanStack Table Imports
 import {
   useReactTable,
@@ -67,7 +68,7 @@ const VehicleModel = () => {
   const [columnFilters, setColumnFilters] = useState([])
   const [sorting, setSorting] = useState([])
 
-    const [anchorEl, setAnchorEl] = useState(null)
+  const [anchorEl, setAnchorEl] = useState(null)
   const [selectedType, setSelectedType] = useState(null)
 
   // --- CRUD Logic Handlers ---
@@ -115,21 +116,18 @@ const VehicleModel = () => {
         id: newId,
         vehicleType: data.vehicleType,
         name: data.name,
-        category_id:data.category_id,
-        SubCategory_id:data.SubCategory_id,
-        make_id:data.make_id,
-        color_id:data.color_id,
-        body_type_id:data.body_data_id,
-        engine_type_id:data.body_data_id,
-        cylinder_id:data.cylinder_id,
-        fuel_type_id:data.fuel_type_id,
-        seating_capacity:data.seating_capacity,
+        category_id: data.category_id,
+        SubCategory_id: data.SubCategory_id,
+        make_id: data.make_id,
+        color_id: data.color_id,
+        body_type_id: data.body_data_id,
+        engine_type_id: data.body_data_id,
+        cylinder_id: data.cylinder_id,
+        fuel_type_id: data.fuel_type_id,
+        seating_capacity: data.seating_capacity,
         transmission: data.transmission,
 
-
-
-        is_active: 'Active',
-
+        is_active: 'Active'
       }
 
       setData(prevData => [...prevData, newRecord])
@@ -151,7 +149,7 @@ const VehicleModel = () => {
     // 2. In a real app, you would call an API here to delete the record.
   }
 
-    // Hidden file input
+  // Hidden file input
   const fileInputRef = useRef(null)
 
   const handleExportClick = event => {
@@ -197,8 +195,6 @@ const VehicleModel = () => {
         return ''
     }
   }
-
-
 
   // --- End of CRUD Logic ---
 
@@ -344,7 +340,7 @@ const VehicleModel = () => {
               onClick={() => handleOpenModal(null)}
               startIcon={<i className='tabler-plus' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-               size='small'
+              size='small'
               sx={{
                 textTransform: 'none',
                 backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
@@ -363,7 +359,7 @@ const VehicleModel = () => {
             <Button
               onClick={''}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-               size='small'
+              size='small'
               sx={{
                 textTransform: 'none',
                 backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
@@ -407,7 +403,7 @@ const VehicleModel = () => {
         {/* --- */}
 
         {/* Table controls (unchanged) */}
-    <div
+        <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',

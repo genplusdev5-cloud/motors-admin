@@ -48,7 +48,7 @@ import AddModelWindow from './AddModelWindow'
 
 const columnHelper = createColumnHelper()
 
-const  VehicleType = () => {
+const VehicleType = () => {
   const theme = useTheme()
   const router = useRouter() // eslint-disable-line no-unused-vars
 
@@ -84,42 +84,38 @@ const  VehicleType = () => {
   }, [])
 
   // Save category (handles both add and update by calling API)
-const handleSaveCategory = async (categoryData, id) => {
-  try {
-    // ✅ FRONTEND DUPLICATE CHECK
-    const isDuplicate = data.some(
-      item =>
-        item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() &&
-        item.id !== id // allow same name for the same record being edited
-    )
+  const handleSaveCategory = async (categoryData, id) => {
+    try {
+      // ✅ FRONTEND DUPLICATE CHECK
+      const isDuplicate = data.some(
+        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id // allow same name for the same record being edited
+      )
 
-    if (isDuplicate) {
-      toast.warning('name name already exists. ')
-      return // ❌ Stop here — don’t call backend
+      if (isDuplicate) {
+        toast.warning('name name already exists. ')
+
+        return // ❌ Stop here — don’t call backend
+      }
+
+      // ✅ Proceed if no duplicate found
+      if (id) {
+        await updateVehicle(id, categoryData)
+        toast.success('Vehicle type updated successfully!')
+      } else {
+        await addVehicle(categoryData)
+        toast.success('vehicle Type added successfully!')
+      }
+
+      handleCloseModal() // Close modal after success
+      await fetchCategories() // Refresh data in the table
+    } catch (error) {
+      console.error('Save vehicle type error:', error)
+
+      const errorMsg = error.response?.data?.message || 'An error occurred while saving the vehicle type.'
+
+      toast.error(errorMsg)
     }
-
-    // ✅ Proceed if no duplicate found
-    if (id) {
-      await updateVehicle(id, categoryData)
-      toast.success('Vehicle type updated successfully!')
-    } else {
-      await addVehicle(categoryData)
-      toast.success('vehicle Type added successfully!')
-    }
-
-    handleCloseModal() // Close modal after success
-    await fetchCategories() // Refresh data in the table
-  } catch (error) {
-    console.error('Save vehicle type error:', error)
-
-    const errorMsg = error.response?.data?.message || 'An error occurred while saving the vehicle type.'
-    toast.error(errorMsg)
   }
-}
-
-
-
-
 
   // Delete category handler
   const handleDelete = async id => {
@@ -372,8 +368,7 @@ const handleSaveCategory = async (categoryData, id) => {
               Add
             </Button>
 
-
-             <Button
+            <Button
               onClick={fetchCategories}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
@@ -392,7 +387,6 @@ const handleSaveCategory = async (categoryData, id) => {
             >
               Refresh
             </Button>
-
           </div>
 
           <div
@@ -409,7 +403,7 @@ const handleSaveCategory = async (categoryData, id) => {
             </Link>
             {' / '}
             <Link href='/vehicle-type' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-             Vehicle Type
+              Vehicle Type
             </Link>
           </div>
         </div>

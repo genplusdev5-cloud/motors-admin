@@ -123,6 +123,7 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave, editingRow }) => {
   const handleSave = () => {
     if (!data.name.trim() || !data.category_id) {
       alert('Name and Category are required.')
+
       return
     }
 
@@ -130,6 +131,7 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave, editingRow }) => {
       name: data.name.trim(),
       description: data.description.trim(),
       category_id: data.category_id,
+
       // Send is_active only if in edit mode (using the dropdown value), otherwise assume active (1)
       is_active: isEdit ? Number(data.is_active) : 1
     }

@@ -32,7 +32,7 @@ import {
 } from '@tanstack/react-table'
 
 // Updated import from corrected service file
-import { getEngineType , addEngineType , updateEngineType , deleteEngineType  } from '@/services/engineTypeApi'
+import { getEngineType, addEngineType, updateEngineType, deleteEngineType } from '@/services/engineTypeApi'
 
 // import axiosInstance, { setTokens } from '@/configs/token' // token config is not directly used here
 
@@ -71,7 +71,7 @@ const EngineType = () => {
     setLoading(true)
 
     try {
-      const categoryData = await getEngineType ()
+      const categoryData = await getEngineType()
 
       setData(categoryData)
     } catch (error) {
@@ -84,42 +84,38 @@ const EngineType = () => {
   }, [])
 
   // Save category (handles both add and update by calling API)
-const handleSaveCategory = async (categoryData, id) => {
-  try {
-    // ✅ FRONTEND DUPLICATE CHECK
-    const isDuplicate = data.some(
-      item =>
-        item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() &&
-        item.id !== id // allow same name when editing the same record
-    )
+  const handleSaveCategory = async (categoryData, id) => {
+    try {
+      // ✅ FRONTEND DUPLICATE CHECK
+      const isDuplicate = data.some(
+        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id // allow same name when editing the same record
+      )
 
-    if (isDuplicate) {
-      toast.warning('Engine Type name already exists. ')
-      return // ❌ Stop — don’t send API call
+      if (isDuplicate) {
+        toast.warning('Engine Type name already exists. ')
+
+        return // ❌ Stop — don’t send API call
+      }
+
+      // ✅ Proceed if not duplicate
+      if (id) {
+        await updateEngineType(id, categoryData)
+        toast.success('Engine Type updated successfully!')
+      } else {
+        await addEngineType(categoryData)
+        toast.success('Engine Type added successfully!')
+      }
+
+      handleCloseModal() // Close modal after success
+      await fetchCategories() // Refresh data in the table
+    } catch (error) {
+      console.error('Save engine type error:', error)
+
+      const errorMsg = error.response?.data?.message || 'An error occurred while saving the engine type.'
+
+      toast.error(errorMsg)
     }
-
-    // ✅ Proceed if not duplicate
-    if (id) {
-      await updateEngineType(id, categoryData)
-      toast.success('Engine Type updated successfully!')
-    } else {
-      await addEngineType(categoryData)
-      toast.success('Engine Type added successfully!')
-    }
-
-    handleCloseModal() // Close modal after success
-    await fetchCategories() // Refresh data in the table
-  } catch (error) {
-    console.error('Save engine type error:', error)
-
-    const errorMsg =
-      error.response?.data?.message || 'An error occurred while saving the engine type.'
-
-    toast.error(errorMsg)
   }
-}
-
-
 
   // Delete category handler
   const handleDelete = async id => {
@@ -130,7 +126,7 @@ const handleSaveCategory = async (categoryData, id) => {
     }
 
     Swal.fire({
-      text: "",
+      text: '',
       showCancelButton: true,
       confirmButtonText: 'Delete ',
       cancelButtonText: 'Cancel',
@@ -371,8 +367,7 @@ const handleSaveCategory = async (categoryData, id) => {
               Add
             </Button>
 
-
-             <Button
+            <Button
               onClick={fetchCategories}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}

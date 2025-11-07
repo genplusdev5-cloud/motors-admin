@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -62,6 +63,7 @@ const Category = () => {
 
     try {
       const categoryData = await getCategories()
+
       setData(categoryData)
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -73,49 +75,43 @@ const Category = () => {
   }, [])
 
   // Save category (handles both add and update by calling API)
-// Save category (handles both add and update by calling API)
-const handleSaveCategory = async (categoryData, id) => {
-  try {
-    // ✅ FRONTEND DUPLICATE CHECK
-    const isDuplicate = data.some(
-      item =>
-        item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() &&
-        item.id !== id // allow same name for the record being edited
-    )
+  // Save category (handles both add and update by calling API)
+  const handleSaveCategory = async (categoryData, id) => {
+    try {
+      // ✅ FRONTEND DUPLICATE CHECK
+      const isDuplicate = data.some(
+        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id // allow same name for the record being edited
+      )
 
-    if (isDuplicate) {
-      toast.warning('Name already exists')
-      return // ❌ Stop — don’t call API
+      if (isDuplicate) {
+        toast.warning('Name already exists')
+
+        return // ❌ Stop — don’t call API
+      }
+
+      // ✅ Proceed if not duplicate
+      if (id) {
+        await updateCategory(id, categoryData)
+        toast.success('Category updated successfully!')
+      } else {
+        await addCategory(categoryData)
+        toast.success('Category added successfully!')
+      }
+
+      handleCloseModal() // Close modal
+      await fetchCategories() // Refresh data
+    } catch (error) {
+      console.error('Save category error:', error)
+
+      let errorMsg = 'An error occurred while saving the category.'
+
+      if (error.response?.data?.message) {
+        errorMsg = error.response.data.message
+      }
+
+      toast.error(errorMsg)
     }
-
-    // ✅ Proceed if not duplicate
-    if (id) {
-      await updateCategory(id, categoryData)
-      toast.success('Category updated successfully!')
-    } else {
-      await addCategory(categoryData)
-      toast.success('Category added successfully!')
-    }
-
-    handleCloseModal() // Close modal
-    await fetchCategories() // Refresh data
-  } catch (error) {
-    console.error('Save category error:', error)
-
-    let errorMsg = 'An error occurred while saving the category.'
-
-    if (error.response?.data?.message) {
-      errorMsg = error.response.data.message
-    }
-
-    toast.error(errorMsg)
   }
-}
-
-
-
-
-
 
   // Delete category handler
   const handleDelete = async id => {
@@ -139,6 +135,7 @@ const handleSaveCategory = async (categoryData, id) => {
         } catch (error) {
           console.error('Delete category error:', error)
           const errorMsg = error.response?.data?.message || 'Failed to delete category.'
+
           toast.error(errorMsg)
         }
       }
@@ -287,10 +284,7 @@ const handleSaveCategory = async (categoryData, id) => {
         if (statusValue === 0 || statusValue === false) statusValue = 'Inactive'
 
         // Theme-based colors
-        const bgColor =
-          statusValue === 'Active'
-            ? theme.palette.success.light
-            : theme.palette.error.light
+        const bgColor = statusValue === 'Active' ? theme.palette.success.light : theme.palette.error.light
 
         return (
           <Typography
@@ -359,7 +353,7 @@ const handleSaveCategory = async (categoryData, id) => {
               Add
             </Button>
 
-              <Button
+            <Button
               onClick={fetchCategories}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}

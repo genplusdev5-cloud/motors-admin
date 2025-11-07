@@ -32,11 +32,7 @@ import {
 } from '@tanstack/react-table'
 
 // Updated import from corrected service file
-import { getBodyType, addBodyType, updateBodyType, deleteBodyType } from '@/services/bodyTypeApi'
-
-// import axiosInstance, { setTokens } from '@/configs/token' // token config is not directly used here
-
-// TanStack Table Imports
+import { getMake, addMake, updateMake, deleteMake } from '@/services/vehicleMakeApi'
 
 // Assuming these are custom components from your project
 import CustomTextField from '@core/components/mui/TextField'
@@ -48,11 +44,9 @@ import AddModelWindow from './AddModelWindow'
 
 const columnHelper = createColumnHelper()
 
-const BodyType = () => {
+const VehicleMake = () => {
   const theme = useTheme()
   const router = useRouter() // eslint-disable-line no-unused-vars
-
-  //const API_URL = 'http://motor-match.genplusinnovations.com:7023/' // eslint-disable-line no-unused-vars
 
   const [open, setOpen] = useState(false)
   const [data, setData] = useState([])
@@ -67,16 +61,16 @@ const BodyType = () => {
 
   // --- Core Functions for Data Management ---
 
-  const fetchCategories = useCallback(async () => {
+  const fetchMake = useCallback(async () => {
     setLoading(true)
 
     try {
-      const categoryData = await getBodyType()
+      const categoryData = await getMake()
 
       setData(categoryData)
     } catch (error) {
-      console.error('Error fetching categories:', error)
-      toast.error('Failed to load categories.')
+      console.error('Error fetching vehicle make:', error)
+      toast.error('Failed to load Vehicle Make.')
       setData([])
     } finally {
       setLoading(false)
@@ -84,52 +78,63 @@ const BodyType = () => {
   }, [])
 
   // Save category (handles both add and update by calling API)
-  const handleSaveCategory = async (categoryData, id) => {
-    try {
-      // ✅ FRONTEND DUPLICATE CHECK
-      const isDuplicate = data.some(
-        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id // allow same name when editing same record
-      )
+const handleSaveCategory = async (categoryData, id) => {
+  try {
+    // ✅ FRONTEND DUPLICATE CHECK
+    const isDuplicate = data.some(
+      item =>
+        item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() &&
+        item.id !== id // allow same name for editing same record
+    )
 
-      if (isDuplicate) {
-        toast.warning('Body Type name already exists.')
-
-        return
-      }
-
-      // ✅ Proceed if not duplicate
-      if (id) {
-        await updateBodyType(id, categoryData)
-        toast.success('Body Type updated successfully!')
-      } else {
-        await addBodyType(categoryData)
-        toast.success('Body Type added successfully!')
-      }
-
-      handleCloseModal() // Close modal after success
-      await fetchCategories() // Refresh data in the table
-    } catch (error) {
-      console.error('Save category error:', error)
-
-      const errorMsg = error.response?.data?.message || 'An error occurred while saving the body type.'
-
-      toast.error(errorMsg)
+    if (isDuplicate) {
+      toast.warning('Vehicle Make name already exists. ')
+      return // ❌ Stop — don’t send to backend
     }
-  }
 
-  // Delete category handler
+    // ✅ Proceed if not duplicate
+    if (id) {
+      await updateMake(id, categoryData)
+      toast.success('Vehicle Make updated successfully!')
+    } else {
+      await addMake(categoryData)
+      toast.success('Vehicle Make added successfully!')
+    }
+
+    handleCloseModal() // Close modal after success
+    await fetchMake() // Refresh data in the table
+  } catch (error) {
+    console.error('Save vehicle make error:', error)
+
+    const errorMsg =
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      'An error occurred while saving the vehicle make.'
+
+    toast.error(errorMsg)
+  }
+}
+
+
+
+
+
+
+
+
   const handleDelete = async id => {
     if (!id) {
-      toast.error('Invalid Body Type ID')
+      toast.error('Invalid vehicle make ID')
 
       return
     }
 
     Swal.fire({
-      text: "You won't be able to revert this!",
+      text: 'Are you sure you want to delete this Vehicle Make?',
+      icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'No, keep it',
+      confirmButtonText: 'Delete ',
+      cancelButtonText: 'Cancel',
       customClass: {
         confirmButton: 'btn btn-danger',
         cancelButton: 'btn btn-secondary'
@@ -137,12 +142,12 @@ const BodyType = () => {
     }).then(async result => {
       if (result.isConfirmed) {
         try {
-          await deleteBodyType(id)
-          toast.success('Body Type deleted successfully!')
-          await fetchCategories()
+          await deleteMake(id)
+          toast.success('Vehicle Make deleted successfully!')
+          await fetchMake()
         } catch (error) {
-          console.error('Error deleting body type:', error)
-          toast.error(error.message || 'Failed to delete body type.')
+          console.error('Error deleting Vehicle Make:', error)
+          toast.error(error.message || 'Failed to delete vehicle make.')
         }
       }
     })
@@ -150,8 +155,8 @@ const BodyType = () => {
 
   // --- Fetch categories on initial load
   useEffect(() => {
-    fetchCategories()
-  }, [fetchCategories])
+    fetchMake()
+  }, [fetchMake])
 
   // Open modal (null => add, row object => edit)
   const handleOpenModal = row => {
@@ -164,7 +169,7 @@ const BodyType = () => {
     setEditingRow(null)
   }
 
-  // Hidden file input
+  // Hidden file input logic for export/import (retained)
   const fileInputRef = useRef(null)
 
   const handleExportClick = event => {
@@ -189,10 +194,6 @@ const BodyType = () => {
     const file = event.target.files[0]
 
     if (file && selectedType) {
-      // NOTE: handleFileUpload is not defined in the original snippet,
-      // you would need to implement it for import functionality.
-      // For now, we'll just log an action.
-      // handleFileUpload(file, selectedType) // custom handler
       toast.info(`Attempting to upload ${selectedType.toUpperCase()} file: ${file.name}`)
     }
 
@@ -273,6 +274,28 @@ const BodyType = () => {
       cell: info => info.getValue()
     }),
 
+    // Vehicle Make Image column (assuming API returns a URL or file name here)
+    columnHelper.accessor('image', {
+      header: 'LOGO',
+      enableSorting: false,
+      cell: info => {
+        const imageUrl = info.getValue()
+
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={info.row.original.name}
+                style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 4 }}
+              />
+            ) : (
+              <Typography variant='caption'>N/A</Typography>
+            )}
+          </Box>
+        )
+      }
+    }),
     columnHelper.accessor('description', {
       header: ({ column }) => getSortableHeader('DESCRIPTION', column),
       cell: info => {
@@ -282,7 +305,7 @@ const BodyType = () => {
       }
     }),
 
-    columnHelper.accessor('is_active', {
+ columnHelper.accessor('is_active', {
       header: 'STATUS',
       enableSorting: false,
       cell: info => {
@@ -346,7 +369,7 @@ const BodyType = () => {
       <Card sx={{ p: '1.5rem' }}>
         <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: `1px solid ${theme.palette.divider}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: theme.palette.text.primary }}>Body Type</span>
+            <span style={{ fontSize: 16, fontWeight: 500, color: theme.palette.text.primary }}>Vehicle Make</span>
             <Button
               onClick={() => handleOpenModal(null)}
               startIcon={<i className='tabler-plus' />}
@@ -368,7 +391,7 @@ const BodyType = () => {
             </Button>
 
             <Button
-              onClick={fetchCategories}
+              onClick={fetchMake}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
               size='small'
@@ -401,8 +424,8 @@ const BodyType = () => {
               Masters
             </Link>
             {' / '}
-            <Link href='/body-type' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-              Body Type
+            <Link href='/vehicle make' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
+              Vehicle Make
             </Link>
           </div>
         </div>
@@ -518,7 +541,9 @@ const BodyType = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={columns.length} className='text-center'></td>
+                  <td colSpan={columns.length} className='text-center'>
+                    <i className='tabler-loader animate-spin' style={{ fontSize: 24 }} /> Loading...
+                  </td>
                 </tr>
               ) : table.getRowModel().rows.length === 0 ? (
                 <tr>
@@ -553,4 +578,4 @@ const BodyType = () => {
   )
 }
 
-export default BodyType
+export default VehicleMake

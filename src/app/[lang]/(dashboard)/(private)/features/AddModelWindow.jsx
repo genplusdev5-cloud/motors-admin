@@ -98,6 +98,7 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave }) => {
     // Client-side validation
     if (!data.name.trim() || !data.category_id) {
       alert('Name and Category are required.')
+
       return
     }
 
