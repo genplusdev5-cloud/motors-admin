@@ -26,20 +26,12 @@ export const updateCylinder = async (id, payload) => {
 
 // ❌ Delete
 
-export const deleteCylinder= async id => {
-  try {
-    // The endpoint is correct for a Django-like REST framework
-    const res = await axiosInstance.delete(`api/cylinder-delete/${id}/`);
+export const deleteCylinder = async id => {
+  const formData = new FormData()
 
-    console.log('Delete response:', res.data);
+  formData.append('id', id)
 
-    return res.data;
-  } catch (err) {
-    // Enhanced error logging to understand the failure
-    console.error('Full delete error:', err);
-    console.error('Error response data:', err.response?.data);
+  const res = await axiosInstance.put('api/cylinder-delete/', formData)
 
-    // Throw a custom error message, prioritizing the message from the backend
-    throw new Error(err.response?.data?.message || 'Failed to delete cylinder due to a server error.');
-  }
-};
+  return res.data
+}

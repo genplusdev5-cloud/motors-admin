@@ -1,6 +1,3 @@
-// ✅ src/app/company/page.jsx - Note: Ensure the line below is properly commented out or removed if causing parser errors
-// / ✅ src/app/company/page.jsx
-
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -9,8 +6,6 @@ import { useRouter } from 'next/navigation'
 
 import { openDB } from 'idb'
 import { toast } from 'react-toastify'
-
-// 💡 NEW: Import the API functions from the service file
 
 // MUI imports
 import { styled, useTheme } from '@mui/material/styles'
@@ -21,275 +16,226 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import { Box } from '@mui/material'
 
-import { getCompanyData, updateCompanyData } from '@/services/companyApi'
-
+import { getCompanyData, updateCompanyData} from '@/services/companyApi' // Assuming you rename the service file
 import Link from '@/components/Link'
 import CustomTextField from '@core/components/mui/TextField'
 import FileUploaderSingle from './FileUploaderSingle'
 
-// 🔹 Label with required star (UNCHANGED)
+// --- Label styling (unchanged)
 const LabelWithStar = styled('span')({
-  '&::before': {
-    content: '"*"',
-    color: 'red',
-    marginRight: 4
-  }
+  '&::before': {
+    content: '"*"',
+    color: 'red',
+    marginRight: 4
+  }
 })
 
-// IndexedDB setup (UNCHANGED)
+// --- IndexedDB setup (unchanged)
 const getCompanyDB = async () => {
-  return openDB('companyDB', 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains('companies')) {
-        db.createObjectStore('companies', { keyPath: 'id', autoIncrement: true })
-      }
-    }
-  })
+  return openDB('companyDB', 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains('companies')) {
+        db.createObjectStore('companies', { keyPath: 'id', autoIncrement: true })
+      }
+    }
+  })
 }
 
 const Company = () => {
-  const theme = useTheme()
-  const router = useRouter() // Fixed: Using useRouter hook
-  const [loading, setLoading] = useState(false)
-  const [editCompanyId, setEditCompanyId] = useState(null)
+  const theme = useTheme()
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [editCompanyId, setEditCompanyId] = useState(null)
 
-  const [data, setData] = useState({
-    // ... data state initialization (UNCHANGED)
-    name: '',
-    company_code: '',
-    prefix: '',
-    capital: '',
-    email: '',
-    city: '',
-    state: '',
-    pincode: '',
-    contact_person: '',
-    phone: '',
-    address_line_1: '',
-    address_line_2: '',
-    gst: '',
-    cin: '',
-    statecode: '',
-    mobile: '',
-    fax: '',
-    logo: '',
-    logo_small: '',
-    logo_invoice: ''
-  })
+  const [data, setData] = useState({
+    name: '',
+    company_code: '',
+    prefix: '',
+    capital: '',
+    email: '',
+    city: '',
+    state: '',
+    pincode: '',
+    contact_person: '',
+    phone: '',
+    address_line_1: '',
+    address_line_2: '',
+    gst: '',
+    cin: '',
+    statecode: '',
+    mobile: '',
+    fax: '',
+    logo: '',
+    logo_small: '',
+    logo_invoice: ''
+  })
 
-  const [touched, setTouched] = useState({})
+  const [touched, setTouched] = useState({})
 
-  // ... Refs and Keyboard Navigation (UNCHANGED)
-  const inputRefs = useRef([])
-  const submitButtonRef = useRef(null)
+  const inputRefs = useRef([])
+  const submitButtonRef = useRef(null)
 
-  const fieldOrder = [
-    'name',
-    'company_code',
-    'email',
-    'gst',
-    'cin',
-    'statecode',
-    'address_line_1',
-    'address_line_2',
-    'city',
-    'state',
-    'pincode',
-    'phone',
-    'mobile',
-    'fax'
-  ]
+  const fieldOrder = [
+    'name',
+    'company_code',
+    'email',
+    'gst',
+    'cin',
+    'statecode',
+    'address_line_1',
+    'address_line_2',
+    'city',
+    'state',
+    'pincode',
+    'phone',
+    'mobile',
+    'fax',
+    'logo',
+    'logo_invoice',
+    'logo_small'
+  ]
 
-  const getRefIndex = field => fieldOrder.indexOf(field)
+  const getRefIndex = field => fieldOrder.indexOf(field)
 
-  const handleKeyDown = (e, index) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      const nextIndex = index + 1
+  const handleKeyDown = (e, index) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      const nextIndex = index + 1
 
-      if (nextIndex < inputRefs.current.length) {
-        inputRefs.current[nextIndex]?.focus()
-      } else {
-        submitButtonRef.current?.focus()
-      }
-    }
-  }
+      if (nextIndex < inputRefs.current.length) {
+        inputRefs.current[nextIndex]?.focus()
+      } else {
+        submitButtonRef.current?.focus()
+      }
+    }
+  }
 
-  const requiredFields = ['name', 'company_code', 'email', 'address_line_1', 'city', 'state', 'gst', 'mobile', 'fax', 'logo', 'logo_small', 'logo_invoice']
+  // --- Simple validation (no required fields)
+  const validateEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const validatePhone = phone => phone.replace(/\D/g, '').length === 10
+  const validatePincode = pincode => pincode.length === 6
 
-  // ... Validation Functions (UNCHANGED)
-  const validateRequired = value => {
-    if (value === null || value === undefined) return false
-    if (typeof value === 'string') return value.trim() !== ''
-    if (typeof value === 'object' && value instanceof File) return true
+  const getErrorMessage = (field, value) => {
+    if (field === 'email' && value && !validateEmail(value)) return 'Invalid email'
+    if (field === 'mobile' && value && !validatePhone(value)) return 'Mobile must be 10 digits'
+    if (field === 'pincode' && value && !validatePincode(value)) return 'Pincode must be 6 digits'
 
-    // Also check if existing logo data is a non-empty string URL (i.e., already uploaded)
-    if (typeof value === 'string') return value.trim() !== ''
+    return ''
+  }
 
+  const handleChange = (field, value) => setData(prev => ({ ...prev, [field]: value }))
 
-    return false
-  }
+  const handleFileChange = (field, file) => {
+    const actualFile = Array.isArray(file) ? file[0] : file
 
-  const validateEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  const validatePhone = phone => phone.replace(/\D/g, '').length === 10
-  const validatePincode = pincode => pincode.length === 6
+    setData(prev => ({ ...prev, [field]: actualFile }))
+  }
 
-  const getErrorMessage = (field, value) => {
-    const isRequired = requiredFields.includes(field)
+  const handleBlur = field => setTouched(prev => ({ ...prev, [field]: true }))
 
-    if (isRequired && !validateRequired(value)) return `${field.replace(/([A-Z])/g, ' $1').trim()} is required`
-    if (field === 'email' && value && !validateEmail(value)) return 'Invalid email'
-    if (field === 'mobile' && value && !validatePhone(value)) return 'Mobile must be 10 digits'
-    if (field === 'pincode' && value && !validatePincode(value)) return 'Pincode must be 6 digits'
+  const loadFromIndexedDB = async id => {
+    try {
+      const db = await getCompanyDB()
+      const existing = await db.get('companies', id)
 
-    return ''
-  }
+      if (existing) {
+        setData(existing)
+        setEditCompanyId(existing.id)
+      }
+    } catch (err) {
+      console.error('Error loading from IndexedDB:', err)
+    }
+  }
 
-  // ... Input Handlers (UNCHANGED)
-  const handleChange = (field, value) => setData(prev => ({ ...prev, [field]: value }))
+  const fetchCompanyData = async () => {
+    try {
+      setLoading(true)
+      const data = await getCompanyData() // API call to get company data
 
-  const handleFileChange = (field, file) => {
-    // If files is an array (from FileUploaderSingle), take the first item, otherwise it's the file object itself
-    const actualFile = Array.isArray(file) ? file[0] : file
+      if (Object.keys(data).length) {
+        setData(prev => ({
+          ...prev,
+          name: data.name || '',
+          company_code: data.company_code || '',
+          email: data.email || '',
+          gst: data.gst || '',
+          cin: data.cin || '',
+          statecode: data.statecode || '',
+          address_line_1: data.address_line_1 || '',
+          address_line_2: data.address_line_2 || '',
+          city: data.city || '',
+          state: data.state || '',
+          pincode: data.pincode || '',
+          phone: data.phone || '',
+          mobile: data.mobile || '',
+          fax: data.fax || '',
+          logo: data.logo || '',
+          logo_small: data.logo_small || '',
+          logo_invoice: data.logo_invoice || ''
+        }))
+        setEditCompanyId(data.id)
+      } else {
+        loadFromIndexedDB(1)
+      }
+    } catch (err) {
+      if (err.response?.status === 401) {
+        toast.error('Session expired. Please login again.')
+        router.push('/login')
 
-    setData(prev => ({ ...prev, [field]: actualFile }))
-  }
+        return
+      }
 
-  const handleBlur = field => setTouched(prev => ({ ...prev, [field]: true }))
+      console.error('API fetch failed:', err)
+      toast.error('Failed to fetch company data.')
+      loadFromIndexedDB(1)
+    } finally {
+      setLoading(false)
+    }
+  }
 
+  useEffect(() => {
+    fetchCompanyData()
+  }, [])
 
-  // --- IndexedDB & API ---
-  const loadFromIndexedDB = async id => {
-    try {
-      const db = await getCompanyDB()
-      const existing = await db.get('companies', id)
+  const handleReset = () => {
+    setTouched({})
+    fetchCompanyData()
+  }
 
-      if (existing) {
-        // Important: When loading from DB, URLs (strings) for logos should be treated as valid existing files
-        setData(existing)
-        setEditCompanyId(existing.id)
-      }
-    } catch (err) {
-      console.error('Error loading from IndexedDB:', err)
-    }
-  }
+  const handleSubmit = async () => {
+    try {
+      setLoading(true)
+      const db = await getCompanyDB()
+      const formData = new FormData()
 
-  const fetchCompanyData = async () => {
-    try {
-      setLoading(true)
+      // Use the existing ID or default to 1 for the update payload
+      const companyId = editCompanyId || 1
 
-      // 💡 REFACTORED: Use the imported service function
-      const data = await getCompanyData()
+      // Append all fields (including files and strings) to FormData
+      Object.entries(data).forEach(([key, value]) => {
+        // Only append 'id' if the server expects it within the payload
+        if (key === 'id') return
+       
+        if (value instanceof File) formData.append(key, value)
+        else formData.append(key, value ?? '')
+      })
 
-      if (Object.keys(data).length) {
-        setData(prev => ({
-          ...prev,
-          name: data.name || '',
-          company_code: data.company_code || '',
-          email: data.email || '',
-          gst: data.gst || '',
-          cin: data.cin || '',
-          statecode: data.statecode || '',
-          address_line_1: data.address_line_1 || '',
-          address_line_2: data.address_line_2 || '',
-          city: data.city || '',
-          state: data.state || '',
-          pincode: data.pincode || '',
-          phone: data.phone || '',
-          mobile: data.mobile || '',
-          fax: data.fax || '',
+      // CRITICAL FIX: Pass the ID as the first argument and the FormData payload as the second.
+      const updatedData = await updateCompanyData(companyId, formData)
 
-          logo: data.logo || '',
-          logo_small: data.logo_small || '',
-          logo_invoice: data.logo_invoice || ''
-        }))
-        setEditCompanyId(data.id)
-        console.log('Fetched from API')
-      } else {
-        console.warn('No API data; fallback to IndexedDB')
-        loadFromIndexedDB(1)
-      }
-    } catch (err) {
-      // Check for common auth errors (based on what axios/instance handles)
-      if (err.response?.status === 401) {
-        toast.error('Session expired. Please login again.')
-        router.push('/login')
+      setData(prev => ({ ...prev, ...updatedData }))
+     
+      // Update IndexedDB with new data and ensure ID is present
+      await db.put('companies', { ...data, ...updatedData, id: companyId})
 
-return
-      }
-
-      console.error('API fetch failed:', err)
-      toast.error('Failed to fetch company data.')
-      loadFromIndexedDB(1)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchCompanyData()
-  }, [])
-
-  const handleReset = () => {
-    setTouched({})
-    fetchCompanyData()
-  }
-
-  const handleSubmit = async () => {
-    const newTouched = requiredFields.reduce((acc, f) => ({ ...acc, [f]: true }), {})
-
-    setTouched(newTouched)
-
-    // Check validity of text fields and existing/new files
-    const isFormValid = requiredFields.every(field => getErrorMessage(field, data[field]) === '')
-
-    if (!isFormValid) return toast.error('Please fill all required fields correctly.')
-
-    try {
-      setLoading(true)
-      const db = await getCompanyDB()
-      const formData = new FormData()
-
-      // ... FormData population logic (UNCHANGED)
-      formData.append('id', editCompanyId || 1)
-      formData.append('name', data.name)
-      formData.append('company_code', data.company_code)
-      formData.append('email', data.email)
-      formData.append('gst', data.gst)
-      formData.append('cin', data.cin)
-      formData.append('statecode', data.statecode)
-      formData.append('address_line_1', data.address_line_1)
-      formData.append('address_line_2', data.address_line_2)
-      formData.append('city', data.city)
-      formData.append('state', data.state)
-      formData.append('pincode', data.pincode)
-      formData.append('phone', data.phone)
-      formData.append('mobile', data.mobile)
-      formData.append('fax', data.fax)
-
-      // Only append if it's a new File object for upload
-      if (data.logo instanceof File) formData.append('logo', data.logo)
-      if (data.logo_small instanceof File) formData.append('logo_small', data.logo_small)
-      if (data.logo_invoice instanceof File) formData.append('logo_invoice', data.logo_invoice)
-
-
-      // 💡 REFACTORED: Use the imported service function
-      const updatedData = await updateCompanyData(editCompanyId || 1, formData)
-
-      // Update local state with fresh data/URLs returned from the server
-      setData(prev => ({ ...prev, ...updatedData }))
-
-      // Update IndexedDB after successful API call
-      await db.put('companies', { ...data, ...updatedData, id: editCompanyId || 1 })
-
-      toast.success('Company updated successfully!')
-    } catch (err) {
-      console.error('Error updating company:', err)
-      toast.error(err.message || 'Error updating company.')
-    } finally {
-      setLoading(false)
-    }
-  }
+      toast.success('Company updated successfully!')
+    } catch (err) {
+      console.error('Error updating company:', err)
+      toast.error(err.message || 'Error updating company.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // if (loading) return <Typography>Loading Company Data...</Typography>
 
@@ -336,14 +282,8 @@ return
               <Grid size={{ xs: 12, sm: 4 }}>
                 <CustomTextField
                   fullWidth
-                  label={
-                    <>
-                      Name
-                      <LabelWithStar />
-                    </>
-                  }
+                  label={<>Name</>}
 
-                  // disabled // Removed disabled tag for a fully editable form
                   value={data.name}
                   disabled
                   onChange={e => handleChange('name', e.target.value)}
@@ -359,12 +299,7 @@ return
               <Grid size={{ xs: 12, sm: 4 }}>
                 <CustomTextField
                   fullWidth
-                  label={
-                    <>
-                      Company Code
-                      <LabelWithStar />
-                    </>
-                  }
+                  label={<>Company Code</>}
                   value={data.company_code}
                   onChange={e => handleChange('company_code', e.target.value)}
                   onBlur={() => handleBlur('company_code')}
@@ -379,12 +314,7 @@ return
               <Grid size={{ xs: 12, sm: 4 }}>
                 <CustomTextField
                   fullWidth
-                  label={
-                    <>
-                      Email
-                      <LabelWithStar />
-                    </>
-                  }
+                  label={<>Email</>}
                   value={data.email}
                   onChange={e => handleChange('email', e.target.value)}
                   onBlur={() => handleBlur('email')}
@@ -398,12 +328,7 @@ return
               <Grid size={{ xs: 12, sm: 4 }}>
                 <CustomTextField
                   fullWidth
-                  label={
-                    <>
-                      GSTIN
-                      <LabelWithStar />
-                    </>
-                  }
+                  label={<>GSTIN</>}
                   value={data.gst}
                   onChange={e => handleChange('gst', e.target.value)}
                   onBlur={() => handleBlur('gst')}
@@ -442,11 +367,7 @@ return
               <Grid size={{ xs: 12, sm: 4 }}>
                 <CustomTextField
                   fullWidth
-                  label={
-                    <>
-                      Address Line 1<LabelWithStar />
-                    </>
-                  }
+                  label={<>Address Line 1</>}
                   multiline
                   type='textarea'
                   rows={3}
@@ -479,12 +400,7 @@ return
               <Grid size={{ xs: 12, sm: 4 }}>
                 <CustomTextField
                   fullWidth
-                  label={
-                    <>
-                      City
-                      <LabelWithStar />
-                    </>
-                  }
+                  label={<>City</>}
                   value={data.city}
                   onChange={e => handleChange('city', e.target.value)}
                   onBlur={() => handleBlur('city')}
@@ -499,12 +415,7 @@ return
               <Grid size={{ xs: 12, sm: 4 }}>
                 <CustomTextField
                   fullWidth
-                  label={
-                    <>
-                      State
-                      <LabelWithStar />
-                    </>
-                  }
+                  label={<>State</>}
                   value={data.state}
                   onChange={e => handleChange('state', e.target.value)}
                   onBlur={() => handleBlur('state')}
@@ -549,12 +460,7 @@ return
               <Grid size={{ xs: 12, sm: 4 }}>
                 <CustomTextField
                   fullWidth
-                  label={
-                    <>
-                      Mobile
-                      <LabelWithStar />
-                    </>
-                  }
+                  label={<>Mobile</>}
                   value={data.mobile}
                   onChange={e => handleChange('mobile', e.target.value)}
                   onBlur={() => handleBlur('mobile')}
@@ -569,11 +475,7 @@ return
               <Grid size={{ xs: 12, sm: 4 }}>
                 <CustomTextField
                   fullWidth
-                  label={
-                    <>
-                      <LabelWithStar /> Fax
-                    </>
-                  }
+                  label={<>Fax</>}
                   value={data.fax}
                   onChange={e => handleChange('fax', e.target.value)}
                   onBlur={() => handleBlur('fax')}
@@ -591,7 +493,7 @@ return
                   component='label'
                   sx={{ display: 'block', fontWeight: 400, color: 'text.primary' }}
                 >
-                  <LabelWithStar /> Logo
+                  Logo
                 </Typography>
                 {/* FileUploaderSingle must handle initial data display if data.logo is a URL string */}
                 <FileUploaderSingle onFileChange={files => handleFileChange('logo', files)} initialFile={data.logo} />
@@ -609,9 +511,12 @@ return
                   component='label'
                   sx={{ display: 'block', fontWeight: 400, color: 'text.primary' }}
                 >
-                  <LabelWithStar /> Logo Small
+                  Logo Small
                 </Typography>
-                <FileUploaderSingle onFileChange={files => handleFileChange('logo_small', files)} initialFile={data.logo_small} />
+                <FileUploaderSingle
+                  onFileChange={files => handleFileChange('logo_small', files)}
+                  initialFile={data.logo_small}
+                />
                 {touched.logo_small && getErrorMessage('logo_small', data.logo_small) && (
                   <Typography variant='caption' color='error'>
                     {getErrorMessage('logo_small', data.logo_small)}
@@ -626,9 +531,12 @@ return
                   component='label'
                   sx={{ display: 'block', fontWeight: 400, color: 'text.primary' }}
                 >
-                  <LabelWithStar /> Logo Invoice
+                  Logo Invoice
                 </Typography>
-                <FileUploaderSingle onFileChange={files => handleFileChange('logo_invoice', files)} initialFile={data.logo_invoice} />
+                <FileUploaderSingle
+                  onFileChange={files => handleFileChange('logo_invoice', files)}
+                  initialFile={data.logo_invoice}
+                />
                 {touched.logo_invoice && getErrorMessage('logo_invoice', data.logo_invoice) && (
                   <Typography variant='caption' color='error'>
                     {getErrorMessage('logo_invoice', data.logo_invoice)}

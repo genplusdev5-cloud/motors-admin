@@ -28,10 +28,11 @@ export const updateVehicle = async (id, payload) => {
 // ❌ Delete
 
 export const deleteVehicle = async id => {
-  // 💡 CRITICAL FIX: The ID was missing from the URL.
-  // The endpoint must include the ID of the resource to be deleted.
-  // Assuming the correct API format for deletion is '/category-delete/{id}/'
-  const res = await axiosInstance.delete(`api/vehicle-type-delete/${id}/`)
+  const formData = new FormData()
+
+  formData.append('id', id)
+
+  const res = await axiosInstance.put('api/vehicle-type-delete/', formData)
 
   return res.data
 }

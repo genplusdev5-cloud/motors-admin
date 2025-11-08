@@ -156,32 +156,66 @@ const SubCategory = () => {
 
   // 3. DELETE DATA (using service function and SweetAlert)
 
-  const handleDeleteData = async id => {
-    Swal.fire({
-      text: 'Are sure delete subcategory',
 
-      showCancelButton: true,
-      confirmButtonText: 'Delete',
-      cancelButtonText: 'Cancel',
-      customClass: {
-        confirmButton: 'btn btn-danger',
-        cancelButton: 'btn btn-primary'
-      }
-    }).then(async result => {
-      if (result.isConfirmed) {
-        try {
-          await deleteSubCategory(id) // ⭐ API Call to delete
-          toast.success('SubCategory deleted successfully!')
-          await fetchSubCategories() // Refresh data
-        } catch (error) {
-          console.error('Delete subcategory error:', error)
-          const errorMsg = error.response?.data?.message || 'Failed to delete subcategory.'
+const handleDeleteData = async id => {
+  Swal.fire({
 
-          toast.error(errorMsg)
-        }
+    text: 'Are you sure you want to delete this subcategory?',
+
+    showCancelButton: true,
+    confirmButtonText: 'Delete',
+    cancelButtonText: 'Cancel',
+    reverseButtons: true,
+    buttonsStyling: false,
+    customClass: {
+      confirmButton: 'swal-confirm-btn',
+      cancelButton: 'swal-cancel-btn'
+    },
+    didOpen: () => {
+      const confirmBtn = Swal.getConfirmButton()
+      const cancelBtn = Swal.getCancelButton()
+
+      // Common style
+      confirmBtn.style.textTransform = 'none'
+      cancelBtn.style.textTransform = 'none'
+      confirmBtn.style.borderRadius = '8px'
+      cancelBtn.style.borderRadius = '8px'
+      confirmBtn.style.padding = '8px 20px'
+      cancelBtn.style.padding = '8px 20px'
+      confirmBtn.style.marginLeft = '10px'
+      cancelBtn.style.marginRight = '10px'
+
+      // ✅ Confirm (Delete) Button
+      confirmBtn.style.backgroundColor = '#212c62'
+      confirmBtn.style.color = '#fff'
+      confirmBtn.style.border = '1px solid #212c62'
+
+      // ❌ Cancel Button
+      cancelBtn.style.border = '1px solid #212c62'
+      cancelBtn.style.color = '#212c62'
+      cancelBtn.style.backgroundColor = 'transparent'
+    }
+  }).then(async result => {
+    if (result.isConfirmed) {
+      try {
+        await deleteSubCategory(id)
+        toast.success('Subcategory deleted successfully!')
+        await fetchSubCategories()
+      } catch (error) {
+        console.error('Delete subcategory error:', error)
+        const errorMsg =
+          error.response?.data?.message || 'Failed to delete subcategory.'
+        toast.error(errorMsg)
       }
-    })
-  }
+    } else if (result.dismiss === Swal.DismissReason.cancel) {
+      toast.info('Subcategory deletion cancelled.')
+    }
+  })
+}
+
+
+
+
 
   // Hidden file input logic for Export/Import functionality
   const fileInputRef = useRef(null)
@@ -472,7 +506,22 @@ const SubCategory = () => {
             />
 
             {/* Export button */}
-            <Button variant='outlined' size='small' onClick={handleExportClick} sx={{ textTransform: 'none' }}>
+            <Button
+              variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
+              size='small'
+              onClick={handleExportClick}
+              sx={{
+                textTransform: 'none',
+                backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
+                color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
+                borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
+                '&:hover': {
+                  backgroundColor:
+                    theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
+                  borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
+                }
+              }}
+            >
               Export
             </Button>
 

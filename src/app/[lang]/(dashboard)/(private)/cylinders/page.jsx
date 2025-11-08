@@ -118,35 +118,63 @@ const Cylinder = () => {
   }
 
   const handleDelete = async id => {
-    if (!id) {
-      toast.error('Invalid Cylinder ID')
-
-      return
-    }
-
     Swal.fire({
-      text: '',
+      text: 'Are you sure you want to delete this category?',
+
       showCancelButton: true,
-      confirmButtonText: 'Delete ',
+      confirmButtonText: 'Delete',
       cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      buttonsStyling: false,
       customClass: {
-        confirmButton: 'btn btn-danger',
-        cancelButton: 'btn btn-secondary'
+        confirmButton: 'swal-confirm-btn',
+        cancelButton: 'swal-cancel-btn'
+      },
+      didOpen: () => {
+        const confirmBtn = Swal.getConfirmButton()
+        const cancelBtn = Swal.getCancelButton()
+
+        // Common style
+        confirmBtn.style.textTransform = 'none'
+        cancelBtn.style.textTransform = 'none'
+        confirmBtn.style.borderRadius = '8px'
+        cancelBtn.style.borderRadius = '8px'
+        confirmBtn.style.padding = '8px 20px'
+        cancelBtn.style.padding = '8px 20px'
+        confirmBtn.style.marginLeft = '10px'
+        cancelBtn.style.marginRight = '10px'
+
+        // ✅ Confirm (Delete) Button
+        confirmBtn.style.backgroundColor = '#212c62'
+        confirmBtn.style.color = '#fff'
+        confirmBtn.style.border = '1px solid #212c62'
+
+        // ❌ Cancel Button
+        cancelBtn.style.border = '1px solid #212c62'
+        cancelBtn.style.color = '#212c62'
+        cancelBtn.style.backgroundColor = 'transparent'
       }
     }).then(async result => {
       if (result.isConfirmed) {
         try {
-          await deleteMileage(id)
+          await deleteCylinder(id)
           toast.success('Cylinder deleted successfully!')
           await fetchCylinder()
         } catch (error) {
-          console.error('Error deleting Cylinder:', error)
-          toast.error(error.message || 'Failed to delete Cylinder.')
+          console.error('Delete cylinder error:', error)
+
+          const errorMsg = error.response?.data?.message || 'Failed to delete cylinder.'
+
+          toast.error(errorMsg)
         }
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info('cylinder deletion cancelled.')
       }
     })
   }
 
+
+  
   // --- Fetch categories on initial load
   useEffect(() => {
     fetchCylinder()

@@ -67,7 +67,7 @@ const EngineType = () => {
 
   // --- Core Functions for Data Management ---
 
-  const fetchCategories = useCallback(async () => {
+  const fetchEngine = useCallback(async () => {
     setLoading(true)
 
     try {
@@ -75,8 +75,8 @@ const EngineType = () => {
 
       setData(categoryData)
     } catch (error) {
-      console.error('Error fetching categories:', error)
-      toast.error('Failed to load categories.')
+      console.error('Error fetching engine:', error)
+      toast.error('Failed to load engine.')
       setData([])
     } finally {
       setLoading(false)
@@ -107,7 +107,7 @@ const EngineType = () => {
       }
 
       handleCloseModal() // Close modal after success
-      await fetchCategories() // Refresh data in the table
+      await fetchEngine() // Refresh data in the table
     } catch (error) {
       console.error('Save engine type error:', error)
 
@@ -119,39 +119,70 @@ const EngineType = () => {
 
   // Delete category handler
   const handleDelete = async id => {
-    if (!id) {
-      toast.error('Invalid Body Type ID')
-
-      return
-    }
-
     Swal.fire({
-      text: '',
+      text: 'Are you sure you want to delete this engine type?',
+
       showCancelButton: true,
-      confirmButtonText: 'Delete ',
+      confirmButtonText: 'Delete',
       cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      buttonsStyling: false,
       customClass: {
-        confirmButton: 'btn btn-danger',
-        cancelButton: 'btn btn-secondary'
+        confirmButton: 'swal-confirm-btn',
+        cancelButton: 'swal-cancel-btn'
+      },
+      didOpen: () => {
+        const confirmBtn = Swal.getConfirmButton()
+        const cancelBtn = Swal.getCancelButton()
+
+        // Common style
+        confirmBtn.style.textTransform = 'none'
+        cancelBtn.style.textTransform = 'none'
+        confirmBtn.style.borderRadius = '8px'
+        cancelBtn.style.borderRadius = '8px'
+        confirmBtn.style.padding = '8px 20px'
+        cancelBtn.style.padding = '8px 20px'
+        confirmBtn.style.marginLeft = '10px'
+        cancelBtn.style.marginRight = '10px'
+
+        // ✅ Confirm (Delete) Button
+        confirmBtn.style.backgroundColor = '#212c62'
+        confirmBtn.style.color = '#fff'
+        confirmBtn.style.border = '1px solid #212c62'
+
+        // ❌ Cancel Button
+        cancelBtn.style.border = '1px solid #212c62'
+        cancelBtn.style.color = '#212c62'
+        cancelBtn.style.backgroundColor = 'transparent'
       }
     }).then(async result => {
       if (result.isConfirmed) {
         try {
           await deleteEngineType(id)
-          toast.success('Body Type deleted successfully!')
-          await fetchCategories()
+          toast.success('engine type deleted successfully!')
+          await fetchEngine()
         } catch (error) {
-          console.error('Error deleting body type:', error)
-          toast.error(error.message || 'Failed to delete body type.')
+          console.error('Delete engine type error:', error)
+
+          const errorMsg = error.response?.data?.message || 'Failed to delete engine type.'
+
+          toast.error(errorMsg)
         }
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info('engine type deletion cancelled.')
       }
     })
   }
 
+
+
+
+
+
   // --- Fetch categories on initial load
   useEffect(() => {
-    fetchCategories()
-  }, [fetchCategories])
+    fetchEngine()
+  }, [fetchEngine])
 
   // Open modal (null => add, row object => edit)
   const handleOpenModal = row => {
@@ -368,7 +399,7 @@ const EngineType = () => {
             </Button>
 
             <Button
-              onClick={fetchCategories}
+              onClick={fetchEngine}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
               size='small'

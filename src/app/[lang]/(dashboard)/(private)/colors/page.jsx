@@ -67,7 +67,7 @@ const Color = () => {
 
   // --- Core Functions for Data Management ---
 
-  const fetchCategories = useCallback(async () => {
+  const fetchColor = useCallback(async () => {
     setLoading(true)
 
     try {
@@ -75,8 +75,8 @@ const Color = () => {
 
       setData(categoryData)
     } catch (error) {
-      console.error('Error fetching categories:', error)
-      toast.error('Failed to load categories.')
+      console.error('Error fetching color:', error)
+      toast.error('Failed to load color.')
       setData([])
     } finally {
       setLoading(false)
@@ -107,7 +107,7 @@ const Color = () => {
       }
 
       handleCloseModal() // Close modal after success
-      await fetchCategories() // Refresh data in the table
+      await fetchColor() // Refresh data in the table
     } catch (error) {
       console.error('Save category error:', error)
 
@@ -118,40 +118,73 @@ const Color = () => {
   }
 
   // Delete category handler
-  const handleDelete = async id => {
-    if (!id) {
-      toast.error('Invalid color ID')
-
-      return
-    }
-
+ const handleDelete = async id => {
     Swal.fire({
-      text: "You won't be able to revert this!",
+      text: 'Are you sure you want to delete this vehicle make ?',
+
       showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'No, keep it',
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      buttonsStyling: false,
       customClass: {
-        confirmButton: 'btn btn-danger',
-        cancelButton: 'btn btn-secondary'
+        confirmButton: 'swal-confirm-btn',
+        cancelButton: 'swal-cancel-btn'
+      },
+      didOpen: () => {
+        const confirmBtn = Swal.getConfirmButton()
+        const cancelBtn = Swal.getCancelButton()
+
+        // Common style
+        confirmBtn.style.textTransform = 'none'
+        cancelBtn.style.textTransform = 'none'
+        confirmBtn.style.borderRadius = '8px'
+        cancelBtn.style.borderRadius = '8px'
+        confirmBtn.style.padding = '8px 20px'
+        cancelBtn.style.padding = '8px 20px'
+        confirmBtn.style.marginLeft = '10px'
+        cancelBtn.style.marginRight = '10px'
+
+        // ✅ Confirm (Delete) Button
+        confirmBtn.style.backgroundColor = '#212c62'
+        confirmBtn.style.color = '#fff'
+        confirmBtn.style.border = '1px solid #212c62'
+
+        // ❌ Cancel Button
+        cancelBtn.style.border = '1px solid #212c62'
+        cancelBtn.style.color = '#212c62'
+        cancelBtn.style.backgroundColor = 'transparent'
       }
     }).then(async result => {
       if (result.isConfirmed) {
         try {
           await deleteColor(id)
-          toast.success('Color deleted successfully!')
-          await fetchColors() // make sure this fetch function exists to refresh your list
+          toast.success('color deleted successfully!')
+          await fetchColor()
         } catch (error) {
-          console.error('Error deleting color:', error)
-          toast.error(error.message || 'Failed to delete color.')
+          console.error('Delete color error:', error)
+
+          const errorMsg = error.response?.data?.message || 'Failed to delete color.'
+
+          toast.error(errorMsg)
         }
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info('color deletion cancelled.')
       }
     })
   }
 
+
+
+
+
+
+
+
   // --- Fetch categories on initial load
   useEffect(() => {
-    fetchCategories()
-  }, [fetchCategories])
+    fetchColor()
+  }, [fetchColor])
 
   // Open modal (null => add, row object => edit)
   const handleOpenModal = row => {
@@ -268,10 +301,39 @@ const Color = () => {
       ),
       enableSorting: false
     }),
-    columnHelper.accessor('name', {
-      header: ({ column }) => getSortableHeader('NAME', column),
-      cell: info => info.getValue()
-    }),
+  columnHelper.accessor('name', {
+            header: ({ column }) => getSortableHeader('COLOR', column), // Changed header from NAME to COLOR
+            cell: info => {
+                const colorValue = info.getValue()
+
+                // Check if it's a valid hex color (basic check)
+                const isHexColor = /^#([0-9A-F]{3}){1,2}$/i.test(colorValue)
+
+                if (!isHexColor) {
+                    return colorValue // Return the name if not a valid hex color
+                }
+
+                return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        {/* The small color swatch container */}
+                        <Box
+                            sx={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: '4px',
+                                border: `1px solid ${theme.palette.divider}`,
+                                backgroundColor: colorValue, // Use the color value
+                                flexShrink: 0
+                            }}
+                        />
+                        {/* The color value/name itself */}
+                        <Typography variant='body2' sx={{ color: theme.palette.text.primary }}>
+                            {colorValue}
+                        </Typography>
+                    </Box>
+                )
+            }
+        }),
 
     columnHelper.accessor('description', {
       header: ({ column }) => getSortableHeader('DESCRIPTION', column),
@@ -368,7 +430,7 @@ const Color = () => {
             </Button>
 
             <Button
-              onClick={fetchCategories}
+              onClick={fetchColor}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
               size='small'

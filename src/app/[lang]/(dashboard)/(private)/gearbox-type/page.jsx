@@ -32,7 +32,7 @@ import {
 } from '@tanstack/react-table'
 
 // Updated import from corrected service file
-import { getGearbox, addGearbox, updateGearbox, deleteGearbox } from '@/services/gearBoxtypeApi'
+import { getGearbox, addGearbox, updateGearbox, deleteGearBox } from '@/services/gearBoxtypeApi'
 
 // import axiosInstance, { setTokens } from '@/configs/token' // token config is not directly used here
 
@@ -123,34 +123,63 @@ const GearboxType = () => {
   }
 
   const handleDelete = async id => {
-    if (!id) {
-      toast.error('Invalid GearboxType ID')
-
-      return
-    }
-
     Swal.fire({
-      text: '',
+      text: 'Are you sure you want to delete this category?',
+
       showCancelButton: true,
-      confirmButtonText: 'Delete ',
+      confirmButtonText: 'Delete',
       cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      buttonsStyling: false,
       customClass: {
-        confirmButton: 'btn btn-danger',
-        cancelButton: 'btn btn-secondary'
+        confirmButton: 'swal-confirm-btn',
+        cancelButton: 'swal-cancel-btn'
+      },
+      didOpen: () => {
+        const confirmBtn = Swal.getConfirmButton()
+        const cancelBtn = Swal.getCancelButton()
+
+        // Common style
+        confirmBtn.style.textTransform = 'none'
+        cancelBtn.style.textTransform = 'none'
+        confirmBtn.style.borderRadius = '8px'
+        cancelBtn.style.borderRadius = '8px'
+        confirmBtn.style.padding = '8px 20px'
+        cancelBtn.style.padding = '8px 20px'
+        confirmBtn.style.marginLeft = '10px'
+        cancelBtn.style.marginRight = '10px'
+
+        // ✅ Confirm (Delete) Button
+        confirmBtn.style.backgroundColor = '#212c62'
+        confirmBtn.style.color = '#fff'
+        confirmBtn.style.border = '1px solid #212c62'
+
+        // ❌ Cancel Button
+        cancelBtn.style.border = '1px solid #212c62'
+        cancelBtn.style.color = '#212c62'
+        cancelBtn.style.backgroundColor = 'transparent'
       }
     }).then(async result => {
       if (result.isConfirmed) {
         try {
-          await deleteGearbox(id)
-          toast.success('Gearbox deleted successfully!')
+          await deleteGearBox(id)
+          toast.success('gearbox deleted successfully!')
           await fetchGearbox()
         } catch (error) {
-          console.error('Error deleting Gearbox:', error)
-          toast.error(error.message || 'Failed to delete Gearbox.')
+          console.error('Delete gearbox error:', error)
+
+          const errorMsg = error.response?.data?.message || 'Failed to delete gearbox.'
+
+          toast.error(errorMsg)
         }
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info('gearbox deletion cancelled.')
       }
     })
   }
+
+
+
 
   // --- Fetch categories on initial load
   useEffect(() => {

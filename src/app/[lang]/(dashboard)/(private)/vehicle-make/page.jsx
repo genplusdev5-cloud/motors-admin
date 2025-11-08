@@ -115,21 +115,41 @@ const VehicleMake = () => {
   }
 
   const handleDelete = async id => {
-    if (!id) {
-      toast.error('Invalid vehicle make ID')
-
-      return
-    }
-
     Swal.fire({
-      text: 'Are you sure you want to delete this Vehicle Make?',
-      icon: 'warning',
+      text: 'Are you sure you want to delete this vehicle make?',
+
       showCancelButton: true,
-      confirmButtonText: 'Delete ',
+      confirmButtonText: 'Delete',
       cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      buttonsStyling: false,
       customClass: {
-        confirmButton: 'btn btn-danger',
-        cancelButton: 'btn btn-secondary'
+        confirmButton: 'swal-confirm-btn',
+        cancelButton: 'swal-cancel-btn'
+      },
+      didOpen: () => {
+        const confirmBtn = Swal.getConfirmButton()
+        const cancelBtn = Swal.getCancelButton()
+
+        // Common style
+        confirmBtn.style.textTransform = 'none'
+        cancelBtn.style.textTransform = 'none'
+        confirmBtn.style.borderRadius = '8px'
+        cancelBtn.style.borderRadius = '8px'
+        confirmBtn.style.padding = '8px 20px'
+        cancelBtn.style.padding = '8px 20px'
+        confirmBtn.style.marginLeft = '10px'
+        cancelBtn.style.marginRight = '10px'
+
+        // ✅ Confirm (Delete) Button
+        confirmBtn.style.backgroundColor = '#212c62'
+        confirmBtn.style.color = '#fff'
+        confirmBtn.style.border = '1px solid #212c62'
+
+        // ❌ Cancel Button
+        cancelBtn.style.border = '1px solid #212c62'
+        cancelBtn.style.color = '#212c62'
+        cancelBtn.style.backgroundColor = 'transparent'
       }
     }).then(async result => {
       if (result.isConfirmed) {
@@ -138,9 +158,14 @@ const VehicleMake = () => {
           toast.success('Vehicle Make deleted successfully!')
           await fetchMake()
         } catch (error) {
-          console.error('Error deleting Vehicle Make:', error)
-          toast.error(error.message || 'Failed to delete vehicle make.')
+          console.error('Delete Vehicle Make error:', error)
+
+          const errorMsg = error.response?.data?.message || 'Failed to delete vehicle make.'
+
+          toast.error(errorMsg)
         }
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info('vehicle make deletion cancelled.')
       }
     })
   }

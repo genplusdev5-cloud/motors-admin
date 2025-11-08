@@ -112,27 +112,48 @@ const BodyType = () => {
       console.error('Save category error:', error)
 
       const errorMsg = error.response?.data?.message || 'An error occurred while saving the body type.'
-      
+
     toast.error(errorMsg)
     }
   }
 
   // Delete category handler
-  const handleDelete = async id => {
-    if (!id) {
-      toast.error('Invalid Body Type ID')
-
-      return
-    }
-
+   const handleDelete = async id => {
     Swal.fire({
-      text: "You won't be able to revert this!",
+      text: 'Are you sure you want to delete this  body type?',
+
       showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'No, keep it',
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      buttonsStyling: false,
       customClass: {
-        confirmButton: 'btn btn-danger',
-        cancelButton: 'btn btn-secondary'
+        confirmButton: 'swal-confirm-btn',
+        cancelButton: 'swal-cancel-btn'
+      },
+      didOpen: () => {
+        const confirmBtn = Swal.getConfirmButton()
+        const cancelBtn = Swal.getCancelButton()
+
+        // Common style
+        confirmBtn.style.textTransform = 'none'
+        cancelBtn.style.textTransform = 'none'
+        confirmBtn.style.borderRadius = '8px'
+        cancelBtn.style.borderRadius = '8px'
+        confirmBtn.style.padding = '8px 20px'
+        cancelBtn.style.padding = '8px 20px'
+        confirmBtn.style.marginLeft = '10px'
+        cancelBtn.style.marginRight = '10px'
+
+        // ✅ Confirm (Delete) Button
+        confirmBtn.style.backgroundColor = '#212c62'
+        confirmBtn.style.color = '#fff'
+        confirmBtn.style.border = '1px solid #212c62'
+
+        // ❌ Cancel Button
+        cancelBtn.style.border = '1px solid #212c62'
+        cancelBtn.style.color = '#212c62'
+        cancelBtn.style.backgroundColor = 'transparent'
       }
     }).then(async result => {
       if (result.isConfirmed) {
@@ -141,12 +162,19 @@ const BodyType = () => {
           toast.success('Body Type deleted successfully!')
           await fetchCategories()
         } catch (error) {
-          console.error('Error deleting body type:', error)
-          toast.error(error.message || 'Failed to delete body type.')
+          console.error('Delete body type error:', error)
+
+          const errorMsg = error.response?.data?.message || 'Failed to delete  body type'
+
+          toast.error(errorMsg)
         }
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info(' body type deletion cancelled.')
       }
     })
   }
+
+
 
   // --- Fetch categories on initial load
   useEffect(() => {

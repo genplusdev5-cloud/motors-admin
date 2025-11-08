@@ -109,7 +109,7 @@ const AddModalWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
         <i className='tabler-x' />
       </DialogCloseButton>
 
-      <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>{isEdit ? 'Edit Brand' : 'Add Brand'}</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>{isEdit ? 'Edit Vehicle Make' : 'Add Vehicle Make'}</DialogTitle>
 
       <Divider sx={{ mx: -3, my: 2 }} />
 

@@ -10,7 +10,6 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Divider from '@mui/material/Divider'
 import { styled, useTheme } from '@mui/material/styles'
-
 import { MenuItem } from '@mui/material'
 
 import DialogCloseButton from './closebtn'
@@ -26,33 +25,27 @@ const LabelWithStar = styled('span')({
 
 const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
   const theme = useTheme()
-
-  // 💡 State now correctly tracks 'is_active'. Default to '1' (Active) for new items.
   const [data, setData] = useState({ name: '', description: '', is_active: '1' })
   const [isEdit, setIsEdit] = useState(false)
 
   // ✅ Populate fields when editing
   useEffect(() => {
     if (editingRow) {
-      // 💡 Convert the incoming is_active (which might be 1 or true) to the string '1' or '0'
-      // to match the <option> values in the Select input.
       const initialIsActive = editingRow.is_active === 1 || editingRow.is_active === true ? '1' : '0'
 
       setData({
         name: editingRow.name || '',
         description: editingRow.description || '',
-        is_active: initialIsActive // Set the string value
+        is_active: initialIsActive
       })
       setIsEdit(true)
     } else {
-      // Reset to empty and default active status ('1') for new category
       setData({ name: '', description: '', is_active: '1' })
       setIsEdit(false)
     }
   }, [editingRow, open])
 
   const handleClose = () => {
-    // Reset state and close
     setData({ name: '', description: '', is_active: '1' })
     setIsEdit(false)
     setOpen(false)
@@ -62,10 +55,28 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
     setData(prev => ({ ...prev, [field]: value }))
   }
 
-  // ✅ When user clicks Add / Update
+  // ✅ Numeric validation for 4-digit limit
+  const handleYearChange = e => {
+    const val = e.target.value
+
+    // Allow only digits
+    if (/^\d*$/.test(val)) {
+      // Limit to 4 digits
+      if (val.length <= 4) {
+        setData(prev => ({ ...prev, name: val }))
+      }
+    }
+  }
+
   const handleSave = () => {
     if (!data.name.trim()) {
-      alert(' name is required!')
+      alert('Year is required!')
+
+      return
+    }
+
+    if (!/^\d{4}$/.test(data.name.trim())) {
+      alert('Year must be a 4-digit number!')
 
       return
     }
@@ -73,15 +84,13 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
     const formattedData = {
       name: data.name.trim(),
       description: data.description.trim(),
-
-      // 💡 CRITICAL FIX: Convert the string value ('1' or '0') from the dropdown back to a number
-      is_active: Number(data.is_active) // ✅ Backend expects numeric
+      is_active: Number(data.is_active)
     }
 
     const id = isEdit && editingRow ? editingRow.id : null
 
-   onSaveCategory(formattedData, id)
-    handleClose() // Close on save (assuming onSaveCategory handles errors internally)
+    onSaveCategory(formattedData, id)
+    handleClose()
   }
 
   return (
@@ -105,13 +114,19 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
 
       <DialogContent sx={{ pt: 1 }}>
         <Grid container spacing={5}>
+          {/* ✅ Only integer input (4 digits) */}
           <Grid size={{ xs: 12, sm: 12 }}>
             <CustomTextField
-              label={<LabelWithStar>Name</LabelWithStar>}
+              label={<LabelWithStar>Year</LabelWithStar>}
               fullWidth
               type='text'
               value={data.name}
-              onChange={e => handleChange('name', e.target.value)}
+              onChange={handleYearChange}
+              inputProps={{
+                maxLength: 4,
+                inputMode: 'numeric',
+                pattern: '[0-9]*'
+              }}
             />
           </Grid>
 
@@ -121,13 +136,11 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
               fullWidth
               multiline
               rows={2}
-              type='textarea'
               value={data.description}
               onChange={e => handleChange('description', e.target.value)}
             />
           </Grid>
 
-          {/* ✅ Show Status dropdown only when editing */}
           {isEdit && (
             <Grid size={{ xs: 12, sm: 12 }}>
               <CustomTextField
@@ -135,25 +148,28 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
                 label={<LabelWithStar>Status</LabelWithStar>}
                 fullWidth
                 value={data.is_active}
-                onChange={e => handleChange('is_active', Number(e.target.value))} // ensure numeric
+                onChange={e => handleChange('is_active', e.target.value)}
               >
-                <MenuItem value={1}>Active</MenuItem>
-                <MenuItem value={0}>Inactive</MenuItem>
+                <MenuItem value={'1'}>Active</MenuItem>
+                <MenuItem value={'0'}>Inactive</MenuItem>
               </CustomTextField>
             </Grid>
           )}
         </Grid>
       </DialogContent>
 
-      <DialogActions sx={{ justifyContent: 'flex-end' }}>
+      <DialogActions sx={{ justifyContent: 'flex-end', gap: 2 }}>
         <Button
           variant='outlined'
           onClick={handleClose}
           sx={{
-            borderColor: theme.palette.text.primary,
-            color: theme.palette.text.primary,
+            borderColor: '#212c62',
+            color: '#212c62',
             textTransform: 'none',
-            '&:hover': { borderColor: theme.palette.text.primary, backgroundColor: 'rgba(33, 44, 98, 0.08)' }
+            '&:hover': {
+              borderColor: '#212c62',
+              backgroundColor: 'rgba(33, 44, 98, 0.08)'
+            }
           }}
         >
           Close
@@ -162,15 +178,13 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
         <Button
           type='submit'
           onClick={handleSave}
-          variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
+          variant='contained'
           sx={{
             textTransform: 'none',
-            backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-            color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-            borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
+            backgroundColor: '#212c62',
+            color: theme.palette.primary.contrastText,
             '&:hover': {
-              backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(33, 44, 98, 0.08)',
-              borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
+              backgroundColor: '#1a2552'
             }
           }}
         >

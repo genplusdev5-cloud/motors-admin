@@ -1,8 +1,8 @@
-// BannerType.jsx
+
 
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -19,7 +19,10 @@ import Typography from '@mui/material/Typography'
 
 import { Menu, MenuItem } from '@mui/material'
 
-// TanStack Table Imports
+import { toast } from 'react-toastify'
+
+import Swal from 'sweetalert2'
+
 import {
   useReactTable,
   getCoreRowModel,
@@ -30,123 +33,174 @@ import {
   getFilteredRowModel
 } from '@tanstack/react-table'
 
+// Updated import from corrected service file
+import { getVehicleModel, addVehicleModel, updateVehicleModel, deleteVehicleModel} from '@/services/vehicleModelApi'
+
+// import axiosInstance, { setTokens } from '@/configs/token' // token config is not directly used here
+
+// TanStack Table Imports
+
 // Assuming these are custom components from your project
 import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
 import styles from '@core/styles/table.module.css'
 
-import AddModalWindow from './AddModelWindow'
-import SubCategory from '../subcategory/page'
+// Modal Component
+import AddModelWindow from './AddModelWindow'
+
 
 const columnHelper = createColumnHelper()
 
-// Helper to find the next ID for new records
-const getNextId = data => {
-  if (data.length === 0) return 1
-
-  // Find the max ID and add 1
-  return Math.max(...data.map(item => item.id), 0) + 1
-}
-
-// Mock Data (Real data structure)
-const initialMockData = []
-
 const VehicleModel = () => {
   const theme = useTheme()
-  const router = useRouter()
+  const router = useRouter() // eslint-disable-line no-unused-vars
 
-  // 1. DATA STATE: Table Data
-  const [data, setData] = useState(initialMockData)
+  //const API_URL = 'http://motor-match.genplusinnovations.com:7023/' // eslint-disable-line no-unused-vars
 
-  // 2. MODAL STATE: Controls open/close
   const [open, setOpen] = useState(false)
-
-  // 3. EDITING STATE: Stores the row data currently being edited (or null for add)
+  const [data, setData] = useState([])
   const [editingRow, setEditingRow] = useState(null)
-
   const [globalFilter, setGlobalFilter] = useState('')
-  const [columnFilters, setColumnFilters] = useState([])
+  const [columnFilters, setColumnFilters] = useState([]) // eslint-disable-line no-unused-vars
   const [sorting, setSorting] = useState([])
+  const [loading, setLoading] = useState(false)
 
   const [anchorEl, setAnchorEl] = useState(null)
   const [selectedType, setSelectedType] = useState(null)
 
-  // --- CRUD Logic Handlers ---
+  // --- Core Functions for Data Management ---
 
-  /**
-   * Opens the modal. Passes row data for editing, or null for adding.
-   * @param {object | null} row - The row data to edit, or null to add.
-   */
-  const handleOpenModal = (row = null) => {
-    setEditingRow(row) // Set data for editing (or null for add)
+  const fetchYear = useCallback(async () => {
+    setLoading(true)
+
+    try {
+      const categoryData = await getVehicleModel()
+
+      setData(categoryData)
+    } catch (error) {
+      console.error('Error fetching Year:', error)
+      toast.error('Failed to load Year')
+      setData([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+
+
+  // Save category (handles both add and update by calling API)
+ const handleSaveCategory = async (categoryData, id) => {
+  try {
+    // ✅ FRONTEND DUPLICATE CHECK
+    const isDuplicate = data.some(
+      item =>
+        item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() &&
+        item.id !== id
+    )
+
+    if (isDuplicate) {
+      toast.warning('Model name already exists.')
+      return
+    }
+
+    // ✅ Proceed if no duplicate
+    if (id) {
+      await updateVehicleModel(id, categoryData)
+      toast.success('Vehicle Model updated successfully!')
+    } else {
+      await addVehicleModel(categoryData)
+      toast.success('Vehicle Model added successfully!')
+    }
+
+    handleCloseModal() // Close modal after success
+    await fetchYear() // Refresh data in the table
+  } catch (error) {
+    console.error('Save Vehicle Model error:', error)
+
+    let errorMsg = error.response?.data?.message || 'An error occurred while saving the Vehicle Model.'
+
+    if (errorMsg.toLowerCase().includes('already exist') || errorMsg.toLowerCase().includes('duplicate')) {
+      toast.warning('Model name already exists.')
+      return
+    }
+
+    toast.error(errorMsg)
+  }
+}
+
+
+
+
+  const handleDelete = async id => {
+    Swal.fire({
+      text: 'Are you sure you want to delete this year?',
+
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'swal-confirm-btn',
+        cancelButton: 'swal-cancel-btn'
+      },
+      didOpen: () => {
+        const confirmBtn = Swal.getConfirmButton()
+        const cancelBtn = Swal.getCancelButton()
+
+        // Common style
+        confirmBtn.style.textTransform = 'none'
+        cancelBtn.style.textTransform = 'none'
+        confirmBtn.style.borderRadius = '8px'
+        cancelBtn.style.borderRadius = '8px'
+        confirmBtn.style.padding = '8px 20px'
+        cancelBtn.style.padding = '8px 20px'
+        confirmBtn.style.marginLeft = '10px'
+        cancelBtn.style.marginRight = '10px'
+
+        // ✅ Confirm (Delete) Button
+        confirmBtn.style.backgroundColor = '#212c62'
+        confirmBtn.style.color = '#fff'
+        confirmBtn.style.border = '1px solid #212c62'
+
+        // ❌ Cancel Button
+        cancelBtn.style.border = '1px solid #212c62'
+        cancelBtn.style.color = '#212c62'
+        cancelBtn.style.backgroundColor = 'transparent'
+      }
+    }).then(async result => {
+      if (result.isConfirmed) {
+        try {
+          await deleteVehicleModel(id)
+          toast.success('Year deleted successfully!')
+          await fetchYear()
+        } catch (error) {
+          console.error('Delete year error:', error)
+
+          const errorMsg = error.response?.data?.message || 'Failed to delete year.'
+
+          toast.error(errorMsg)
+        }
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info('year deletion cancelled.')
+      }
+    })
+  }
+
+  // --- Fetch categories on initial load
+  useEffect(() => {
+    fetchYear()
+  }, [fetchYear])
+
+  // Open modal (null => add, row object => edit)
+  const handleOpenModal = row => {
+    setEditingRow(row)
     setOpen(true)
   }
 
-  /**
-   * Closes the modal and resets the editing state.
-   */
   const handleCloseModal = () => {
     setOpen(false)
-    setEditingRow(null) // Clear editing state after close
-  }
-
-  /**
-   * Handles adding a new record or saving changes to an existing one.
-   * @param {object} data - The data from the modal ({id, name, description}).
-   */
-  const handleSaveData = data => {
-    if (data.id) {
-      // EDIT: Update the existing record
-      setData(prevData =>
-        prevData.map(item =>
-          item.id === data.id
-            ? {
-                ...item,
-                accQuality: data.name, // Maps to NAME column
-                accQualityPo: data.description // Maps to DESCRIPTION column
-              }
-            : item
-        )
-      )
-    } else {
-      // ADD: Create a new record
-      const newId = getNextId(data)
-
-      const newRecord = {
-        id: newId,
-        vehicleType: data.vehicleType,
-        name: data.name,
-        category_id: data.category_id,
-        SubCategory_id: data.SubCategory_id,
-        make_id: data.make_id,
-        color_id: data.color_id,
-        body_type_id: data.body_data_id,
-        engine_type_id: data.body_data_id,
-        cylinder_id: data.cylinder_id,
-        fuel_type_id: data.fuel_type_id,
-        seating_capacity: data.seating_capacity,
-        transmission: data.transmission,
-
-        is_active: 'Active'
-      }
-
-      setData(prevData => [...prevData, newRecord])
-    }
-
-    handleCloseModal() // Close the modal after successful save
-  }
-
-  /**
-   * Handles deleting a record.
-   * @param {number} id - The ID of the record to delete.
-   */
-
-  const handleDeleteData = id => {
-    // 1. Filter out the row with the matching id
-    setData(prevData => prevData.filter(item => item.id !== id))
-    console.log('Deleted row ID:', id)
-
-    // 2. In a real app, you would call an API here to delete the record.
+    setEditingRow(null)
   }
 
   // Hidden file input
@@ -174,7 +228,7 @@ const VehicleModel = () => {
     const file = event.target.files[0]
 
     if (file && selectedType) {
-      handleFileUpload(file, selectedType) // custom handler
+      toast.info(`Attempting to upload ${selectedType.toUpperCase()} file: ${file.name}`)
     }
 
     event.target.value = '' // reset input (for re-uploading same file)
@@ -196,9 +250,8 @@ const VehicleModel = () => {
     }
   }
 
-  // --- End of CRUD Logic ---
+  // Sorting icon & helper same as your original code
 
-  // Component to display the correct sorting icon (unchanged)
   const SortIcon = ({ sortDir }) => {
     if (sortDir === 'asc') return <i className='tabler-arrow-up' style={{ fontSize: 16 }} />
     if (sortDir === 'desc') return <i className='tabler-arrow-down' style={{ fontSize: 16 }} />
@@ -206,8 +259,7 @@ const VehicleModel = () => {
     return <i className='tabler-arrows-sort' style={{ fontSize: 16, opacity: 0.5 }} />
   }
 
-  // Helper function to create a sortable header component (unchanged)
-  const getSortableHeader = (headerName, column) => (
+  const getSortableHeader = (headerName, column, IconComponent) => (
     <div
       className='cursor-pointer select-none flex items-center'
       onClick={column.getToggleSortingHandler()}
@@ -221,9 +273,13 @@ const VehicleModel = () => {
         width: '100%'
       }}
     >
-      <Typography variant='subtitle2' component='span' fontWeight={500} color='inherit'>
-        {headerName}
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {IconComponent}
+        <Typography variant='subtitle2' component='span' fontWeight={500} color='inherit'>
+          {headerName}
+        </Typography>
+      </Box>
+
       {column.getCanSort() && <SortIcon sortDir={column.getIsSorted()} />}
     </div>
   )
@@ -239,7 +295,7 @@ const VehicleModel = () => {
             </IconButton>
           </Tooltip>
           <Tooltip title='Delete'>
-            <IconButton onClick={() => handleDeleteData(row.original.id)} size='small'>
+            <IconButton onClick={() => handleDelete(row.original.id)} size='small'>
               <i className='tabler-trash' style={{ fontSize: 20, color: theme.palette.error.main }} />
             </IconButton>
           </Tooltip>
@@ -248,64 +304,114 @@ const VehicleModel = () => {
       enableSorting: false
     }),
 
-    columnHelper.accessor('vehicleType', {
-      header: ({ column }) => getSortableHeader('VEHICLE TYPE', column),
-      cell: info => info.getValue()
-    }),
     columnHelper.accessor('name', {
       header: ({ column }) => getSortableHeader('NAME', column),
       cell: info => info.getValue()
     }),
-    columnHelper.accessor('manufacturingYear', {
-      header: ({ column }) => getSortableHeader('MANUFACTURING YEAR', column),
-      cell: info => info.getValue()
-    }),
-    columnHelper.accessor('regYear', {
-      header: ({ column }) => getSortableHeader('REGISTRATION YEAR', column),
+
+  columnHelper.accessor('categories', {
+      header: ({ column }) => getSortableHeader('CATEGORY', column),
       cell: info => info.getValue()
     }),
 
-    columnHelper.accessor('transmission', {
+      columnHelper.accessor('subCategories', {
+      header: ({ column }) => getSortableHeader('SUBCATEGORY', column),
+      cell: info => info.getValue()
+    }),
+      columnHelper.accessor('vehicleMakes', {
+      header: ({ column }) => getSortableHeader('VEHICLE MAKE', column),
+      cell: info => info.getValue()
+    }),
+      columnHelper.accessor('vehicleTypes', {
+      header: ({ column }) => getSortableHeader('VEHICLE TYPE', column),
+      cell: info => info.getValue()
+    }),
+
+      columnHelper.accessor('bodyTypes', {
+      header: ({ column }) => getSortableHeader('BODY TYPE', column),
+      cell: info => info.getValue()
+    }),
+      columnHelper.accessor('engineTypes', {
+      header: ({ column }) => getSortableHeader('ENGINE TYPE', column),
+      cell: info => info.getValue()
+    }),
+
+      columnHelper.accessor('fuelTypes', {
+      header: ({ column }) => getSortableHeader('FUEL TYPE', column),
+      cell: info => info.getValue()
+    }),
+      columnHelper.accessor('gearboxes', {
+      header: ({ column }) => getSortableHeader('GEARBOX TYPE', column),
+      cell: info => info.getValue()
+    }),
+      columnHelper.accessor('transmission', {
       header: ({ column }) => getSortableHeader('TRANSMISSION', column),
       cell: info => info.getValue()
     }),
-
-    columnHelper.accessor('millage', {
-      header: ({ column }) => getSortableHeader('MILLAGE', column),
-      cell: info => info.getValue()
-    }),
-
-    columnHelper.accessor('seatingCapacity', {
+      columnHelper.accessor('seating_capacity', {
       header: ({ column }) => getSortableHeader('SEATING CAPACITY', column),
       cell: info => info.getValue()
     }),
 
-    columnHelper.accessor('price', {
-      header: ({ column }) => getSortableHeader('PRICE', column),
+      columnHelper.accessor('mileage', {
+      header: ({ column }) => getSortableHeader('MILEAGE', column),
       cell: info => info.getValue()
     }),
 
-    columnHelper.accessor('status', {
+     columnHelper.accessor('no_of_weels', {
+      header: ({ column }) => getSortableHeader('NO OF WHEELS', column),
+      cell: info => info.getValue()
+    }),
+
+
+      columnHelper.accessor('tank', {
+      header: ({ column }) => getSortableHeader('TANK CAPACITY', column),
+      cell: info => info.getValue()
+    }),
+
+
+
+
+
+
+
+    columnHelper.accessor('is_active', {
       header: 'STATUS',
       enableSorting: false,
       cell: info => {
-        const statusValue = info.getValue()
+        let statusValue = info.getValue()
 
-        if (!statusValue) return null
+        // Convert numeric / boolean → readable text
+        if (statusValue === 1 || statusValue === true) statusValue = 'Active'
+        if (statusValue === 0 || statusValue === false) statusValue = 'Inactive'
 
-        const bgColor = statusValue === 'Active' ? theme.palette.success.main : theme.palette.warning.main
-        const textColor = theme.palette.common.white
+        // ✅ Theme-based colors
+        const bgColor =
+          statusValue === 'Active'
+            ? theme.palette.success.light // light green bg
+            : theme.palette.error.light // light red bg
+
+        const textColor = statusValue === 'Active' ? theme.palette.success.main : theme.palette.error.main // eslint-disable-line no-unused-vars
 
         return (
           <Typography
-            variant='caption'
+            variant='body2'
             sx={{
+              display: 'inline-block',
               px: 2,
               py: 0.5,
-              borderRadius: 1,
+              borderRadius: 2,
               fontWeight: 600,
               backgroundColor: bgColor,
-              color: textColor
+              color:
+                theme.palette.mode === 'dark' && statusValue === 'Active'
+                  ? theme.palette.success.main
+                  : theme.palette.mode === 'dark' && statusValue === 'Inactive'
+                    ? theme.palette.error.main
+                    : 'white', // Improved color logic for dark mode
+              textAlign: 'center',
+              minWidth: 80,
+              textTransform: 'capitalize'
             }}
           >
             {statusValue}
@@ -331,11 +437,9 @@ const VehicleModel = () => {
   return (
     <>
       <Card sx={{ p: '1.5rem' }}>
-        {/* Header and Breadcrumbs */}
         <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: `1px solid ${theme.palette.divider}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: theme.palette.text.primary }}>Vehicle Model </span>
-            {/* 💡 ADD: Click on Add Button opens the modal in Add mode (null) */}
+            <span style={{ fontSize: 16, fontWeight: 500, color: theme.palette.text.primary }}>Vehicle Model</span>
             <Button
               onClick={() => handleOpenModal(null)}
               startIcon={<i className='tabler-plus' />}
@@ -357,7 +461,8 @@ const VehicleModel = () => {
             </Button>
 
             <Button
-              onClick={''}
+              onClick={fetchYear}
+              startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
               size='small'
               sx={{
@@ -377,13 +482,7 @@ const VehicleModel = () => {
           </div>
 
           <div
-            style={{
-              fontSize: 14,
-              color: theme.palette.text.secondary,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6
-            }}
+            style={{ fontSize: 14, color: theme.palette.text.secondary, display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <Link href='/' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
               <Box display='flex' alignItems='center' gap={1}>
@@ -396,13 +495,11 @@ const VehicleModel = () => {
             </Link>
             {' / '}
             <Link href='/vehicle-model' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-              Vehicle Model
+            Vehicle Model
             </Link>
           </div>
         </div>
-        {/* --- */}
 
-        {/* Table controls (unchanged) */}
         <div
           style={{
             display: 'flex',
@@ -484,9 +581,7 @@ const VehicleModel = () => {
             />
           </div>
         </div>
-        {/* --- */}
 
-        {/* Table (unchanged) */}
         <div className='overflow-x-auto'>
           <table className={styles.table}>
             <thead>
@@ -514,7 +609,11 @@ const VehicleModel = () => {
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={columns.length} className='text-center'></td>
+                </tr>
+              ) : table.getRowModel().rows.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className='text-center'>
                     No data available
@@ -532,9 +631,7 @@ const VehicleModel = () => {
             </tbody>
           </table>
         </div>
-        {/* --- */}
 
-        {/* Pagination (unchanged) */}
         <TablePagination
           component={() => <TablePaginationComponent table={table} />}
           count={data.length}
@@ -544,12 +641,7 @@ const VehicleModel = () => {
         />
       </Card>
 
-      <AddModalWindow
-        open={open}
-        setOpen={setOpen}
-        initialData={editingRow} // Pass the row data for editing (null for Add)
-        onSave={handleSaveData} // Pass the function to handle Add/Edit logic
-      />
+      <AddModelWindow open={open} setOpen={setOpen} onSaveCategory={handleSaveCategory} editingRow={editingRow} />
     </>
   )
 }

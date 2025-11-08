@@ -26,17 +26,12 @@ export const updateEngineType  = async (id, payload) => {
 
 // ❌ Delete
 
-export const deleteEngineType  = async id => {
-  try {
-    const res = await axiosInstance.put(`api/engine-type-delete/${id}`) // ✅ DELETE method
+export const deleteEngineType = async id => {
+  const formData = new FormData()
 
-   console.log('🛰️ Deleting Body Type URL:', `api/engine-type-delete/${id}`)
+  formData.append('id', id)
 
+  const res = await axiosInstance.put('api/engine-type-delete/', formData)
 
-    return res.data
-  } catch (err) {
-    console.error('Full delete error:', err)
-    console.error('Error response data:', err.response?.data)
-    throw new Error(err.response?.data?.message || 'Failed to delete body type due to a server error.')
-  }
+  return res.data
 }

@@ -32,7 +32,7 @@ import {
 } from '@tanstack/react-table'
 
 // Updated import from corrected service file
-import { getMileage, addMileage, updateMileage, deleteMileage } from '@/services/mileageApi'
+import { getMileage, addMileage , updateMileage, deleteMileage } from '@/services/mileageApi'
 
 // import axiosInstance, { setTokens } from '@/configs/token' // token config is not directly used here
 
@@ -67,7 +67,7 @@ const Mileage = () => {
 
   // --- Core Functions for Data Management ---
 
-  const fetchMileage = useCallback(async () => {
+  const fetchMileage  = useCallback(async () => {
     setLoading(true)
 
     try {
@@ -75,8 +75,8 @@ const Mileage = () => {
 
       setData(categoryData)
     } catch (error) {
-      console.error('Error fetching mileage:', error)
-      toast.error('Failed to load categories.')
+      console.error('Error fetching Mileage :', error)
+      toast.error('Failed to load Mileage .')
       setData([])
     } finally {
       setLoading(false)
@@ -88,69 +88,97 @@ const Mileage = () => {
     try {
       // ✅ FRONTEND DUPLICATE CHECK
       const isDuplicate = data.some(
-        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id // allow same name for editing same record
+        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id // allow same name for the same record during edit
       )
 
       if (isDuplicate) {
-        toast.warning('Mileage name already exists.')
+        toast.warning('Mileage  name already exists. Please use a different name.')
 
-        return // ❌ Stop — don’t send API call
+        return // ❌ Stop — don’t call API
       }
 
       // ✅ Proceed if not duplicate
       if (id) {
         await updateMileage(id, categoryData)
-        toast.success('Mileage updated successfully!')
+        toast.success('Mileage  updated successfully!')
       } else {
-        await addMileage(categoryData)
-        toast.success('Mileage added successfully!')
+        await addMileage (categoryData)
+        toast.success('Mileage  added successfully!')
       }
 
       handleCloseModal() // Close modal after success
-      await fetchMileage() // Refresh data in the table
+      await fetchMileage () // Refresh data in the table
     } catch (error) {
-      console.error('Save mileage error:', error)
+      console.error('Save Mileage  error:', error)
 
-      const errorMsg = error.response?.data?.message || 'An error occurred while saving the mileage.'
+      const errorMsg = error.response?.data?.message || 'An error occurred while saving the Mileage .'
 
       toast.error(errorMsg)
     }
   }
 
   const handleDelete = async id => {
-    if (!id) {
-      toast.error('Invalid mileage ID')
-
-      return
-    }
-
     Swal.fire({
-      text: '',
+      text: 'Are you sure you want to delete this Mileage ?',
+
       showCancelButton: true,
-      confirmButtonText: 'Delete ',
+      confirmButtonText: 'Delete',
       cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      buttonsStyling: false,
       customClass: {
-        confirmButton: 'btn btn-danger',
-        cancelButton: 'btn btn-secondary'
+        confirmButton: 'swal-confirm-btn',
+        cancelButton: 'swal-cancel-btn'
+      },
+      didOpen: () => {
+        const confirmBtn = Swal.getConfirmButton()
+        const cancelBtn = Swal.getCancelButton()
+
+        // Common style
+        confirmBtn.style.textTransform = 'none'
+        cancelBtn.style.textTransform = 'none'
+        confirmBtn.style.borderRadius = '8px'
+        cancelBtn.style.borderRadius = '8px'
+        confirmBtn.style.padding = '8px 20px'
+        cancelBtn.style.padding = '8px 20px'
+        confirmBtn.style.marginLeft = '10px'
+        cancelBtn.style.marginRight = '10px'
+
+        // ✅ Confirm (Delete) Button
+        confirmBtn.style.backgroundColor = '#212c62'
+        confirmBtn.style.color = '#fff'
+        confirmBtn.style.border = '1px solid #212c62'
+
+        // ❌ Cancel Button
+        cancelBtn.style.border = '1px solid #212c62'
+        cancelBtn.style.color = '#212c62'
+        cancelBtn.style.backgroundColor = 'transparent'
       }
     }).then(async result => {
       if (result.isConfirmed) {
         try {
-          await deleteMileage(id)
+          await deleteMileage (id)
           toast.success('mileage deleted successfully!')
-          await fetchMileage()
+          await fetchMileage ()
         } catch (error) {
-          console.error('Error deleting mileage:', error)
-          toast.error(error.message || 'Failed to delete mileage.')
+          console.error('Delete mileage error:', error)
+
+          const errorMsg = error.response?.data?.message || 'Failed to delete mileage.'
+
+          toast.error(errorMsg)
         }
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info('mileage deletion cancelled.')
       }
     })
   }
 
+
+
   // --- Fetch categories on initial load
   useEffect(() => {
     fetchMileage()
-  }, [fetchMileage])
+  }, [fetchMileage ])
 
   // Open modal (null => add, row object => edit)
   const handleOpenModal = row => {
@@ -367,7 +395,7 @@ const Mileage = () => {
             </Button>
 
             <Button
-              onClick={fetchMileage}
+              onClick={fetchMileage }
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
               size='small'
@@ -400,8 +428,8 @@ const Mileage = () => {
               Masters
             </Link>
             {' / '}
-            <Link href='/mileage' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-              Mileage
+            <Link href='/cylinder' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
+             Mileage
             </Link>
           </div>
         </div>

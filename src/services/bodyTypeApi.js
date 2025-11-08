@@ -27,16 +27,12 @@ export const updateBodyType = async (id, payload) => {
 // ❌ Delete
 
 export const deleteBodyType = async id => {
-  try {
-    const res = await axiosInstance.put(`api/body-type-delete/${id}`) // ✅ DELETE method
+  const formData = new FormData()
 
-   console.log('🛰️ Deleting Body Type URL:', `api/body-type-delete/${id}`)
+  formData.append('id', id)
 
+  const res = await axiosInstance.put('api/body-type-delete/', formData)
 
-    return res.data
-  } catch (err) {
-    console.error('Full delete error:', err)
-    console.error('Error response data:', err.response?.data)
-    throw new Error(err.response?.data?.message || 'Failed to delete body type due to a server error.')
-  }
+  return res.data
 }
+

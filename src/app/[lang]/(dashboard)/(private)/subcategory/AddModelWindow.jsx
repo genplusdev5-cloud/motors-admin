@@ -32,50 +32,49 @@ const LabelWithStar = styled('span')({
 const AddModalWindow = ({ open, setOpen, initialData, onSave, editingRow }) => {
   const theme = useTheme()
 
-  // Local state
   const [data, setData] = useState({
     id: '',
     name: '',
     description: '',
     category_id: '',
-    is_active: '1' // Default to '1' (Active)
+    is_active: '1'
   })
 
   const [isEdit, setIsEdit] = useState(false)
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(false)
 
-  // Handle editing row
+  // Add/Edit Mode Detection and Data Population
   useEffect(() => {
     if (editingRow) {
-      const initialIsActive = editingRow.is_active === 1 || editingRow.is_active === true ? '1' : '0'
-
+      setIsEdit(true)
       setData({
+        id: editingRow.id || '',
         name: editingRow.name || '',
         description: editingRow.description || '',
         category_id: editingRow.category_id || '',
-        is_active: initialIsActive
+        // Ensure '1' is default if editingRow.is_active is missing
+        is_active:
+          editingRow.is_active != null
+            ? editingRow.is_active === 1 || editingRow.is_active === true
+              ? '1'
+              : '0'
+            : '1'
       })
-      setIsEdit(true)
     } else {
-      setData({ name: '', description: '', category_id: '', is_active: '1' })
+      // Add mode
       setIsEdit(false)
+      setData({ id: '', name: '', description: '', category_id: '', is_active: '1' })
     }
   }, [editingRow, open])
 
-  // Fetch categories
+  // Fetch Category List
   const fetchCategoryList = useCallback(async () => {
     setLoading(true)
-
     try {
       const result = await getCategories()
-
-      if (Array.isArray(result)) {
-        setCategories(result)
-      } else {
-        console.error('Unexpected category response:', result)
-        setCategories([])
-      }
+      if (Array.isArray(result)) setCategories(result)
+      else setCategories([])
     } catch (error) {
       console.error('Error fetching categories:', error)
       setCategories([])
@@ -84,35 +83,20 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave, editingRow }) => {
     }
   }, [])
 
-  // Load categories when modal opens
+  // Load categories on modal open
   useEffect(() => {
-    if (open) {
-      fetchCategoryList()
-
-      if (initialData) {
-        setData({
-          id: initialData.id || '',
-          name: initialData.name || '',
-          description: initialData.description || '',
-          category_id: initialData.category_id || '',
-          is_active: String(initialData.is_active ?? '1')
-        })
-      } else {
-        // Set default state for ADD mode, ensuring is_active is '1' (Active)
-        setData({
-          id: '',
-          name: '',
-          description: '',
-          category_id: '',
-          is_active: '1' // Default to '1' (Active) when adding
-        })
-      }
-    }
-  }, [open, initialData, fetchCategoryList])
+    if (open) fetchCategoryList()
+  }, [open, fetchCategoryList])
 
   // Handlers
   const handleClose = () => {
-    setData({ category_id: '', name: '', description: '', is_active: '1' })
+    setData({
+      id: '',
+      name: '',
+      description: '',
+      category_id: '',
+      is_active: '1'
+    })
     setOpen(false)
   }
 
@@ -123,7 +107,6 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave, editingRow }) => {
   const handleSave = () => {
     if (!data.name.trim() || !data.category_id) {
       alert('Name and Category are required.')
-
       return
     }
 
@@ -131,27 +114,18 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave, editingRow }) => {
       name: data.name.trim(),
       description: data.description.trim(),
       category_id: data.category_id,
-
-      // Send is_active only if in edit mode (using the dropdown value), otherwise assume active (1)
-      is_active: isEdit ? Number(data.is_active) : 1
+      is_active: Number(data.is_active)
     }
 
-    console.log('🛰 Sending Data:', formattedData)
-
-    // Make sure ID is correct
     const id = isEdit && editingRow ? editingRow.id || editingRow.sub_category_id : null
 
-    // Call the parent save function
     onSave(formattedData, id)
-
     handleClose()
   }
 
   const modalTitle = isEdit ? 'Edit SubCategory' : 'Add SubCategory'
 
-  // ===============================
-  // Render UI
-  // ===============================
+  // Render
   return (
     <Dialog
       fullWidth
@@ -183,15 +157,15 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave, editingRow }) => {
               label={<LabelWithStar>Category</LabelWithStar>}
               fullWidth
               value={data.category_id}
-              onChange={e => handleChange('category_id', Number(e.target.value))}
+              onChange={e => handleChange('category_id', e.target.value)}
+              SelectProps={{ displayEmpty: true }}
             >
               <MenuItem value=''>
-                <em>{loading ? 'Loading...' : 'Select Category'}</em>
+                <em>Select Category</em>
               </MenuItem>
-
-              {categories.map(cat => (
-                <MenuItem key={cat.id} value={cat.id}>
-                  {cat.name}
+              {categories.map(category => (
+                <MenuItem key={category.id} value={category.id}>
+                  {category.name}
                 </MenuItem>
               ))}
             </CustomTextField>
@@ -219,7 +193,7 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave, editingRow }) => {
             />
           </Grid>
 
-          {/* 🔸 Status Field (Only visible in EDIT mode) */}
+          {/* 🔸 Status Field (Only in edit mode, defaults to Active) */}
           {isEdit && (
             <Grid size={{ xs: 12 }}>
               <CustomTextField
@@ -248,7 +222,8 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave, editingRow }) => {
             textTransform: 'none',
             '&:hover': {
               borderColor: theme.palette.text.primary,
-              backgroundColor: theme.palette.mode === 'light' ? 'rgba(33, 44, 98, 0.08)' : 'rgba(255,255,255,0.08)'
+              backgroundColor:
+                theme.palette.mode === 'light' ? 'rgba(33, 44, 98, 0.08)' : 'rgba(255,255,255,0.08)'
             }
           }}
         >

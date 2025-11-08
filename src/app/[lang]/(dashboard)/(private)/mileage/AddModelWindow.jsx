@@ -80,7 +80,7 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
 
     const id = isEdit && editingRow ? editingRow.id : null
 
-    onSaveCategory(formattedData, id)
+   onSaveCategory(formattedData, id)
     handleClose() // Close on save (assuming onSaveCategory handles errors internally)
   }
 

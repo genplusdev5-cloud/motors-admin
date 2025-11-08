@@ -67,9 +67,11 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           <MenuItem href={`/${locale}/company`}>{'Company'}</MenuItem>
           <MenuItem href={`/${locale}/category`}>{'Category'}</MenuItem>
           <MenuItem href={`/${locale}/subcategory`}>{'SubCategory'}</MenuItem>
-         
+
           <MenuItem href={`/${locale}/vehicle-make`}>{'Vehicle Make'}</MenuItem>
           <MenuItem href={`/${locale}/colors`}>{'Colors'}</MenuItem>
+                 <MenuItem href={`/${locale}/mileage`}>{'Mileage'}</MenuItem>
+
            <MenuItem href={`/${locale}/vehicle-type`}>{'Vehicle Type'}</MenuItem>
           <MenuItem href={`/${locale}/body-type`}>{'Body Type'}</MenuItem>
           <MenuItem href={`/${locale}/engine-type`}>{'Engine Type'}</MenuItem>

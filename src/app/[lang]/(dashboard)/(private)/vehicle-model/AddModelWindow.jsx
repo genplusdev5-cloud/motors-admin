@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
+// MUI Imports
 import Grid from '@mui/material/Grid2'
 import Dialog from '@mui/material/Dialog'
 import Button from '@mui/material/Button'
@@ -10,22 +11,25 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Divider from '@mui/material/Divider'
 import { styled, useTheme } from '@mui/material/styles'
-import { MenuItem } from '@mui/material'
-
-import Checkbox from '@mui/material/Checkbox'
-import Chip from '@mui/material/Chip'
-
 import Autocomplete from '@mui/material/Autocomplete'
-import TextField from '@mui/material/TextField'
 
-import Box from '@mui/material/Box'
-
-import Typography from '@mui/material/Typography'
-
+// Custom Imports
 import DialogCloseButton from './closebtn'
 import CustomTextField from '@core/components/mui/TextField'
-import FileUploaderSingle from './FileUploaderSingle'
 
+// API Services
+import {
+  getCategories,
+  getSubCategories,
+  getVehicleMake,
+  getVehicleType,
+  getBodyType,
+  getEngineType,
+  getFuel,
+  getGearBox
+} from '@/services/vehicleModelApi'
+
+// Style component to add the red asterisk for required fields
 const LabelWithStar = styled('span')({
   '&::before': {
     content: '"*"',
@@ -34,437 +38,141 @@ const LabelWithStar = styled('span')({
   }
 })
 
-const AddModalWindow = ({ open, setOpen, initialData, onSave }) => {
+const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
   const theme = useTheme()
 
   const [data, setData] = useState({
     id: null,
-    vehicleType: '',
     name: '',
-
+    categoryId: '',
+    subCategoryId: '',
+    vehicleMakeId: '',
+    vehicleTypeId: '',
+    bodyTypeId: '',
+    engineTypeId: '',
+    fuelTypeId: '',
+    gearboxId: '',
     transmission: '',
-
     seatingCapacity: '',
-
+    power: '',
+    noOfWheels: '',
+    tankCapacity: '',
+    remarks: ''
   })
 
-  const vehicleOptions = [
-    { label: 'Two Wheeler', value: 'two' },
-    { label: 'Four Wheeler', value: 'four' }
-  ]
+  const [categories, setCategories] = useState([])
+  const [subCategories, setSubCategories] = useState([])
+  const [vehicleMakes, setVehicleMakes] = useState([])
+  const [vehicleTypes, setVehicleTypes] = useState([])
+  const [bodyTypes, setBodyTypes] = useState([])
+  const [engineTypes, setEngineTypes] = useState([])
+  const [fuelTypes, setFuelTypes] = useState([])
+  const [gearBoxes, setGearBoxes] = useState([])
+  const [loading, setLoading] = useState(false)
 
+  // Load dropdowns
   useEffect(() => {
     if (open) {
-      if (initialData) {
-        setData({
-          ...initialData,
-          manufacturingYear: initialData.manufacturingYear || '',
-          regYear: initialData.regYear || ''
-        })
-      } else {
-        setData({
-          id: '',
-          vehicleType: '',
-          name: '',
+      const fetchAll = async () => {
+        setLoading(true)
 
-          transmission: '',
+        try {
+          const [cat, subCat, make, vType, body, engine, fuel, gear] = await Promise.all([
+            getCategories(),
+            getSubCategories(),
+            getVehicleMake(),
+            getVehicleType(),
+            getBodyType(),
+            getEngineType(),
+            getFuel(),
+            getGearBox()
+          ])
 
-          seatingCapacity: '',
-
-        })
-      }
-    }
-  }, [open, initialData])
-
-// CATEGORY LIST-------------------------------------------------------
-
-  const fetchCategoryList = async () => {
-    setLoading(true)
-
-    try {
-      const token ={ACCESS_TOKEN}
-
-
-      const res = await fetch('http://motor-match.genplusinnovations.com:7023/api/category-list/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${ACCESS_TOKEN}`
+          setCategories(cat)
+          setSubCategories(subCat)
+          setVehicleMakes(make)
+          setVehicleTypes(vType)
+          setBodyTypes(body)
+          setEngineTypes(engine)
+          setFuelTypes(fuel)
+          setGearBoxes(gear)
+        } catch (err) {
+          console.error('Error loading dropdowns:', err)
+        } finally {
+          setLoading(false)
         }
-      })
-
-      if (res.status === 401) {
-        console.error('Unauthorized: Invalid or expired token')
-        setCategories([])
-
-        return
       }
 
-      const result = await res.json()
-
-      // ✅ Adjusted for your actual API response structure
-      if (Array.isArray(result.data)) {
-        setCategories(result.data)
-      } else {
-        console.error('Unexpected API structure:', result)
-        setCategories([])
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    } finally {
-      setLoading(false)
+      fetchAll()
     }
-  }
+  }, [open])
 
-
-
-  // SUBCATEGORY LIST--------------------------------------------------------------
-
-    const fetchSubCategoryList = async () => {
-    setLoading(true)
-
-    try {
-      const token ={ACCESS_TOKEN}
-
-
-      const res = await fetch('http://motor-match.genplusinnovations.com:7023/api/subcategory-list/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${ACCESS_TOKEN}`
-        }
+  // Load edit data
+  useEffect(() => {
+    if (editingRow) {
+      setData({
+        id: editingRow.id,
+        name: editingRow.name || '',
+        categoryId: editingRow.categoryId || '',
+        subCategoryId: editingRow.subCategoryId || '',
+        vehicleMakeId: editingRow.vehicleMakeId || '',
+        vehicleTypeId: editingRow.vehicleTypeId || '',
+        bodyTypeId: editingRow.bodyTypeId || '',
+        engineTypeId: editingRow.engineTypeId || '',
+        fuelTypeId: editingRow.fuelTypeId || '',
+        gearboxId: editingRow.gearboxId || '',
+        transmission: editingRow.transmission || '',
+        seatingCapacity: editingRow.seating_capacity || '',
+        power: editingRow.power || '',
+        noOfWheels: editingRow.no_of_weels || '',
+        tankCapacity: editingRow.tank || '',
+        remarks: editingRow.remarks || ''
       })
-
-      if (res.status === 401) {
-        console.error('Unauthorized: Invalid or expired token')
-        setCategories([])
-
-        return
-      }
-
-      const result = await res.json()
-
-      // ✅ Adjusted for your actual API response structure
-      if (Array.isArray(result.data)) {
-        setCategories(result.data)
-      } else {
-        console.error('Unexpected API structure:', result)
-        setCategories([])
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-
-
-  // VEHICLE MAKE LIST-----------------------------------------
-
-    const fetchVehicleMakeList = async () => {
-    setLoading(true)
-
-    try {
-      const token ={ACCESS_TOKEN}
-
-
-      const res = await fetch('http://motor-match.genplusinnovations.com:7023/api/make-list/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${ACCESS_TOKEN}`
-        }
+    } else {
+      setData({
+        id: null,
+        name: '',
+        categoryId: '',
+        subCategoryId: '',
+        vehicleMakeId: '',
+        vehicleTypeId: '',
+        bodyTypeId: '',
+        engineTypeId: '',
+        fuelTypeId: '',
+        gearboxId: '',
+        transmission: '',
+        seatingCapacity: '',
+        power: '',
+        noOfWheels: '',
+        tankCapacity: '',
+        remarks: ''
       })
-
-      if (res.status === 401) {
-        console.error('Unauthorized: Invalid or expired token')
-        setCategories([])
-
-        return
-      }
-
-      const result = await res.json()
-
-      // ✅ Adjusted for your actual API response structure
-      if (Array.isArray(result.data)) {
-        setCategories(result.data)
-      } else {
-        console.error('Unexpected API structure:', result)
-        setCategories([])
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    } finally {
-      setLoading(false)
     }
+  }, [editingRow, open])
+
+  const handleChange = (field, value) => {
+    setData(prev => ({ ...prev, [field]: value }))
   }
-
-
-  // VEHICLE TYPE LIST--------------------------------------
-
-    const fetchVehicleTypeList = async () => {
-    setLoading(true)
-
-    try {
-      const token ={ACCESS_TOKEN}
-
-
-      const res = await fetch('http://motor-match.genplusinnovations.com:7023/api/vehicle-type-list/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${ACCESS_TOKEN}`
-        }
-      })
-
-      if (res.status === 401) {
-        console.error('Unauthorized: Invalid or expired token')
-        setCategories([])
-
-        return
-      }
-
-      const result = await res.json()
-
-      // ✅ Adjusted for your actual API response structure
-      if (Array.isArray(result.data)) {
-        setCategories(result.data)
-      } else {
-        console.error('Unexpected API structure:', result)
-        setCategories([])
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // BODY TYPE LIST----------------------------------------
-
-    const fetchBodyTypeList = async () => {
-    setLoading(true)
-
-    try {
-      const token ={ACCESS_TOKEN}
-
-
-      const res = await fetch('http://motor-match.genplusinnovations.com:7023/api/body-type-list/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${ACCESS_TOKEN}`
-        }
-      })
-
-      if (res.status === 401) {
-        console.error('Unauthorized: Invalid or expired token')
-        setCategories([])
-
-        return
-      }
-
-      const result = await res.json()
-
-      // ✅ Adjusted for your actual API response structure
-      if (Array.isArray(result.data)) {
-        setCategories(result.data)
-      } else {
-        console.error('Unexpected API structure:', result)
-        setCategories([])
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-
-  // engine type LIST---------------------------------------------------------
-
-    const fetchEngineTypeList = async () => {
-    setLoading(true)
-
-    try {
-      const token ={ACCESS_TOKEN}
-
-
-      const res = await fetch('http://motor-match.genplusinnovations.com:7023/api/engine-type-list/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${ACCESS_TOKEN}`
-        }
-      })
-
-      if (res.status === 401) {
-        console.error('Unauthorized: Invalid or expired token')
-        setCategories([])
-
-        return
-      }
-
-      const result = await res.json()
-
-      // ✅ Adjusted for your actual API response structure
-      if (Array.isArray(result.data)) {
-        setCategories(result.data)
-      } else {
-        console.error('Unexpected API structure:', result)
-        setCategories([])
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-
-  // FUEL TYPE LIST----------------------------------------------------------
-
-    const fetchFuelTypeList = async () => {
-    setLoading(true)
-
-    try {
-      const token ={ACCESS_TOKEN}
-
-
-      const res = await fetch('http://motor-match.genplusinnovations.com:7023/api/fuel-type-list/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${ACCESS_TOKEN}`
-        }
-      })
-
-      if (res.status === 401) {
-        console.error('Unauthorized: Invalid or expired token')
-        setCategories([])
-
-        return
-      }
-
-      const result = await res.json()
-
-      // ✅ Adjusted for your actual API response structure
-      if (Array.isArray(result.data)) {
-        setCategories(result.data)
-      } else {
-        console.error('Unexpected API structure:', result)
-        setCategories([])
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-
-  // GEARBOX TYPE LIST
-
-
-    const fetchGearboxType = async () => {
-    setLoading(true)
-
-    try {
-      const token ={ACCESS_TOKEN}
-
-
-      const res = await fetch('http://motor-match.genplusinnovations.com:7023/api/gearbox-list/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${ACCESS_TOKEN}`
-        }
-      })
-
-      if (res.status === 401) {
-        console.error('Unauthorized: Invalid or expired token')
-        setCategories([])
-
-        return
-      }
-
-      const result = await res.json()
-
-      // ✅ Adjusted for your actual API response structure
-      if (Array.isArray(result.data)) {
-        setCategories(result.data)
-      } else {
-        console.error('Unexpected API structure:', result)
-        setCategories([])
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   const handleClose = () => setOpen(false)
 
-  const handleChange = (field, value) => {
-    if (field === 'manufacturingYear' || field === 'regYear') {
-      // Only allow numbers, max 4 digits
-      const cleaned = value.replace(/\D/g, '').slice(0, 4)
-
-      setData(prev => ({ ...prev, [field]: cleaned }))
-    } else {
-      setData(prev => ({ ...prev, [field]: value }))
-    }
-  }
-
-  const handleChanges = event => {
-    setData(prev => ({
-      ...prev,
-      vehicleType: event.target.value
-    }))
-  }
-
-
-
   const handleSave = () => {
-    if (!data.vehicleType || !data.name) {
-      alert('Vehicle Type and Name are required.')
+    if (!data.name) {
+      alert('Name is required')
 
       return
     }
 
-    const yearPattern = /^\d{4}$/
-
-    if (
-      (data.manufacturingYear && !yearPattern.test(data.manufacturingYear)) ||
-      (data.regYear && !yearPattern.test(data.regYear))
-    ) {
-      alert('Manufacturing Year and Registration Year must be 4 digits.')
-
-      return
+    if (typeof onSaveCategory === 'function') {
+      onSaveCategory(data, data.id)
+      handleClose()
+    } else {
+      console.error('onSaveCategory prop is missing or not a function!')
     }
-
-    onSave(data)
   }
 
-  const customThemeColor = '#212c62'
-  const modalTitle = initialData ? 'Edit Vehicle Model' : 'Add Vehicle Model'
-  const actionButtonText = initialData ? 'Save Changes' : 'Add'
+  const modalTitle = editingRow ? 'Edit Vehicle Model' : 'Add Vehicle Model'
+  const actionButtonText = editingRow ? 'Update' : 'Add'
 
   return (
     <Dialog
@@ -482,307 +190,205 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave }) => {
       </DialogCloseButton>
 
       <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>{modalTitle}</DialogTitle>
-
       <Divider sx={{ mx: -3, my: 2 }} />
 
       <DialogContent sx={{ pt: 1 }}>
         <Grid container spacing={5}>
-{/*
-         <Grid size={{ xs: 12, sm: 6 }}>
-      <Autocomplete
-        multiple
-        fullWidth
-        options={vehicleOptions}
-        getOptionLabel={option => option.label}
-        value={vehicleOptions.filter(opt => selectedVehicles.some(v => v.value === opt.value))}
-        onChange={handleVehicleChange}
-
-        renderInput={params => (
-          <CustomTextField
-            {...params}
-            label={<LabelWithStar>Category</LabelWithStar>}
-            placeholder='Select vehicle types'
-          />
-        )}
-      />
-    </Grid> */}
-
-
-
-
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Autocomplete
-              fullWidth
-              options={vehicleOptions}
-              getOptionLabel={option => option.label}
-              value={vehicleOptions.find(opt => opt.value === data.vehicleType) || null}
-              onChange={(event, newValue) => {
-                handleChange('vehicleType', newValue ? newValue.value : '')
-              }}
-              renderInput={params => (
-                <CustomTextField
-                  {...params}
-                  label={<LabelWithStar>Category</LabelWithStar>}
-                  onChange={e => handleChange('vehicleType', e.target.value)} // capture typed text
-                />
-              )}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Autocomplete
-              fullWidth
-              options={vehicleOptions}
-              getOptionLabel={option => option.label}
-              value={vehicleOptions.find(opt => opt.value === data.vehicleType) || null}
-              onChange={(event, newValue) => {
-                handleChange('vehicleType', newValue ? newValue.value : '')
-              }}
-              renderInput={params => (
-                <CustomTextField
-                  {...params}
-                  label={<LabelWithStar>SubCategory</LabelWithStar>}
-                  onChange={e => handleChange('vehicleType', e.target.value)} // capture typed text
-                />
-              )}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Autocomplete
-              fullWidth
-              options={vehicleOptions}
-              getOptionLabel={option => option.label}
-              value={vehicleOptions.find(opt => opt.value === data.vehicleType) || null}
-              onChange={(event, newValue) => {
-                handleChange('vehicleType', newValue ? newValue.value : '')
-              }}
-              renderInput={params => (
-                <CustomTextField
-                  {...params}
-                  label={<LabelWithStar>Vehicle Make</LabelWithStar>}
-                  onChange={e => handleChange('vehicleType', e.target.value)} // capture typed text
-                />
-              )}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Autocomplete
-              fullWidth
-              options={vehicleOptions}
-              getOptionLabel={option => option.label}
-              value={vehicleOptions.find(opt => opt.value === data.vehicleType) || null}
-              onChange={(event, newValue) => {
-                handleChange('vehicleType', newValue ? newValue.value : '')
-              }}
-              renderInput={params => (
-                <CustomTextField
-                  {...params}
-                  label={<LabelWithStar>Vehicle Type</LabelWithStar>}
-                  onChange={e => handleChange('vehicleType', e.target.value)} // capture typed text
-                />
-              )}
-            />
-          </Grid>
-
-
-
+          {/* Vehicle Name */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <CustomTextField
-              label='Power'
+              label={<LabelWithStar>Name</LabelWithStar>}
               fullWidth
               value={data.name}
               onChange={e => handleChange('name', e.target.value)}
             />
           </Grid>
 
+          {/* Category */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <Autocomplete
               fullWidth
-              options={vehicleOptions}
-              getOptionLabel={option => option.label}
-              value={vehicleOptions.find(opt => opt.value === data.vehicleType) || null}
-              onChange={(event, newValue) => {
-                handleChange('vehicleType', newValue ? newValue.value : '')
-              }}
+              loading={loading}
+              options={categories}
+              getOptionLabel={option => option.name || ''}
+              value={categories.find(opt => opt.id === data.categoryId) || null}
+              onChange={(e, newValue) => handleChange('categoryId', newValue ? newValue.id : '')}
+              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Category</LabelWithStar>} />}
+            />
+          </Grid>
+
+          {/* SubCategory */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Autocomplete
+              fullWidth
+              loading={loading}
+              options={subCategories}
+              getOptionLabel={option => option.name || ''}
+              value={subCategories.find(opt => opt.id === data.subCategoryId) || null}
+              onChange={(e, newValue) => handleChange('subCategoryId', newValue ? newValue.id : '')}
+              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>SubCategory</LabelWithStar>} />}
+            />
+          </Grid>
+
+          {/* Vehicle Make */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Autocomplete
+              fullWidth
+              options={vehicleMakes}
+              getOptionLabel={option => option.name || ''}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderOption={(props, option) => (
+                <li {...props} key={option.id}>
+                  {' '}
+                  {/* ✅ unique key */}
+                  {option.name}
+                </li>
+              )}
+              value={vehicleMakes.find(opt => opt.id === data.vehicleMakeId) || null}
+              onChange={(e, newValue) => handleChange('vehicleMakeId', newValue ? newValue.id : '')}
+              renderInput={params => <CustomTextField {...params} label='Vehicle Make' />}
+            />
+          </Grid>
+
+          {/* Vehicle Type */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Autocomplete
+              fullWidth
+              options={vehicleTypes}
+              getOptionLabel={option => option.name || ''}
+              value={vehicleTypes.find(opt => opt.id === data.vehicleTypeId) || null}
+              onChange={(e, newValue) => handleChange('vehicleTypeId', newValue ? newValue.id : '')}
               renderInput={params => (
-                <CustomTextField
-                  {...params}
-                  label={<LabelWithStar>Body Type</LabelWithStar>}
-                  onChange={e => handleChange('vehicleType', e.target.value)} // capture typed text
-                />
+                <CustomTextField {...params} label={<LabelWithStar>Vehicle Type</LabelWithStar>} />
               )}
             />
           </Grid>
 
+          {/* Body Type */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <Autocomplete
               fullWidth
-              options={vehicleOptions}
-              getOptionLabel={option => option.label}
-              value={vehicleOptions.find(opt => opt.value === data.vehicleType) || null}
-              onChange={(event, newValue) => {
-                handleChange('vehicleType', newValue ? newValue.value : '')
-              }}
+              options={bodyTypes}
+              getOptionLabel={option => option.name || ''}
+              value={bodyTypes.find(opt => opt.id === data.bodyTypeId) || null}
+              onChange={(e, newValue) => handleChange('bodyTypeId', newValue ? newValue.id : '')}
+              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Body Type</LabelWithStar>} />}
+            />
+          </Grid>
+
+          {/* Engine Type */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Autocomplete
+              fullWidth
+              options={engineTypes}
+              getOptionLabel={option => option.name || ''}
+              value={engineTypes.find(opt => opt.id === data.engineTypeId) || null}
+              onChange={(e, newValue) => handleChange('engineTypeId', newValue ? newValue.id : '')}
+              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Engine Type</LabelWithStar>} />}
+            />
+          </Grid>
+
+          {/* Fuel Type */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Autocomplete
+              fullWidth
+              options={fuelTypes}
+              getOptionLabel={option => option.name || ''}
+              value={fuelTypes.find(opt => opt.id === data.fuelTypeId) || null}
+              onChange={(e, newValue) => handleChange('fuelTypeId', newValue ? newValue.id : '')}
+              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Fuel Type</LabelWithStar>} />}
+            />
+          </Grid>
+
+          {/* Gearbox Type */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Autocomplete
+              fullWidth
+              options={gearBoxes}
+              getOptionLabel={option => option.name || ''}
+              value={gearBoxes.find(opt => opt.id === data.gearboxId) || null}
+              onChange={(e, newValue) => handleChange('gearboxId', newValue ? newValue.id : '')}
               renderInput={params => (
-                <CustomTextField
-                  {...params}
-                  label={<LabelWithStar>Engine Type</LabelWithStar>}
-                  onChange={e => handleChange('vehicleType', e.target.value)} // capture typed text
-                />
+                <CustomTextField {...params} label={<LabelWithStar>Gearbox Type</LabelWithStar>} />
               )}
             />
           </Grid>
 
-          
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Autocomplete
-              fullWidth
-              options={vehicleOptions}
-              getOptionLabel={option => option.label}
-              value={vehicleOptions.find(opt => opt.value === data.vehicleType) || null}
-              onChange={(event, newValue) => {
-                handleChange('vehicleType', newValue ? newValue.value : '')
-              }}
-              renderInput={params => (
-                <CustomTextField
-                  {...params}
-                  label={<LabelWithStar>Fuel Type</LabelWithStar>}
-                  onChange={e => handleChange('vehicleType', e.target.value)} // capture typed text
-                />
-              )}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Autocomplete
-              fullWidth
-              options={vehicleOptions}
-              getOptionLabel={option => option.label}
-              value={vehicleOptions.find(opt => opt.value === data.vehicleType) || null}
-              onChange={(event, newValue) => {
-                handleChange('vehicleType', newValue ? newValue.value : '')
-              }}
-              renderInput={params => (
-                <CustomTextField
-                  {...params}
-                  label={<LabelWithStar>Gearbox Type</LabelWithStar>}
-                  onChange={e => handleChange('vehicleType', e.target.value)} // capture typed text
-                />
-              )}
-            />
-          </Grid>
-
+          {/* Transmission */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <CustomTextField
               label='Transmission'
               fullWidth
-              value={data.name}
-              onChange={e => handleChange('name', e.target.value)}
+              value={data.transmission}
+              onChange={e => handleChange('transmission', e.target.value)}
             />
           </Grid>
 
+          {/* Seating Capacity */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <CustomTextField
               label='Seating Capacity'
               fullWidth
-              value={data.name}
-              onChange={e => handleChange('name', e.target.value)}
+              value={data.seating_capacity}
+              onChange={e => handleChange('seating_capacity', e.target.value)}
             />
           </Grid>
 
+          {/* Power */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <CustomTextField
-              label='No of wheels'
+              label='Power'
               fullWidth
-              value={data.name}
-              onChange={e => handleChange('name', e.target.value)}
+              value={data.power}
+              onChange={e => handleChange('power', e.target.value)}
             />
           </Grid>
 
+          {/* No of Wheels */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <CustomTextField
+              label='No of Wheels'
+              fullWidth
+              value={data.no_of_weels}
+              onChange={e => handleChange('no_of_weels', e.target.value)}
+            />
+          </Grid>
+
+          {/* Tank Capacity */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <CustomTextField
               label='Tank Capacity'
               fullWidth
-              value={data.name}
-              onChange={e => handleChange('name', e.target.value)}
+              value={data.tankCapacity}
+              onChange={e => handleChange('tankCapacity', e.target.value)}
             />
           </Grid>
 
-          {/* Name */}
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <CustomTextField
-              label='Name'
-              fullWidth
-              value={data.name}
-              onChange={e => handleChange('name', e.target.value)}
-            />
-          </Grid>
-
-          {/* <Grid item xs={12} sm={4}>
-            <Typography
-              variant='caption'
-              component='label'
-              sx={{ display: 'block', fontWeight: 400, color: 'text.primary' }}
-            >
-              <LabelWithStar /> Vehicle Image
-            </Typography>
-
-            <FileUploaderSingle onFileChange={files => handleFileChange('logo', files)} />
-          </Grid> */}
-
-          {/* Remarks */}
-          {/* <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 12 }}>
             <CustomTextField
               label='Remarks'
               fullWidth
-              multiline
-              rows={2}
-              value={formData.remarks}
+              value={data.remarks}
               onChange={e => handleChange('remarks', e.target.value)}
-              sx={{ ml: 4 }}
             />
-          </Grid> */}
+          </Grid>
         </Grid>
       </DialogContent>
 
       <DialogActions sx={{ justifyContent: 'flex-end' }}>
-        {/* Close Button */}
         <Button
           onClick={handleClose}
           variant='outlined'
           sx={{
             borderColor: theme.palette.text.primary,
             color: theme.palette.text.primary,
-            textTransform: 'none',
-            '&:hover': {
-              borderColor: theme.palette.text.primary,
-              backgroundColor: theme.palette.mode === 'light' ? 'rgba(33, 44, 98, 0.08)' : 'rgba(255,255,255,0.08)'
-            }
+            textTransform: 'none'
           }}
         >
           Close
         </Button>
 
-        {/* Save / Add Button */}
-        <Button
-          onClick={handleSave}
-          type='submit'
-          variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-          sx={{
-            textTransform: 'none',
-            backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-            color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-            borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-            '&:hover': {
-              backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-              borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
-            }
-          }}
-        >
+        <Button onClick={handleSave} variant='contained' sx={{ textTransform: 'none' }}>
           {actionButtonText}
         </Button>
       </DialogActions>
@@ -790,4 +396,4 @@ const AddModalWindow = ({ open, setOpen, initialData, onSave }) => {
   )
 }
 
-export default AddModalWindow
+export default AddModelWindow

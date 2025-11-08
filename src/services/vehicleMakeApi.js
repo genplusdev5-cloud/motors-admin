@@ -72,31 +72,11 @@ export const updateMake = async (id, payload) => {
 
 // ❌ Delete
 export const deleteMake = async id => {
-  try {
-    if (!id) throw new Error('Invalid make ID provided.')
+  const formData = new FormData()
 
-    const token = getAccessToken()
+  formData.append('id', id)
 
-    if (!token) throw new Error('Missing access token.')
+  const res = await axiosInstance.put('api/make-delete/', formData)
 
-    // ✅ Call API cleanly with proper headers
-    const res = await axiosInstance.delete(`api/make-delete/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    console.log('✅ Delete response:', res.data)
-
-    return res.data
-  } catch (err) {
-    console.error('❌ Full delete error:', err)
-    console.error('⚠️ Error response data:', err.response?.data)
-
-    // Return clear error message
-    throw new Error(
-      err.response?.data?.message || err.response?.data?.detail || 'Failed to delete make due to a server error.'
-    )
-  }
+  return res.data
 }

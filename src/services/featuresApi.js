@@ -36,10 +36,12 @@ export const updateSubCategory = async (id, payload) => {
   return res.data
 }
 
-// ❌ Delete SubCategory
 export const deleteSubCategory = async id => {
-  // NOTE: Assuming the delete endpoint is /subcategory-delete/{id}/
-  const res = await axiosInstance.delete(`/features-delete/${id}/`)
+  const formData = new FormData()
 
-  return res.data
+  formData.append('id', id)
+
+  const res = await axiosInstance.put('api/features-delete/', formData)
+
+  return res.data
 }

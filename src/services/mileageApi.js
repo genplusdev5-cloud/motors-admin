@@ -11,14 +11,14 @@ export const getMileage = async () => {
 }
 
 // ➕ Add
-export const addMileage = async payload => {
-  const res = await axiosInstance.post('/mileage-add/', payload)
+export const addMileage  = async payload => {
+  const res = await axiosInstance.post('api/mileage-add/', payload)
 
   return res.data
 }
 
 // ✏️ Update
-export const updateMileage = async (id, payload) => {
+export const updateMileage  = async (id, payload) => {
   const res = await axiosInstance.put(`api/mileage-update/${id}/`, payload)
 
   return res.data
@@ -26,20 +26,12 @@ export const updateMileage = async (id, payload) => {
 
 // ❌ Delete
 
-export const deleteMileage= async id => {
-  try {
-    // The endpoint is correct for a Django-like REST framework
-    const res = await axiosInstance.delete(`api/mileage-delete/${id}/`);
+export const deleteMileage  = async id => {
+  const formData = new FormData()
 
-    console.log('Delete response:', res.data);
+  formData.append('id', id)
 
-    return res.data;
-  } catch (err) {
-    // Enhanced error logging to understand the failure
-    console.error('Full delete error:', err);
-    console.error('Error response data:', err.response?.data);
+  const res = await axiosInstance.put('api/mileage-delete/', formData)
 
-    // Throw a custom error message, prioritizing the message from the backend
-    throw new Error(err.response?.data?.message || 'Failed to delete milage due to a server error.');
-  }
-};
+  return res.data
+}

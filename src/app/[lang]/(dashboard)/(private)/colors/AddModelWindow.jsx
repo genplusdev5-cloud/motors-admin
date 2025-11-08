@@ -10,12 +10,17 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Divider from '@mui/material/Divider'
 import { styled, useTheme } from '@mui/material/styles'
-
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography' // ✅ FIXED HERE
 import { MenuItem } from '@mui/material'
 
-import DialogCloseButton from './closebtn'
-import CustomTextField from '@core/components/mui/TextField'
+import CustomTextField from '@/@core/components/mui/TextField'
 
+import DialogCloseButton from './closebtn'
+
+// import CustomTextField from '@core/components/mui/TextField' // CustomTextField might not support type='color' well, but we'll try to adapt.
+
+// Styled component for the required label star
 const LabelWithStar = styled('span')({
   '&::before': {
     content: '"*"',
@@ -24,28 +29,49 @@ const LabelWithStar = styled('span')({
   }
 })
 
+// Styled component for the Color Picker input wrapper
+// Standard HTML input type="color" is used for the color selection
+const StyledColorInput = styled('input')({
+  // Hide the default color input border/style
+  appearance: 'none',
+  border: 'none',
+  width: '100%',
+  height: '40px', // Adjust height as needed
+  backgroundColor: 'transparent',
+  cursor: 'pointer',
+  '&::-webkit-color-swatch-wrapper': {
+    padding: 0
+  },
+  '&::-webkit-color-swatch': {
+    border: 'none',
+    borderRadius: '4px' // Match MUI borderRadius
+  }
+})
+
 const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
   const theme = useTheme()
 
-  // 💡 State now correctly tracks 'is_active'. Default to '1' (Active) for new items.
+  // Default 'name' to a default hex color for a better user experience
   const [data, setData] = useState({ name: '', description: '', is_active: '1' })
   const [isEdit, setIsEdit] = useState(false)
 
   // ✅ Populate fields when editing
   useEffect(() => {
     if (editingRow) {
-      // 💡 Convert the incoming is_active (which might be 1 or true) to the string '1' or '0'
-      // to match the <option> values in the Select input.
+      // Check if name is a valid hex code (or default to white if not for color input)
+      const initialName =
+        editingRow.name && /^#([0-9A-F]{3}){1,2}$/i.test(editingRow.name.trim()) ? editingRow.name.trim() : ''
+
       const initialIsActive = editingRow.is_active === 1 || editingRow.is_active === true ? '1' : '0'
 
       setData({
-        name: editingRow.name || '',
+        name: initialName, // Use validated or default hex code
         description: editingRow.description || '',
-        is_active: initialIsActive // Set the string value
+        is_active: initialIsActive
       })
       setIsEdit(true)
     } else {
-      // Reset to empty and default active status ('1') for new category
+      // Reset to default hex color and default active status ('1') for new category
       setData({ name: '', description: '', is_active: '1' })
       setIsEdit(false)
     }
@@ -64,24 +90,23 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
 
   // ✅ When user clicks Add / Update
   const handleSave = () => {
-    if (!data.name.trim()) {
-      alert('Category name is required!')
+    // The color input type="color" should always provide a value, but we can check if it's a valid hex.
+    if (!data.name.trim() || !/^#([0-9A-F]{3}){1,2}$/i.test(data.name.trim())) {
+      alert('A valid color hex code is required!')
 
       return
     }
 
     const formattedData = {
-      name: data.name.trim(),
+      name: data.name.trim(), // Assuming 'name' stores the hex code
       description: data.description.trim(),
-
-      // 💡 CRITICAL FIX: Convert the string value ('1' or '0') from the dropdown back to a number
-      is_active: Number(data.is_active) // ✅ Backend expects numeric
+      is_active: Number(data.is_active)
     }
 
     const id = isEdit && editingRow ? editingRow.id : null
 
+    // Pass formattedData and ID to the save function in the parent component
     onSaveCategory(formattedData, id)
-    handleClose() // Close on save (assuming onSaveCategory handles errors internally)
   }
 
   return (
@@ -89,10 +114,11 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
       fullWidth
       open={open}
       onClose={handleClose}
-      maxWidth='md'
+      maxWidth='xs'
       sx={{
         '& .MuiDialog-container': { alignItems: 'flex-start' },
-        '& .MuiDialog-paper': { overflow: 'visible', width: 500, maxWidth: '100%' }
+
+        '& .MuiDialog-paper': { overflow: 'visible', width: 400, maxWidth: '100%' }
       }}
     >
       <DialogCloseButton onClick={handleClose}>
@@ -105,17 +131,18 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
 
       <DialogContent sx={{ pt: 1 }}>
         <Grid container spacing={5}>
-          <Grid size={{ xs: 12, sm: 12 }}>
+          <Grid size={{ xs: 12 }}>
             <CustomTextField
-              label={<LabelWithStar>Name</LabelWithStar>}
+              label='name'
               fullWidth
-              type='text'
+              rows={2}
+              type='color'
               value={data.name}
               onChange={e => handleChange('name', e.target.value)}
             />
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 12 }}>
+          <Grid size={{ xs: 12 }}>
             <CustomTextField
               label='Description'
               fullWidth
@@ -129,19 +156,19 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
 
           {/* ✅ Show Status dropdown only when editing */}
           {isEdit && (
-           <Grid size={{ xs: 12, sm: 12 }}>
-  <CustomTextField
-    select
-    label={<LabelWithStar>Status</LabelWithStar>}
-    fullWidth
-    value={data.is_active}
-    onChange={e => handleChange('is_active', Number(e.target.value))} // ensure numeric
-  >
-    <MenuItem value={1}>Active</MenuItem>
-    <MenuItem value={0}>Inactive</MenuItem>
-  </CustomTextField>
-</Grid>
-
+            <Grid size={{ xs: 12 }}>
+              {/* NOTE: Changed onChange to pass string value to avoid conflicting with the Number() cast inside the component */}
+              <CustomTextField
+                select
+                label={<LabelWithStar>Status</LabelWithStar>}
+                fullWidth
+                value={data.is_active}
+                onChange={e => handleChange('is_active', e.target.value)}
+              >
+                <MenuItem value={'1'}>Active</MenuItem>
+                <MenuItem value={'0'}>Inactive</MenuItem>
+              </CustomTextField>
+            </Grid>
           )}
         </Grid>
       </DialogContent>
