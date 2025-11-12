@@ -80,16 +80,7 @@ const VehicleMake = () => {
   // Save category (handles both add and update by calling API)
   const handleSaveCategory = async (categoryData, id) => {
     try {
-      // ✅ FRONTEND DUPLICATE CHECK
-      const isDuplicate = data.some(
-        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id // allow same name for editing same record
-      )
 
-      if (isDuplicate) {
-        toast.warning('Vehicle Make name already exists. ')
-
-        return // ❌ Stop — don’t send to backend
-      }
 
       // ✅ Proceed if not duplicate
       if (id) {
@@ -293,26 +284,28 @@ const VehicleMake = () => {
 
     // Vehicle Make Image column (assuming API returns a URL or file name here)
     columnHelper.accessor('image', {
-      header: 'LOGO',
+      header: 'IMAGE',
       enableSorting: false,
       cell: info => {
-        const imageUrl = info.getValue()
+        const image = info.getValue()
 
         return (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {imageUrl ? (
+            {image ? (
               <img
-                src={imageUrl}
+                src={image}
                 alt={info.row.original.name}
                 style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 4 }}
               />
             ) : (
-              <Typography variant='caption'>N/A</Typography>
+              <Typography variant='caption'>image</Typography>
             )}
           </Box>
         )
       }
     }),
+
+
     columnHelper.accessor('description', {
       header: ({ column }) => getSortableHeader('DESCRIPTION', column),
       cell: info => {
@@ -559,7 +552,7 @@ const VehicleMake = () => {
               {loading ? (
                 <tr>
                   <td colSpan={columns.length} className='text-center'>
-                    <i className='tabler-loader animate-spin' style={{ fontSize: 24 }} /> Loading...
+                   
                   </td>
                 </tr>
               ) : table.getRowModel().rows.length === 0 ? (

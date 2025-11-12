@@ -119,7 +119,7 @@ const Cylinder = () => {
 
   const handleDelete = async id => {
     Swal.fire({
-      text: 'Are you sure you want to delete this category?',
+      text: 'Are you sure you want to delete this cylinder?',
 
       showCancelButton: true,
       confirmButtonText: 'Delete',
@@ -174,7 +174,7 @@ const Cylinder = () => {
   }
 
 
-  
+
   // --- Fetch categories on initial load
   useEffect(() => {
     fetchCylinder()

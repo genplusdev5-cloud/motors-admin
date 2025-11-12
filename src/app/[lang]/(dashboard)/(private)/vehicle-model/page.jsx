@@ -1,5 +1,3 @@
-
-
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
@@ -34,9 +32,7 @@ import {
 } from '@tanstack/react-table'
 
 // Updated import from corrected service file
-import { getVehicleModel, addVehicleModel, updateVehicleModel, deleteVehicleModel} from '@/services/vehicleModelApi'
-
-// import axiosInstance, { setTokens } from '@/configs/token' // token config is not directly used here
+import { getVehicleModel, addVehicleModel, updateVehicleModel, deleteVehicleModel } from '@/services/vehicleModelApi'
 
 // TanStack Table Imports
 
@@ -46,6 +42,7 @@ import TablePaginationComponent from '@components/TablePaginationComponent'
 import styles from '@core/styles/table.module.css'
 
 // Modal Component
+// Assuming AddModelWindow is the component to be updated
 import AddModelWindow from './AddModelWindow'
 
 
@@ -54,8 +51,6 @@ const columnHelper = createColumnHelper()
 const VehicleModel = () => {
   const theme = useTheme()
   const router = useRouter() // eslint-disable-line no-unused-vars
-
-  //const API_URL = 'http://motor-match.genplusinnovations.com:7023/' // eslint-disable-line no-unused-vars
 
   const [open, setOpen] = useState(false)
   const [data, setData] = useState([])
@@ -74,66 +69,64 @@ const VehicleModel = () => {
     setLoading(true)
 
     try {
+      // Assuming getVehicleModel() fetches an array of vehicle model objects
       const categoryData = await getVehicleModel()
 
       setData(categoryData)
     } catch (error) {
       console.error('Error fetching Year:', error)
-      toast.error('Failed to load Year')
+      toast.error('Failed to load Vehicle Models')
       setData([])
     } finally {
       setLoading(false)
     }
   }, [])
 
-
-
   // Save category (handles both add and update by calling API)
- const handleSaveCategory = async (categoryData, id) => {
-  try {
-    // ✅ FRONTEND DUPLICATE CHECK
-    const isDuplicate = data.some(
-      item =>
-        item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() &&
-        item.id !== id
-    )
+  const handleSaveCategory = async (categoryData, id) => {
+    try {
+      // ✅ FRONTEND DUPLICATE CHECK
+      const isDuplicate = data.some(
+        item => item.name?.trim().toLowerCase() === categoryData.name?.trim().toLowerCase() && item.id !== id
+      )
 
-    if (isDuplicate) {
-      toast.warning('Model name already exists.')
-      return
+      if (isDuplicate) {
+        toast.warning('Model name already exists.')
+
+        return
+      }
+
+      // ✅ Proceed if no duplicate
+      if (id) {
+        await updateVehicleModel(id, categoryData)
+        toast.success('Vehicle Model updated successfully!')
+      } else {
+        console.log('Before Save Data: ')
+        console.log(categoryData)
+        await addVehicleModel(categoryData)
+        toast.success('Vehicle Model added successfully!')
+      }
+
+      handleCloseModal() // Close modal after success
+      await fetchYear() // Refresh data in the table
+    } catch (error) {
+      console.error('Save Vehicle Model error:', error)
+
+      let errorMsg = error.response?.data?.message || 'An error occurred while saving the Vehicle Model.'
+
+      if (errorMsg.toLowerCase().includes('already exist') || errorMsg.toLowerCase().includes('duplicate')) {
+        toast.warning('Vehicle Model name already exists.')
+
+        return
+      }
+
+      toast.error(errorMsg)
     }
-
-    // ✅ Proceed if no duplicate
-    if (id) {
-      await updateVehicleModel(id, categoryData)
-      toast.success('Vehicle Model updated successfully!')
-    } else {
-      await addVehicleModel(categoryData)
-      toast.success('Vehicle Model added successfully!')
-    }
-
-    handleCloseModal() // Close modal after success
-    await fetchYear() // Refresh data in the table
-  } catch (error) {
-    console.error('Save Vehicle Model error:', error)
-
-    let errorMsg = error.response?.data?.message || 'An error occurred while saving the Vehicle Model.'
-
-    if (errorMsg.toLowerCase().includes('already exist') || errorMsg.toLowerCase().includes('duplicate')) {
-      toast.warning('Model name already exists.')
-      return
-    }
-
-    toast.error(errorMsg)
   }
-}
-
-
-
 
   const handleDelete = async id => {
     Swal.fire({
-      text: 'Are you sure you want to delete this year?',
+      text: 'Are you sure you want to delete this vehicle model?',
 
       showCancelButton: true,
       confirmButtonText: 'Delete',
@@ -172,17 +165,17 @@ const VehicleModel = () => {
       if (result.isConfirmed) {
         try {
           await deleteVehicleModel(id)
-          toast.success('Year deleted successfully!')
+          toast.success('Vehicle model deleted successfully!')
           await fetchYear()
         } catch (error) {
-          console.error('Delete year error:', error)
+          console.error('Delete vehicle model error:', error)
 
-          const errorMsg = error.response?.data?.message || 'Failed to delete year.'
+          const errorMsg = error.response?.data?.message || 'Failed to delete vehicle model.'
 
           toast.error(errorMsg)
         }
       } else if (result.dismiss === Swal.DismissReason.cancel) {
-        toast.info('year deletion cancelled.')
+        toast.info('Vehicle model deletion cancelled.')
       }
     })
   }
@@ -194,6 +187,8 @@ const VehicleModel = () => {
 
   // Open modal (null => add, row object => edit)
   const handleOpenModal = row => {
+    // When editing, the row object (row.original) contains all the data
+    // from the API needed to pre-fill the modal fields.
     setEditingRow(row)
     setOpen(true)
   }
@@ -203,7 +198,7 @@ const VehicleModel = () => {
     setEditingRow(null)
   }
 
-  // Hidden file input
+  // Hidden file input logic for export/import... (kept as is)
   const fileInputRef = useRef(null)
 
   const handleExportClick = event => {
@@ -250,7 +245,7 @@ const VehicleModel = () => {
     }
   }
 
-  // Sorting icon & helper same as your original code
+  // Sorting icon & helper (kept as is)
 
   const SortIcon = ({ sortDir }) => {
     if (sortDir === 'asc') return <i className='tabler-arrow-up' style={{ fontSize: 16 }} />
@@ -284,6 +279,7 @@ const VehicleModel = () => {
     </div>
   )
 
+  // Columns definition (kept as is)
   const columns = [
     columnHelper.accessor('action', {
       header: 'ACTIONS',
@@ -306,76 +302,118 @@ const VehicleModel = () => {
 
     columnHelper.accessor('name', {
       header: ({ column }) => getSortableHeader('NAME', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
     }),
 
-  columnHelper.accessor('categories', {
+    columnHelper.accessor('category_name', {
       header: ({ column }) => getSortableHeader('CATEGORY', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
     }),
 
-      columnHelper.accessor('subCategories', {
+    columnHelper.accessor('subcategory_name', {
       header: ({ column }) => getSortableHeader('SUBCATEGORY', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
     }),
-      columnHelper.accessor('vehicleMakes', {
-      header: ({ column }) => getSortableHeader('VEHICLE MAKE', column),
-      cell: info => info.getValue()
-    }),
-      columnHelper.accessor('vehicleTypes', {
+
+ columnHelper.accessor('make_name', {
+  header: ({ column }) => getSortableHeader('MAKE', column),
+  cell: info => info.getValue() || '-'
+}),
+
+
+    columnHelper.accessor('vehicle_type_name', {
       header: ({ column }) => getSortableHeader('VEHICLE TYPE', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
     }),
 
-      columnHelper.accessor('bodyTypes', {
+    columnHelper.accessor('body_type_name', {
       header: ({ column }) => getSortableHeader('BODY TYPE', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
     }),
-      columnHelper.accessor('engineTypes', {
+
+    columnHelper.accessor('engine_name', {
       header: ({ column }) => getSortableHeader('ENGINE TYPE', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
     }),
 
-      columnHelper.accessor('fuelTypes', {
+    columnHelper.accessor('fuel_name', {
       header: ({ column }) => getSortableHeader('FUEL TYPE', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
     }),
-      columnHelper.accessor('gearboxes', {
-      header: ({ column }) => getSortableHeader('GEARBOX TYPE', column),
-      cell: info => info.getValue()
-    }),
-      columnHelper.accessor('transmission', {
+
+    columnHelper.accessor('transmission', {
       header: ({ column }) => getSortableHeader('TRANSMISSION', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
     }),
-      columnHelper.accessor('seating_capacity', {
+
+    columnHelper.accessor('seating_capacity', {
       header: ({ column }) => getSortableHeader('SEATING CAPACITY', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
     }),
 
-      columnHelper.accessor('mileage', {
-      header: ({ column }) => getSortableHeader('MILEAGE', column),
-      cell: info => info.getValue()
+    columnHelper.accessor('power', {
+      header: ({ column }) => getSortableHeader('POWER', column),
+      cell: info => info.getValue() || '-'
     }),
 
-     columnHelper.accessor('no_of_weels', {
+    columnHelper.accessor('no_of_weels', {
       header: ({ column }) => getSortableHeader('NO OF WHEELS', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
     }),
 
-
-      columnHelper.accessor('tank', {
+    columnHelper.accessor('tank_capacity', {
       header: ({ column }) => getSortableHeader('TANK CAPACITY', column),
-      cell: info => info.getValue()
+      cell: info => info.getValue() || '-'
+    }),
+
+    columnHelper.accessor('remarks', {
+      header: ({ column }) => getSortableHeader('REMARKS', column),
+      cell: info => info.getValue() || '-'
+    }),
+
+
+columnHelper.accessor('color_name', {
+  header: ({ column }) => getSortableHeader('COLOR', column),
+  cell: info => {
+    const colorValue = info.getValue()
+
+    // Handle missing or invalid color
+    if (!colorValue) return '-'
+
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {/* Color preview circle */}
+        <Box
+          sx={{
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            backgroundColor: colorValue,
+            border: '1px solid #ccc'
+          }}
+        />
+
+      </Box>
+    )
+  }
+}),
+
+
+    columnHelper.accessor('cylinder_no', {
+      header: ({ column }) => getSortableHeader('CYLINDER', column),
+      cell: info => info.getValue() || '-'
     }),
 
 
 
 
 
+    columnHelper.accessor('mileage_name', {
+      header: ({ column }) => getSortableHeader('MILEAGE', column),
+      cell: info => info.getValue() || '-'
+    }),
 
-
-    columnHelper.accessor('is_active', {
+     columnHelper.accessor('is_active', {
       header: 'STATUS',
       enableSorting: false,
       cell: info => {
@@ -419,7 +457,7 @@ const VehicleModel = () => {
         )
       }
     })
-  ]
+  ].filter(Boolean)
 
   const table = useReactTable({
     data,
@@ -495,7 +533,7 @@ const VehicleModel = () => {
             </Link>
             {' / '}
             <Link href='/vehicle-model' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-            Vehicle Model
+              Vehicle Model
             </Link>
           </div>
         </div>
@@ -641,6 +679,7 @@ const VehicleModel = () => {
         />
       </Card>
 
+      {/* AddModelWindow component */}
       <AddModelWindow open={open} setOpen={setOpen} onSaveCategory={handleSaveCategory} editingRow={editingRow} />
     </>
   )

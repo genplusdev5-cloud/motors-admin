@@ -70,13 +70,13 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
 
   const handleSave = () => {
     if (!data.name.trim()) {
-      alert('Year is required!')
+      toast('⚠️ year is required.')
 
       return
     }
 
     if (!/^\d{4}$/.test(data.name.trim())) {
-      alert('Year must be a 4-digit number!')
+      toast('Year must be a 4-digit number!')
 
       return
     }

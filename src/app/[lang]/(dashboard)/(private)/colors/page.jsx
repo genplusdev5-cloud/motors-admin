@@ -118,9 +118,9 @@ const Color = () => {
   }
 
   // Delete category handler
- const handleDelete = async id => {
+  const handleDelete = async id => {
     Swal.fire({
-      text: 'Are you sure you want to delete this vehicle make ?',
+      text: 'Are you sure you want to delete this color ?',
 
       showCancelButton: true,
       confirmButtonText: 'Delete',
@@ -173,13 +173,6 @@ const Color = () => {
       }
     })
   }
-
-
-
-
-
-
-
 
   // --- Fetch categories on initial load
   useEffect(() => {
@@ -301,39 +294,67 @@ const Color = () => {
       ),
       enableSorting: false
     }),
-  columnHelper.accessor('name', {
-            header: ({ column }) => getSortableHeader('COLOR', column), // Changed header from NAME to COLOR
-            cell: info => {
-                const colorValue = info.getValue()
 
-                // Check if it's a valid hex color (basic check)
-                const isHexColor = /^#([0-9A-F]{3}){1,2}$/i.test(colorValue)
+    columnHelper.accessor('name', {
+      header: ({ column }) => getSortableHeader('COLOR', column),
+      cell: info => {
+        const colorValue = info.getValue()
 
-                if (!isHexColor) {
-                    return colorValue // Return the name if not a valid hex color
-                }
+        // Handle missing or invalid color
+        if (!colorValue) return '-'
 
-                return (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        {/* The small color swatch container */}
-                        <Box
-                            sx={{
-                                width: 20,
-                                height: 20,
-                                borderRadius: '4px',
-                                border: `1px solid ${theme.palette.divider}`,
-                                backgroundColor: colorValue, // Use the color value
-                                flexShrink: 0
-                            }}
-                        />
-                        {/* The color value/name itself */}
-                        <Typography variant='body2' sx={{ color: theme.palette.text.primary }}>
-                            {colorValue}
-                        </Typography>
-                    </Box>
-                )
-            }
-        }),
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Color preview circle */}
+            <Box
+              sx={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                backgroundColor: colorValue,
+                border: '1px solid #ccc'
+              }}
+            />
+
+          </Box>
+        )
+      }
+    }),
+
+
+    // columnHelper.accessor('name', {
+    //   header: ({ column }) => getSortableHeader('COLOR', column), // Changed header from NAME to COLOR
+    //   cell: info => {
+    //     const colorValue = info.getValue()
+
+    //     // Check if it's a valid hex color (basic check)
+    //     const isHexColor = /^#([0-9A-F]{3}){1,2}$/i.test(colorValue)
+
+    //     if (!isHexColor) {
+    //       return colorValue // Return the name if not a valid hex color
+    //     }
+
+    //     return (
+    //       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+    //         {/* The small color swatch container */}
+    //         <Box
+    //           sx={{
+    //             width: 20,
+    //             height: 20,
+    //             borderRadius: '4px',
+    //             border: `1px solid ${theme.palette.divider}`,
+    //             backgroundColor: colorValue, // Use the color value
+    //             flexShrink: 0
+    //           }}
+    //         />
+    //         {/* The color value/name itself */}
+    //         <Typography variant='body2' sx={{ color: theme.palette.text.primary }}>
+    //           {colorValue}
+    //         </Typography>
+    //       </Box>
+    //     )
+    //   }
+    // }),
 
     columnHelper.accessor('description', {
       header: ({ column }) => getSortableHeader('DESCRIPTION', column),

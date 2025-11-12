@@ -124,7 +124,7 @@ const FuelType = () => {
 
   const handleDelete = async id => {
     Swal.fire({
-      text: 'Are you sure you want to delete this category?',
+      text: 'Are you sure you want to delete this Fuel type?',
 
       showCancelButton: true,
       confirmButtonText: 'Delete',

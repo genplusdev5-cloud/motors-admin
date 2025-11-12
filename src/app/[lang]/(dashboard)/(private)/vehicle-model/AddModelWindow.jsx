@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 
-// MUI Imports
 import Grid from '@mui/material/Grid2'
 import Dialog from '@mui/material/Dialog'
 import Button from '@mui/material/Button'
@@ -12,8 +11,14 @@ import DialogActions from '@mui/material/DialogActions'
 import Divider from '@mui/material/Divider'
 import { styled, useTheme } from '@mui/material/styles'
 import Autocomplete from '@mui/material/Autocomplete'
+import TextField from '@mui/material/TextField'
+import { MenuItem, Chip } from '@mui/material'
+import Box from '@mui/material/Box'
 
-// Custom Imports
+import Checkbox from '@mui/material/Checkbox'
+import ListItemText from '@mui/material/ListItemText'
+
+// Custom
 import DialogCloseButton from './closebtn'
 import CustomTextField from '@core/components/mui/TextField'
 
@@ -26,10 +31,12 @@ import {
   getBodyType,
   getEngineType,
   getFuel,
-  getGearBox
+  getColor,
+  getMileage,
+  getCylinder
 } from '@/services/vehicleModelApi'
 
-// Style component to add the red asterisk for required fields
+// Label with required star
 const LabelWithStar = styled('span')({
   '&::before': {
     content: '"*"',
@@ -44,20 +51,24 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
   const [data, setData] = useState({
     id: null,
     name: '',
-    categoryId: '',
-    subCategoryId: '',
-    vehicleMakeId: '',
-    vehicleTypeId: '',
-    bodyTypeId: '',
-    engineTypeId: '',
-    fuelTypeId: '',
-    gearboxId: '',
+    category_id: '',
+    subcategory_id: '',
+    make_id: '',
+    make_name: '',
+    vehicle_type_name: '',
+    vehicle_type_id: '',
+    body_type_id: '',
+    engine_type_id: '',
+    fuel_type_id: '',
     transmission: '',
-    seatingCapacity: '',
+    seating_capacity: '',
     power: '',
-    noOfWheels: '',
-    tankCapacity: '',
-    remarks: ''
+    no_of_weels: '',
+    tank_capacity: '',
+    remarks: '',
+    color_id: '',
+    mileage_id: '',
+    cylinder_no: ''
   })
 
   const [categories, setCategories] = useState([])
@@ -67,17 +78,19 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
   const [bodyTypes, setBodyTypes] = useState([])
   const [engineTypes, setEngineTypes] = useState([])
   const [fuelTypes, setFuelTypes] = useState([])
-  const [gearBoxes, setGearBoxes] = useState([])
   const [loading, setLoading] = useState(false)
+  const [colors, setColors] = useState([])
+  const [mileages, setMileages] = useState([])
+  const [cylinderNo, setCylinderNo] = useState([])
 
-  // Load dropdowns
+  // Load dropdown data
   useEffect(() => {
     if (open) {
       const fetchAll = async () => {
         setLoading(true)
 
         try {
-          const [cat, subCat, make, vType, body, engine, fuel, gear] = await Promise.all([
+          const [cat, subCat, make, vehicleTypes, body, engine, fuel, color, mileage, cylinder] = await Promise.all([
             getCategories(),
             getSubCategories(),
             getVehicleMake(),
@@ -85,17 +98,21 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
             getBodyType(),
             getEngineType(),
             getFuel(),
-            getGearBox()
+            getColor(),
+            getMileage(),
+            getCylinder()
           ])
 
           setCategories(cat)
           setSubCategories(subCat)
           setVehicleMakes(make)
-          setVehicleTypes(vType)
+          setVehicleTypes(vehicleTypes)
           setBodyTypes(body)
           setEngineTypes(engine)
           setFuelTypes(fuel)
-          setGearBoxes(gear)
+          setColors(color)
+          setMileages(mileage)
+          setCylinderNo(cylinder)
         } catch (err) {
           console.error('Error loading dropdowns:', err)
         } finally {
@@ -111,42 +128,27 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
   useEffect(() => {
     if (editingRow) {
       setData({
-        id: editingRow.id,
+        id: editingRow.id || null,
         name: editingRow.name || '',
-        categoryId: editingRow.categoryId || '',
-        subCategoryId: editingRow.subCategoryId || '',
-        vehicleMakeId: editingRow.vehicleMakeId || '',
-        vehicleTypeId: editingRow.vehicleTypeId || '',
-        bodyTypeId: editingRow.bodyTypeId || '',
-        engineTypeId: editingRow.engineTypeId || '',
-        fuelTypeId: editingRow.fuelTypeId || '',
-        gearboxId: editingRow.gearboxId || '',
+        category_id: editingRow.category_id || '',
+        subcategory_id: editingRow.subcategory_id || '',
+        make_id: editingRow.make_id || '',
+        vehicle_type_id: editingRow.vehicle_type_id || '',
+        body_type_id: editingRow.body_type_id || '',
+        engine_type_id: editingRow.engine_type_id || '',
+        fuel_type_id: editingRow.fuel_type_id || '',
         transmission: editingRow.transmission || '',
-        seatingCapacity: editingRow.seating_capacity || '',
+        seating_capacity: editingRow.seating_capacity || '',
         power: editingRow.power || '',
-        noOfWheels: editingRow.no_of_weels || '',
-        tankCapacity: editingRow.tank || '',
-        remarks: editingRow.remarks || ''
+        no_of_weels: editingRow.no_of_weels || '',
+        tank_capacity: editingRow.tank_capacity || '',
+        remarks: editingRow.remarks || '',
+        color_id: editingRow.color_id || '',
+        mileage_id: editingRow.mileage || '',
+        cylinder_no: editingRow.cylinder || ''
       })
     } else {
-      setData({
-        id: null,
-        name: '',
-        categoryId: '',
-        subCategoryId: '',
-        vehicleMakeId: '',
-        vehicleTypeId: '',
-        bodyTypeId: '',
-        engineTypeId: '',
-        fuelTypeId: '',
-        gearboxId: '',
-        transmission: '',
-        seatingCapacity: '',
-        power: '',
-        noOfWheels: '',
-        tankCapacity: '',
-        remarks: ''
-      })
+      setData(prev => ({ ...prev, id: null }))
     }
   }, [editingRow, open])
 
@@ -158,21 +160,31 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
 
   const handleSave = () => {
     if (!data.name) {
-      alert('Name is required')
+      toast('⚠️ Name is required.')
 
       return
     }
 
     if (typeof onSaveCategory === 'function') {
-      onSaveCategory(data, data.id)
+      onSaveCategory(data, data.id) // Parent handles API save and refresh
       handleClose()
     } else {
-      console.error('onSaveCategory prop is missing or not a function!')
+      console.error('onSaveCategory is not provided or not a function')
     }
   }
 
   const modalTitle = editingRow ? 'Edit Vehicle Model' : 'Add Vehicle Model'
   const actionButtonText = editingRow ? 'Update' : 'Add'
+
+  const renderCylinderValue = selected => (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+           {' '}
+      {selected.map(value => {
+        return <Chip key={value} size='small' label={value} />
+      })}
+         {' '}
+    </Box>
+  )
 
   return (
     <Dialog
@@ -194,7 +206,6 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
 
       <DialogContent sx={{ pt: 1 }}>
         <Grid container spacing={5}>
-          {/* Vehicle Name */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <CustomTextField
               label={<LabelWithStar>Name</LabelWithStar>}
@@ -204,117 +215,375 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
             />
           </Grid>
 
-          {/* Category */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <Autocomplete
               fullWidth
-              loading={loading}
               options={categories}
               getOptionLabel={option => option.name || ''}
-              value={categories.find(opt => opt.id === data.categoryId) || null}
-              onChange={(e, newValue) => handleChange('categoryId', newValue ? newValue.id : '')}
+              value={categories.find(cat => cat.id === data.category_id) || null}
+              onChange={(event, newValue) => handleChange('category_id', newValue ? newValue.id : '')}
               renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Category</LabelWithStar>} />}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
             />
           </Grid>
 
-          {/* SubCategory */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+          {/* <Grid size={{ xs: 12, sm: 6 }}>
+            <CustomTextField
+              select
+              label={<LabelWithStar>Category</LabelWithStar>}
+              fullWidth
+              value={data.category_id}
+              onChange={e => handleChange('category_id', e.target.value)}
+              SelectProps={{ displayEmpty: true }}
+            >
+              {categories.map(category => (
+                <MenuItem key={category.id} value={category.id}>
+                  {category.name}
+
+                </MenuItem>
+              ))}
+            </CustomTextField>
+          </Grid> */}
+
+          {/* ----------------------------------subcategory--------------------------------------- */}
+
+          {/* <Grid size={{ xs: 6 }}>
+            <CustomTextField
+              select
+              label={<LabelWithStar>Sub Category</LabelWithStar>}
+              fullWidth
+              value={data.subcategory_id}
+              onChange={e => handleChange('subcategory_id', e.target.value)}
+              SelectProps={{ displayEmpty: true }}
+            >
+              {subCategories.map(subCategory => (
+                <MenuItem key={subCategory.id} value={subCategory.id}>
+                  {subCategory.subcategory_name || subCategory.name}
+                </MenuItem>
+              ))}
+            </CustomTextField>
+          </Grid> */}
+
+          <Grid size={{ xs: 6 }}>
             <Autocomplete
               fullWidth
-              loading={loading}
               options={subCategories}
-              getOptionLabel={option => option.name || ''}
-              value={subCategories.find(opt => opt.id === data.subCategoryId) || null}
-              onChange={(e, newValue) => handleChange('subCategoryId', newValue ? newValue.id : '')}
-              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>SubCategory</LabelWithStar>} />}
+              getOptionLabel={option => option.subcategory_name || option.name || ''}
+              value={subCategories.find(sub => sub.id === data.subcategory_id) || null}
+              onChange={(event, newValue) => handleChange('subcategory_id', newValue ? newValue.id : '')}
+              renderInput={params => (
+                <CustomTextField {...params} label={<LabelWithStar>Sub Category</LabelWithStar>} />
+              )}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
             />
           </Grid>
 
-          {/* Vehicle Make */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+          {/* -------------------------------make------------------------------ */}
+
+          {/* <Grid size={{ xs: 6 }}>
+            <CustomTextField
+              select
+              label={<LabelWithStar>Make</LabelWithStar>}
+              fullWidth
+              value={data.make_id}
+              onChange={e => handleChange('make_id', e.target.value)}
+              SelectProps={{ displayEmpty: true }}
+            >
+              {vehicleMakes.map(makeList => (
+                <MenuItem key={makeList.id} value={makeList.id}>
+                  {makeList.make_name || makeList.name}
+                </MenuItem>
+              ))}
+            </CustomTextField>
+          </Grid> */}
+
+          <Grid size={{ xs: 6 }}>
             <Autocomplete
               fullWidth
               options={vehicleMakes}
-              getOptionLabel={option => option.name || ''}
+              getOptionLabel={option => option.make_name || option.name || ''}
+              value={vehicleMakes.find(make => make.id === data.make_id) || null}
+              onChange={(event, newValue) => handleChange('make_id', newValue ? newValue.id : '')}
+              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Make</LabelWithStar>} />}
               isOptionEqualToValue={(option, value) => option.id === value.id}
-              renderOption={(props, option) => (
-                <li {...props} key={option.id}>
-                  {' '}
-                  {/* ✅ unique key */}
-                  {option.name}
-                </li>
-              )}
-              value={vehicleMakes.find(opt => opt.id === data.vehicleMakeId) || null}
-              onChange={(e, newValue) => handleChange('vehicleMakeId', newValue ? newValue.id : '')}
-              renderInput={params => <CustomTextField {...params} label='Vehicle Make' />}
             />
           </Grid>
 
-          {/* Vehicle Type */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+          {/* ----------------------------vehicle type------------------------------------------------------ */}
+
+          {/* <Grid size={{ xs: 6 }}>
+            <CustomTextField
+              select
+              label={<LabelWithStar>Vehicle Type</LabelWithStar>}
+              fullWidth
+              value={data.vehicle_type_id}
+              onChange={e => handleChange('vehicle_type_id', parseInt(e.target.value, 10))}
+              SelectProps={{ displayEmpty: true }}
+            >
+              {vehicleTypes.map(vehicle => (
+                <MenuItem key={vehicle.id} value={vehicle.id}>
+                  {vehicle.vehicle_type_name || vehicle.name}
+                </MenuItem>
+              ))}
+            </CustomTextField>
+          </Grid> */}
+
+          <Grid size={{ xs: 6 }}>
             <Autocomplete
               fullWidth
               options={vehicleTypes}
-              getOptionLabel={option => option.name || ''}
-              value={vehicleTypes.find(opt => opt.id === data.vehicleTypeId) || null}
-              onChange={(e, newValue) => handleChange('vehicleTypeId', newValue ? newValue.id : '')}
+              getOptionLabel={option => option.vehicle_type_name || option.name || ''}
+              value={vehicleTypes.find(v => v.id === data.vehicle_type_id) || null}
+              onChange={(event, newValue) => handleChange('vehicle_type_id', newValue ? parseInt(newValue.id, 10) : '')}
               renderInput={params => (
                 <CustomTextField {...params} label={<LabelWithStar>Vehicle Type</LabelWithStar>} />
               )}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
             />
           </Grid>
 
-          {/* Body Type */}
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Autocomplete
+          {/*------------------------engine type------------------------------------------------------------------------  */}
+
+          {/* <Grid size={{ xs: 12, sm: 6 }}>
+            <CustomTextField
+              select
+              label={<LabelWithStar>Engine Type</LabelWithStar>}
               fullWidth
-              options={bodyTypes}
-              getOptionLabel={option => option.name || ''}
-              value={bodyTypes.find(opt => opt.id === data.bodyTypeId) || null}
-              onChange={(e, newValue) => handleChange('bodyTypeId', newValue ? newValue.id : '')}
-              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Body Type</LabelWithStar>} />}
-            />
-          </Grid>
-
-          {/* Engine Type */}
+              value={data.enginee_type_id}
+              onChange={e => handleChange('enginee_type_id', parseInt(e.target.value, 10))}
+              SelectProps={{ displayEmpty: true }}
+            >
+              {engineTypes.map(engine => (
+                <MenuItem key={engine.id} value={engine.id}>
+                  {engine.engine_name || engine.name}
+                </MenuItem>
+              ))}
+            </CustomTextField>
+          </Grid> */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <Autocomplete
               fullWidth
               options={engineTypes}
-              getOptionLabel={option => option.name || ''}
-              value={engineTypes.find(opt => opt.id === data.engineTypeId) || null}
-              onChange={(e, newValue) => handleChange('engineTypeId', newValue ? newValue.id : '')}
+              getOptionLabel={option => option.engine_name || option.name || ''}
+              value={engineTypes.find(engine => engine.id === data.enginee_type_id) || null}
+              onChange={(event, newValue) => handleChange('enginee_type_id', newValue ? parseInt(newValue.id, 10) : '')}
               renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Engine Type</LabelWithStar>} />}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
             />
           </Grid>
 
-          {/* Fuel Type */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+          {/* -------------------------------Body Type ------------------------------------------------------------------*/}
+          {/* <Grid size={{ xs: 6 }}>
+            <CustomTextField
+              select
+              label={<LabelWithStar>Body Type</LabelWithStar>}
+              fullWidth
+              value={data.body_type_id}
+              onChange={e => handleChange('body_type_id', e.target.value)}
+              SelectProps={{ displayEmpty: true }}
+            >
+              {bodyTypes.map(body => (
+                <MenuItem key={body.id} value={body.id}>
+                  {body.body_type_name || body.name}
+                </MenuItem>
+              ))}
+            </CustomTextField>
+          </Grid> */}
+
+          <Grid size={{ xs: 6 }}>
+            <Autocomplete
+              fullWidth
+              options={bodyTypes}
+              getOptionLabel={option => option.body_type_name || option.name || ''}
+              value={bodyTypes.find(body => body.id === data.body_type_id) || null}
+              onChange={(event, newValue) => handleChange('body_type_id', newValue ? newValue.id : '')}
+              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Body Type</LabelWithStar>} />}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+            />
+          </Grid>
+
+          {/*-------------------------------------------- Fuel Type ------------------------------------*/}
+
+          {/* <Grid size={{ xs: 6 }}>
+            <CustomTextField
+              select
+              label={<LabelWithStar>Fuel Type</LabelWithStar>}
+              fullWidth
+              value={data.fuel_type_id}
+              onChange={e => handleChange('fuel_type_id', e.target.value)}
+              SelectProps={{ displayEmpty: true }}
+            >
+              {fuelTypes.map(fuel => (
+                <MenuItem key={fuel.id} value={fuel.id}>
+                  {fuel.fuel_name || fuel.name}
+                </MenuItem>
+              ))}
+            </CustomTextField>
+          </Grid> */}
+
+          <Grid size={{ xs: 6 }}>
             <Autocomplete
               fullWidth
               options={fuelTypes}
-              getOptionLabel={option => option.name || ''}
-              value={fuelTypes.find(opt => opt.id === data.fuelTypeId) || null}
-              onChange={(e, newValue) => handleChange('fuelTypeId', newValue ? newValue.id : '')}
+              getOptionLabel={option => option.fuel_name || option.name || ''}
+              value={fuelTypes.find(fuel => fuel.id === data.fuel_type_id) || null}
+              onChange={(event, newValue) => handleChange('fuel_type_id', newValue ? newValue.id : '')}
               renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Fuel Type</LabelWithStar>} />}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
             />
           </Grid>
 
-          {/* Gearbox Type */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+          {/* ----------------------------------------Color Dropdown--------------------------------------------------------- */}
+          {/* <Grid size={{ xs: 6 }}>
+            <CustomTextField
+              select
+              label={<LabelWithStar>Color</LabelWithStar>}
+              fullWidth
+              value={data.color_id}
+              onChange={e => handleChange('color_id', e.target.value)}
+              SelectProps={{ displayEmpty: true }}
+            >
+              {colors.map(color => (
+                <MenuItem key={color.id} value={color.id}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        backgroundColor: color.color_code || color.code || color.color_name,
+                        border: '1px solid #ccc'
+                      }}
+                    />
+
+                    <span>{color.color_name || color.name}</span>
+                  </Box>
+                </MenuItem>
+              ))}
+            </CustomTextField>
+          </Grid> */}
+
+<Grid size={{ xs: 6 }}>
+  <CustomTextField
+    select
+    label={<LabelWithStar>Color</LabelWithStar>}
+    fullWidth
+    value={
+      typeof data.color_id === 'string'
+        ? data.color_id.split(',').map(id => id.trim())
+        : Array.isArray(data.color_id)
+        ? data.color_id
+        : []
+    }
+    onChange={e => {
+      const selectedIds = e.target.value
+      handleChange('color_id', selectedIds.join(','))
+    }}
+    SelectProps={{
+      multiple: true,
+      renderValue: selected => {
+        const selectedNames = colors
+          .filter(color => selected.includes(String(color.id)))
+          .map(color => color.color_name || color.name)
+        return selectedNames.join(', ')
+      },
+    }}
+  >
+    {colors.map(color => (
+      <MenuItem key={color.id} value={String(color.id)}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* 🔵 Color Preview Circle */}
+          <Box
+            sx={{
+              width: 20,
+              height: 20,
+              borderRadius: '50%',
+              backgroundColor: color.color_code || '#ccc', // fallback gray
+              border: '1px solid #ccc',
+            }}
+          />
+          {/* 🏷️ Color Name */}
+          <span>{color.color_name || color.name}</span>
+        </Box>
+      </MenuItem>
+    ))}
+  </CustomTextField>
+</Grid>
+
+
+
+
+
+
+          {/* -------------------------------cylinder---------------------------------------------- */}
+
+          <Grid size={{ xs: 6 }}>
+            <CustomTextField
+              select
+              fullWidth
+              label={<LabelWithStar>Cylinders</LabelWithStar>}
+
+              value={
+                typeof data.cylinder_no === 'string' && data.cylinder_no
+                  ? data.cylinder_no.split(',').map(s => s.trim())
+                  : []
+              }
+              onChange={e => handleChange('cylinder_no', e.target.value.join(', '))}
+              SelectProps={{
+                multiple: true,
+                renderValue: selected => selected.join(', ')
+              }}
+            >
+              {Array.isArray(cylinderNo) &&
+                cylinderNo.map(cylinder => {
+                  const value = cylinder.name || cylinder.cylinder_name
+
+                  return (
+                    <MenuItem key={value} value={value}>
+                      {cylinder.cylinder_name || cylinder.name}
+                    </MenuItem>
+                  )
+                })}
+            </CustomTextField>
+          </Grid>
+
+
+
+          {/* -----------------------------------Mileage Dropdown------------------------------------ */}
+          {/* <Grid size={{ xs: 6 }}>
+            <CustomTextField
+              select
+              label={<LabelWithStar>Mileage</LabelWithStar>}
+              fullWidth
+              value={data.mileage_id} // Use separate state
+              onChange={e => handleChange('mileage_id', e.target.value)}
+              SelectProps={{ displayEmpty: true }}
+            >
+              {mileages.map(
+                (
+                  mileage // You need a mileages array fetched from API
+                ) => (
+                  <MenuItem key={mileage.id} value={mileage.id}>
+                    {mileage.mileage_name || mileage.name}
+                  </MenuItem>
+                )
+              )}
+            </CustomTextField>
+          </Grid> */}
+
+          <Grid size={{ xs: 6 }}>
             <Autocomplete
               fullWidth
-              options={gearBoxes}
-              getOptionLabel={option => option.name || ''}
-              value={gearBoxes.find(opt => opt.id === data.gearboxId) || null}
-              onChange={(e, newValue) => handleChange('gearboxId', newValue ? newValue.id : '')}
-              renderInput={params => (
-                <CustomTextField {...params} label={<LabelWithStar>Gearbox Type</LabelWithStar>} />
-              )}
+              options={mileages}
+              getOptionLabel={option => option.mileage_name || option.name || ''}
+              value={mileages.find(m => m.id === data.mileage_id) || null}
+              onChange={(event, newValue) => handleChange('mileage_id', newValue ? newValue.id : '')}
+              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Mileage</LabelWithStar>} />}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
             />
           </Grid>
 
-          {/* Transmission */}
+          {/*-------------------------------- Transmission------------------------------------- */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <CustomTextField
               label='Transmission'
@@ -359,15 +628,18 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
             <CustomTextField
               label='Tank Capacity'
               fullWidth
-              value={data.tankCapacity}
-              onChange={e => handleChange('tankCapacity', e.target.value)}
+              value={data.tank_capacity}
+              onChange={e => handleChange('tank_capacity', e.target.value)}
             />
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 12 }}>
+          {/* Remarks */}
+          <Grid size={{ xs: 12 }}>
             <CustomTextField
               label='Remarks'
               fullWidth
+              multiline
+              rows={2}
               value={data.remarks}
               onChange={e => handleChange('remarks', e.target.value)}
             />
@@ -387,7 +659,6 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
         >
           Close
         </Button>
-
         <Button onClick={handleSave} variant='contained' sx={{ textTransform: 'none' }}>
           {actionButtonText}
         </Button>
@@ -397,3 +668,18 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
 }
 
 export default AddModelWindow
+
+// sutocompletre code
+
+{
+  /* <Grid size={{ xs: 12, sm: 6 }}>
+            <Autocomplete
+              fullWidth
+              options={bodyTypes}
+              getOptionLabel={option => option.body_type_name || ''}
+              value={bodyTypes.find(opt => opt.id === data.body_type_id) || null}
+              onChange={(e, newValue) => handleChange('body_type_id', newValue ? newValue.id : '')}
+              renderInput={params => <CustomTextField {...params} label={<LabelWithStar>Body Type</LabelWithStar>} />}
+            />
+          </Grid> */
+}

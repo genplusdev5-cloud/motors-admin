@@ -65,7 +65,7 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
   // ✅ When user clicks Add / Update
   const handleSave = () => {
     if (!data.name.trim()) {
-      alert(' name is required!')
+        toast('⚠️ Name is required.')
 
       return
     }
@@ -99,7 +99,7 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
         <i className='tabler-x' />
       </DialogCloseButton>
 
-      <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>{isEdit ? 'Edit Mileage ' : 'Add Milage'}</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>{isEdit ? 'Edit Cylinder ' : 'Add Cylinder'}</DialogTitle>
 
       <Divider sx={{ mx: -3, my: 2 }} />
 

@@ -12,7 +12,9 @@ export const getBannerType = async () => {
 
 // ➕ Add
 export const addBannerType = async payload => {
-  const res = await axiosInstance.post('api/banner-type-add/', payload)
+  const res = await axiosInstance.post('api/banner-type-add/', payload, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
 
   return res.data
 }
@@ -35,4 +37,3 @@ export const deleteBannerType = async id => {
 
   return res.data
 }
-

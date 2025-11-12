@@ -65,7 +65,7 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
   // ✅ When user clicks Add / Update
   const handleSave = () => {
     if (!data.name.trim()) {
-      alert(' name is required!')
+      toast('⚠️ Name is required.')
 
       return
     }

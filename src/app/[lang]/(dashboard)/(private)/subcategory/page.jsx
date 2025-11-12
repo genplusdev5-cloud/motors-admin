@@ -7,7 +7,7 @@ import Link from 'next/link'
 
 import { toast } from 'react-toastify'
 
-// MUI Imports
+// 💠 MUI Imports
 import Card from '@mui/material/Card'
 import Button from '@mui/material/Button'
 import TablePagination from '@mui/material/TablePagination'
@@ -16,10 +16,10 @@ import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
-import { MenuItem } from '@mui/material'
 import Menu from '@mui/material/Menu'
+import { MenuItem } from '@mui/material'
 
-// TanStack Table Imports
+// 💠 Table Imports
 import {
   useReactTable,
   getCoreRowModel,
@@ -30,17 +30,15 @@ import {
   getFilteredRowModel
 } from '@tanstack/react-table'
 
-// Assuming these are custom components from your project
-import Swal from 'sweetalert2' // SweetAlert library
+import Swal from 'sweetalert2'
 
+// 💠 Custom Components
 import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
 import styles from '@core/styles/table.module.css'
-
-// Modal Component (Ensure this path is correct)
 import AddModalWindow from './AddModelWindow'
 
-// 💡 NECESSARY IMPORTS for your logic
+// 💠 API imports
 import { getSubCategories, updateSubCategory, addSubCategory, deleteSubCategory } from '@/services/subCategoryApi'
 
 const columnHelper = createColumnHelper()
@@ -48,8 +46,6 @@ const columnHelper = createColumnHelper()
 const SubCategory = () => {
   const theme = useTheme()
   const router = useRouter()
-
-  // Removed unused API_URL constant
 
   const [open, setOpen] = useState(false)
   const [data, setData] = useState([])
@@ -61,9 +57,11 @@ const SubCategory = () => {
   const [anchorEl, setAnchorEl] = useState(null)
   const [selectedType, setSelectedType] = useState(null)
 
-  // 💡 HANDLERS: Modal Logic
-  const handleOpenModal = (row = null) => {
-    setEditingRow(row) // Set data for editing, or null for adding
+  const fileInputRef = useRef(null)
+
+  // 🔹 Modal handlers
+  const handleOpenModal = row => {
+    setEditingRow(row)
     setOpen(true)
   }
 
@@ -72,67 +70,48 @@ const SubCategory = () => {
     setOpen(false)
   }
 
-  // 💡 HANDLERS: File Upload Placeholder
-  const handleFileUpload = (file, type) => {
-    toast.info(`Uploading file: ${file.name} (Type: ${type}). Logic needs implementation.`)
-
-    // Your actual file upload logic using the API service goes here
-  }
-
-  // 1. FETCH DATA (Wrapped in useCallback)
+  // 🔹 Fetch data
   const fetchSubCategories = useCallback(async () => {
     setLoading(true)
 
     try {
-      const list = await getSubCategories() // ⭐ API Call to fetch data
+      const list = await getSubCategories()
 
-      // Map response structure to component structure
       const mapped = list.map(item => ({
         id: item.id,
         name: item.name ?? '',
         description: item.description ?? '',
-        category: item.category_name ?? 'N/A', // Mapped Category Name for display
+        category: item.category_name ?? '',
         category_id: item.category_id ?? '',
-        raw_is_active: item.is_active ?? 0,
-        status: item.is_active === 1 ? 'Active' : 'Inactive',
-        ...item
+        is_active: item.is_active ?? 0
       }))
 
       setData(mapped)
     } catch (error) {
       console.error('Error fetching subcategories:', error)
-      toast.error(`Error fetching data. Check console for details.`)
-      setData([])
+      toast.error('Error fetching subcategories')
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // 💡 HANDLER: Refresh button
-  const fetchCategories = () => {
-    fetchSubCategories()
-  }
-
-  // 💡 USEEFFECT: Call fetchSubCategories on component mount
   useEffect(() => {
     fetchSubCategories()
   }, [fetchSubCategories])
 
-  // 2. SAVE/UPDATE DATA (using service functions)
+  // 🔹 Save / Update handler
   const handleSaveCategory = async (payload, id) => {
     try {
-      // ✅ FRONTEND DUPLICATE CHECK
       const isDuplicate = data.some(
-        item => item.name?.trim().toLowerCase() === payload.name?.trim().toLowerCase() && item.id !== id // allow same name for editing the same record
+        item => item.name?.trim().toLowerCase() === payload.name?.trim().toLowerCase() && item.id !== id
       )
 
       if (isDuplicate) {
         toast.warning('SubCategory name already exists')
 
-        return // ❌ Stop here — don’t call the API
+        return
       }
 
-      // ✅ Proceed with API call if not duplicate
       if (id) {
         await updateSubCategory(id, payload)
         toast.success('SubCategory updated successfully!')
@@ -142,113 +121,82 @@ const SubCategory = () => {
       }
 
       handleCloseModal()
-      await fetchSubCategories() // Refresh data in the table
+      await fetchSubCategories()
     } catch (error) {
       console.error('Save subcategory error:', error)
-
-      // Get appropriate error message from backend
-      const errorMsg =
-        error.response?.data?.message || error.message || 'An error occurred while saving the subcategory.'
-
-      toast.error(errorMsg)
+      toast.error(error.response?.data?.message || 'Error saving subcategory')
     }
   }
 
-  // 3. DELETE DATA (using service function and SweetAlert)
+  // 🔹 Delete handler
+  const handleDeleteData = async id => {
+    Swal.fire({
+      text: 'Are you sure you want to delete this Subcategory?',
 
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'swal-confirm-btn',
+        cancelButton: 'swal-cancel-btn'
+      },
+      didOpen: () => {
+        const confirmBtn = Swal.getConfirmButton()
+        const cancelBtn = Swal.getCancelButton()
 
-const handleDeleteData = async id => {
-  Swal.fire({
+        // Common style
+        confirmBtn.style.textTransform = 'none'
+        cancelBtn.style.textTransform = 'none'
+        confirmBtn.style.borderRadius = '8px'
+        cancelBtn.style.borderRadius = '8px'
+        confirmBtn.style.padding = '8px 20px'
+        cancelBtn.style.padding = '8px 20px'
+        confirmBtn.style.marginLeft = '10px'
+        cancelBtn.style.marginRight = '10px'
 
-    text: 'Are you sure you want to delete this subcategory?',
+        // ✅ Confirm (Delete) Button
+        confirmBtn.style.backgroundColor = '#212c62'
+        confirmBtn.style.color = '#fff'
+        confirmBtn.style.border = '1px solid #212c62'
 
-    showCancelButton: true,
-    confirmButtonText: 'Delete',
-    cancelButtonText: 'Cancel',
-    reverseButtons: true,
-    buttonsStyling: false,
-    customClass: {
-      confirmButton: 'swal-confirm-btn',
-      cancelButton: 'swal-cancel-btn'
-    },
-    didOpen: () => {
-      const confirmBtn = Swal.getConfirmButton()
-      const cancelBtn = Swal.getCancelButton()
-
-      // Common style
-      confirmBtn.style.textTransform = 'none'
-      cancelBtn.style.textTransform = 'none'
-      confirmBtn.style.borderRadius = '8px'
-      cancelBtn.style.borderRadius = '8px'
-      confirmBtn.style.padding = '8px 20px'
-      cancelBtn.style.padding = '8px 20px'
-      confirmBtn.style.marginLeft = '10px'
-      cancelBtn.style.marginRight = '10px'
-
-      // ✅ Confirm (Delete) Button
-      confirmBtn.style.backgroundColor = '#212c62'
-      confirmBtn.style.color = '#fff'
-      confirmBtn.style.border = '1px solid #212c62'
-
-      // ❌ Cancel Button
-      cancelBtn.style.border = '1px solid #212c62'
-      cancelBtn.style.color = '#212c62'
-      cancelBtn.style.backgroundColor = 'transparent'
-    }
-  }).then(async result => {
-    if (result.isConfirmed) {
-      try {
-        await deleteSubCategory(id)
-        toast.success('Subcategory deleted successfully!')
-        await fetchSubCategories()
-      } catch (error) {
-        console.error('Delete subcategory error:', error)
-        const errorMsg =
-          error.response?.data?.message || 'Failed to delete subcategory.'
-        toast.error(errorMsg)
+        // ❌ Cancel Button
+        cancelBtn.style.border = '1px solid #212c62'
+        cancelBtn.style.color = '#212c62'
+        cancelBtn.style.backgroundColor = 'transparent'
       }
-    } else if (result.dismiss === Swal.DismissReason.cancel) {
-      toast.info('Subcategory deletion cancelled.')
-    }
-  })
-}
+    }).then(async result => {
+      if (result.isConfirmed) {
+        try {
+          await deleteSubCategory(id)
+          toast.success('SubCategory deleted successfully!')
+          await fetchSubCategories()
+        } catch (error) {
+          console.error('Delete subcategory error:', error)
 
+          const errorMsg = error.response?.data?.message || 'Failed to delete sub category.'
 
-
-
-
-  // Hidden file input logic for Export/Import functionality
-  const fileInputRef = useRef(null)
-
-  const handleExportClick = event => {
-    setAnchorEl(event.currentTarget)
+          toast.error(errorMsg)
+        }
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info('sub category deletion cancelled.')
+      }
+    })
   }
 
-  const handleClose = () => {
-    setAnchorEl(null)
-  }
 
-  // when user clicks menu item
+
+  // 🔹 File Upload & Export handlers
+  const handleExportClick = event => setAnchorEl(event.currentTarget)
+  const handleClose = () => setAnchorEl(null)
+
   const handleMenuItemClick = type => {
     setSelectedType(type)
     handleClose()
-
-    // open hidden file input
-    if (fileInputRef.current) fileInputRef.current.click()
+    fileInputRef.current?.click()
   }
 
-  // handle file selection
-  const handleFileChange = event => {
-    const file = event.target.files[0]
-
-    if (file && selectedType) {
-      handleFileUpload(file, selectedType) // custom handler placeholder
-    }
-
-    event.target.value = '' // reset input
-  }
-
-  // restrict file extensions based on type
   const getAcceptType = () => {
     switch (selectedType) {
       case 'csv':
@@ -264,38 +212,16 @@ const handleDeleteData = async id => {
     }
   }
 
-  // Utility components for table header
-  const SortIcon = ({ sortDir }) => {
-    if (sortDir === 'asc') return <i className='tabler-arrow-up' style={{ fontSize: 16 }} />
-    if (sortDir === 'desc') return <i className='tabler-arrow-down' style={{ fontSize: 16 }} />
+  const handleFileChange = e => {
+    const file = e.target.files?.[0]
 
-    return <i className='tabler-arrows-sort' style={{ fontSize: 16, opacity: 0.5 }} />
+    if (!file) return
+    toast.info(`File "${file.name}" selected for upload (${selectedType.toUpperCase()})`)
+    e.target.value = ''
   }
 
-  const getSortableHeader = (headerName, column) => (
-    <div
-      className='cursor-pointer select-none flex items-center'
-      onClick={column.getToggleSortingHandler()}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
-        justifyContent: 'space-between',
-        fontWeight: '500',
-        color: theme.palette.text.primary,
-        width: '100%'
-      }}
-    >
-      <Typography variant='subtitle2' component='span' fontWeight={500} color='inherit'>
-        {headerName}
-      </Typography>
-      {column.getCanSort() && <SortIcon sortDir={column.getIsSorted()} />}
-    </div>
-  )
-
-  // TanStack Table Column Definitions
+  // 🔹 Table columns
   const columns = [
-    // ACTIONS column
     columnHelper.accessor('action', {
       header: 'ACTIONS',
       cell: ({ row }) => (
@@ -314,24 +240,10 @@ const handleDeleteData = async id => {
       ),
       enableSorting: false
     }),
+    columnHelper.accessor('category', { header: 'CATEGORY', cell: info => info.getValue() }),
+    columnHelper.accessor('name', { header: 'NAME', cell: info => info.getValue() }),
+    columnHelper.accessor('description', { header: 'DESCRIPTION', cell: info => info.getValue() }),
 
-    // Category Name (Uses the mapped 'category' key)
-    columnHelper.accessor('category', {
-      header: ({ column }) => getSortableHeader('CATEGORY', column),
-      cell: info => info.getValue()
-    }),
-
-    columnHelper.accessor('name', {
-      header: ({ column }) => getSortableHeader('NAME', column),
-      cell: info => info.getValue()
-    }),
-
-    columnHelper.accessor('description', {
-      header: ({ column }) => getSortableHeader('DESCRIPTION', column),
-      cell: info => info.getValue()
-    }),
-
-    // Status column
     columnHelper.accessor('is_active', {
       header: 'STATUS',
       enableSorting: false,
@@ -378,7 +290,6 @@ const handleDeleteData = async id => {
     })
   ]
 
-  // TanStack Table Initialization
   const table = useReactTable({
     data,
     columns,
@@ -392,12 +303,12 @@ const handleDeleteData = async id => {
     getFilteredRowModel: getFilteredRowModel()
   })
 
-  // Component Render
+  // 🔹 Render
   return (
     <>
       <Card sx={{ p: '1.5rem' }}>
-        {/* Header and Breadcrumbs */}
-        <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: `1px solid ${theme.palette.divider}` }}>
+        {/* Header */}
+         <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: `1px solid ${theme.palette.divider}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <span style={{ fontSize: 16, fontWeight: 500, color: theme.palette.text.primary }}>SubCategory</span>
             <Button
@@ -421,7 +332,7 @@ const handleDeleteData = async id => {
             </Button>
 
             <Button
-              onClick={fetchCategories}
+              onClick={fetchSubCategories}
               startIcon={<i className='tabler-refresh' />}
               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
               size='small'
@@ -455,47 +366,27 @@ const handleDeleteData = async id => {
             </Link>
             {' / '}
             <Link href='/subcategory' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-              SubCategory
+              Subcategory
             </Link>
           </div>
         </div>
-        {/* --- */}
 
-        {/* Table Controls (Show entries, Search, Export) */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 10
-          }}
-        >
-          {/* Left: Show entries */}
+        {/* Table Controls */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <p style={{ margin: 0, color: theme.palette.text.primary }}>Show</p>
+            <p>Show</p>
             <select
               value={table.getState().pagination.pageSize}
-              onChange={e => {
-                table.setPageSize(Number(e.target.value))
-                table.setPageIndex(0)
-              }}
-              style={{
-                padding: '6px 8px',
-                borderRadius: 4,
-                border: `1px solid ${theme.palette.divider}`,
-                backgroundColor: theme.palette.background.paper,
-                color: theme.palette.text.primary
-              }}
+              onChange={e => table.setPageSize(Number(e.target.value))}
+              style={{ padding: '6px 8px', borderRadius: 4 }}
             >
               <option value={5}>5</option>
               <option value={10}>10</option>
               <option value={25}>25</option>
-              <option value={50}>50</option>
             </select>
-            <p style={{ margin: 0, color: theme.palette.text.primary }}>entries</p>
+            <p>entries</p>
           </div>
 
-          {/* Right: Search + Export dropdown */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <CustomTextField
               value={globalFilter}
@@ -504,47 +395,24 @@ const handleDeleteData = async id => {
               size='small'
               sx={{ width: '200px' }}
             />
-
-            {/* Export button */}
-            <Button
-              variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-              size='small'
-              onClick={handleExportClick}
-              sx={{
-                textTransform: 'none',
-                backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-                color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-                borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-                '&:hover': {
-                  backgroundColor:
-                    theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-                  borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
-                }
-              }}
-            >
+            <Button variant='contained' size='small' onClick={handleExportClick}>
               Export
             </Button>
-
-            {/* Menu for choosing upload type */}
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
               <MenuItem onClick={() => handleMenuItemClick('csv')}>Upload CSV</MenuItem>
               <MenuItem onClick={() => handleMenuItemClick('xlsx')}>Upload Excel (.xlsx)</MenuItem>
               <MenuItem onClick={() => handleMenuItemClick('json')}>Upload JSON</MenuItem>
               <MenuItem onClick={() => handleMenuItemClick('pdf')}>Upload PDF</MenuItem>
             </Menu>
-
-            {/* Hidden file input */}
             <input
+              ref={fileInputRef}
               type='file'
               accept={getAcceptType()}
               style={{ display: 'none' }}
-              ref={fileInputRef}
               onChange={handleFileChange}
             />
           </div>
         </div>
-
-        {/* --- */}
 
         {/* Table */}
         <div className='overflow-x-auto'>
@@ -553,32 +421,19 @@ const handleDeleteData = async id => {
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map(header => (
-                    <th key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder ? null : (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            justifyContent: 'space-between',
-                            fontWeight: '500',
-                            color: theme.palette.text.primary
-                          }}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                        </div>
-                      )}
-                    </th>
+                    <th key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</th>
                   ))}
                 </tr>
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan={columns.length} className='text-center'>
-                    {loading ? 'Loading data...' : 'No data available'}
-                  </td>
+
+                </tr>
+              ) : table.getRowModel().rows.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length}>No data available</td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map(row => (
@@ -592,7 +447,6 @@ const handleDeleteData = async id => {
             </tbody>
           </table>
         </div>
-        {/* --- */}
 
         {/* Pagination */}
         <TablePagination
@@ -604,13 +458,8 @@ const handleDeleteData = async id => {
         />
       </Card>
 
-      {/* Modal Component Render */}
-      <AddModalWindow
-        open={open}
-        setOpen={setOpen}
-        initialData={editingRow} // Pass the row data for editing (null for Add)
-        onSave={handleSaveCategory} // Pass the function that handles API call and table refresh
-      />
+      {/* Add/Edit Modal */}
+      <AddModalWindow open={open} setOpen={setOpen} initialData={editingRow} onSave={handleSaveCategory} />
     </>
   )
 }

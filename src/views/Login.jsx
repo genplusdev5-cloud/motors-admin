@@ -380,7 +380,6 @@
 
 // refresh token  old file code
 
-
 // 'use client'
 
 // import { useState } from 'react'
@@ -581,11 +580,7 @@
 
 // export default Login
 
-
 // ------NEW CODE WITH TOKEN ------------------------
-
-
-
 
 'use client'
 
@@ -705,6 +700,8 @@ const Login = ({ mode }) => {
       // Extract token safely
       let accessToken = data?.access || data?.token || data?.data?.access || data?.user?.apiToken || null
 
+      console.log('Token Access:', accessToken)
+
       if (!accessToken) {
         console.warn('⚠️ API returned no valid token')
       } else {
@@ -720,6 +717,8 @@ const Login = ({ mode }) => {
         redirect: false
       })
 
+      console.log('Login check **', signInResponse)
+
       if (signInResponse?.ok) {
         console.log('✅ NextAuth session created')
         router.replace(getLocalizedUrl('/en/dashboard', locale))
@@ -734,6 +733,56 @@ const Login = ({ mode }) => {
       setLoading(false)
     }
   }
+
+  // const onSubmit = async formData => {
+  //   setLoading(true)
+  //   setErrorMsg(null)
+
+  //   try {
+  //     // Step 1: Hit your backend login API
+  //     const res = await axiosInstance.post('api/admin/login/', {
+  //       email: formData.email,
+  //       password: formData.password
+  //     })
+
+  //     const data = res.data
+
+  //     console.log('🟢 API Response:', data)
+
+  //     // Step 2: Extract the token properly
+  //     const accessToken = data?.access || data?.token || data?.data?.access || data?.data?.token || null
+
+  //     if (!accessToken) throw new Error('No token returned from API')
+
+  //     // Step 3: Sign in with NextAuth
+  //     const signInResponse = await signIn('credentials', {
+  //       email: formData.email,
+  //       password: formData.password,
+  //       apiToken: accessToken, // ✅ pass token here!
+  //       redirect: false
+  //     })
+
+  //     console.log('🔑 NextAuth Login Response:', signInResponse)
+
+  //     if (signInResponse.ok) {
+  //       console.log('✅ NextAuth session created')
+  //       router.replace(getLocalizedUrl('/en/dashboard', locale))
+  //     } else {
+  //       console.warn('⚠️ NextAuth sign-in failed:', signInResponse)
+  //       setErrorMsg('Login failed. Please try again.')
+  //     }
+  //   } catch (err) {
+  //     console.error('❌ Login failed:', err)
+  //     setErrorMsg(err.response?.data?.message || 'Invalid email or password.')
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
+
+
+
+
+
 
   // -------------------- Render --------------------
   return (
@@ -843,4 +892,3 @@ const Login = ({ mode }) => {
 }
 
 export default Login
-

@@ -92,7 +92,8 @@ const AddModelWindow = ({ open, setOpen, onSaveCategory, editingRow }) => {
   const handleSave = () => {
     // The color input type="color" should always provide a value, but we can check if it's a valid hex.
     if (!data.name.trim() || !/^#([0-9A-F]{3}){1,2}$/i.test(data.name.trim())) {
-      alert('A valid color hex code is required!')
+       toast('⚠️ color is required.')
+
 
       return
     }
