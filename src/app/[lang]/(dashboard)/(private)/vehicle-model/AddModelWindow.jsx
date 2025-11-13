@@ -463,57 +463,54 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
             </CustomTextField>
           </Grid> */}
 
-<Grid size={{ xs: 6 }}>
-  <CustomTextField
-    select
-    label={<LabelWithStar>Color</LabelWithStar>}
-    fullWidth
-    value={
-      typeof data.color_id === 'string'
-        ? data.color_id.split(',').map(id => id.trim())
-        : Array.isArray(data.color_id)
-        ? data.color_id
-        : []
-    }
-    onChange={e => {
-      const selectedIds = e.target.value
-      handleChange('color_id', selectedIds.join(','))
-    }}
-    SelectProps={{
-      multiple: true,
-      renderValue: selected => {
-        const selectedNames = colors
-          .filter(color => selected.includes(String(color.id)))
-          .map(color => color.color_name || color.name)
-        return selectedNames.join(', ')
-      },
-    }}
-  >
-    {colors.map(color => (
-      <MenuItem key={color.id} value={String(color.id)}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {/* 🔵 Color Preview Circle */}
-          <Box
-            sx={{
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              backgroundColor: color.color_code || '#ccc', // fallback gray
-              border: '1px solid #ccc',
-            }}
-          />
-          {/* 🏷️ Color Name */}
-          <span>{color.color_name || color.name}</span>
-        </Box>
-      </MenuItem>
-    ))}
-  </CustomTextField>
-</Grid>
+          <Grid size={{ xs: 6 }}>
+            <CustomTextField
+              select
+              label={<LabelWithStar>Color</LabelWithStar>}
+              fullWidth
+              value={
+                typeof data.color_id === 'string'
+                  ? data.color_id.split(',').map(id => id.trim())
+                  : Array.isArray(data.color_id)
+                    ? data.color_id
+                    : []
+              }
+              onChange={e => {
+                const selectedIds = e.target.value
 
+                handleChange('color_id', selectedIds.join(','))
+              }}
+              SelectProps={{
+                multiple: true,
+                renderValue: selected => {
+                  const selectedNames = colors
+                    .filter(color => selected.includes(String(color.id)))
+                    .map(color => color.color_name || color.name)
 
-
-
-
+                  return selectedNames.join(', ')
+                }
+              }}
+            >
+              {colors.map(color => (
+                <MenuItem key={color.id} value={String(color.id)}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {/* 🔵 Color Preview Circle */}
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        backgroundColor: color.color_code || '#ccc', // fallback gray
+                        border: '1px solid #ccc'
+                      }}
+                    />
+                    {/* 🏷️ Color Name */}
+                    <span>{color.color_name || color.name}</span>
+                  </Box>
+                </MenuItem>
+              ))}
+            </CustomTextField>
+          </Grid>
 
           {/* -------------------------------cylinder---------------------------------------------- */}
 
@@ -522,7 +519,6 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
               select
               fullWidth
               label={<LabelWithStar>Cylinders</LabelWithStar>}
-
               value={
                 typeof data.cylinder_no === 'string' && data.cylinder_no
                   ? data.cylinder_no.split(',').map(s => s.trim())
@@ -546,8 +542,6 @@ const AddModelWindow = ({ open, setOpen, editingRow, onSaveCategory }) => {
                 })}
             </CustomTextField>
           </Grid>
-
-
 
           {/* -----------------------------------Mileage Dropdown------------------------------------ */}
           {/* <Grid size={{ xs: 6 }}>
