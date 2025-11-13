@@ -47,7 +47,7 @@ export const authOptions = {
         return null
           }
 
-          // ✅ Extract token correctly from nested structure
+  
           const token =
             data?.access ||
             data?.token ||
