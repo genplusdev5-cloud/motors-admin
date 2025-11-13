@@ -694,11 +694,6 @@
 
 // export default Company
 
-
-
-
-
-
 // ----------------------correct file code with apis ----------------------------------------------------
 
 'use client'
@@ -908,9 +903,13 @@ const Company = () => {
     }
   }
 
+  //   useEffect(() => {
+  //   fetchCompanyData()
+  // }, [])
+
   useEffect(() => {
     fetchCompanyData()
-  }, [])
+  })
 
   const handleReset = () => {
     setTouched({})
