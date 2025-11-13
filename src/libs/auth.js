@@ -30,7 +30,7 @@ export const authOptions = {
           }
 
           // Otherwise, perform login via backend
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/login/`, {
+          const res = await fetch('https://motor-match.genplusinnovations.com/api/admin/login/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
