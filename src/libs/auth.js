@@ -47,7 +47,7 @@ export const authOptions = {
         return null
           }
 
-  
+
           const token =
             data?.access ||
             data?.token ||

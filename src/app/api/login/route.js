@@ -4,7 +4,7 @@ export async function POST(req) {
     const body = await req.json()
 
     // 🔗 Backend API endpoint
-    const response = await fetch('https://motor-match.genplusinnovations.com/api/login', {
+    const response = await fetch('https://motor-match.genplusinnovations.com/api/admin/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
