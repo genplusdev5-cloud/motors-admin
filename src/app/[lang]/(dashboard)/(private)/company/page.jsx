@@ -696,6 +696,8 @@
 
 // ----------------------correct file code with apis ----------------------------------------------------
 
+
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -903,13 +905,13 @@ const Company = () => {
     }
   }
 
-  //   useEffect(() => {
-  //   fetchCompanyData()
-  // }, [])
-
-  useEffect(() => {
+    useEffect(() => {
     fetchCompanyData()
-  })
+  }, [])
+
+  // useEffect(() => {
+  //   fetchCompanyData()
+  // })
 
   const handleReset = () => {
     setTouched({})
