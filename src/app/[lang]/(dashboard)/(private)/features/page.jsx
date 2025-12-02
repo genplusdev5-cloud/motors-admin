@@ -40,8 +40,7 @@ import styles from '@core/styles/table.module.css'
 // Modal Component (Ensure this path is correct)
 import AddModalWindow from './AddModelWindow'
 
-// 💡 NECESSARY IMPORTS for your logic
-import { getSubCategories, updateSubCategory, addSubCategory, deleteSubCategory } from '@/services/subCategoryApi'
+
 
 const columnHelper = createColumnHelper()
 

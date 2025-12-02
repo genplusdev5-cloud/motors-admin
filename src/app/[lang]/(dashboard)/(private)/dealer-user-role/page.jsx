@@ -35,14 +35,7 @@ import {
 import TablePaginationComponent from '@components/TablePaginationComponent'
 import CustomTextField from '@core/components/mui/TextField'
 
-import {
- getDealerModulesList,
-   getDealerRole,
-   addDealerRole,
-   updateDealerRole,
-   deleteDealerRole,
-   duplicateDealerRole
-} from '@/services/dealerPriviledgesApi'
+
 
 import styles from '@core/styles/table.module.css'
 import AddModelWindow from './AddModelWindow'

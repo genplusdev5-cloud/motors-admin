@@ -35,14 +35,7 @@ import {
 import TablePaginationComponent from '@components/TablePaginationComponent'
 import CustomTextField from '@core/components/mui/TextField'
 
-import {
-  getAdminModulesList,
-  getAdminRole,
-  addAdminRole,
-  updateAdminRole,
-  deleteAdminRole,
-  duplicateAdminRole
-} from '@/services/adminPriviledgesApi'
+
 
 import styles from '@core/styles/table.module.css'
 import AddModelWindow from './AddModelWindow'

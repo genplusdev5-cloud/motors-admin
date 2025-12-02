@@ -17,9 +17,7 @@ import { MenuItem } from '@mui/material'
 import DialogCloseButton from './closebtn'
 import CustomTextField from '@core/components/mui/TextField'
 
-// 💡 NEW: Import the API function for categories
-// You must adjust this path to where your subCategoryApi.js file is located
-import { getCategories } from '@/services/subCategoryApi'
+
 
 // Style for required field star
 const LabelWithStar = styled('span')({

@@ -74,8 +74,7 @@ export default FooterContent
 // import useVerticalNav from '@menu/hooks/useVerticalNav'
 // import { verticalLayoutClasses } from '@layouts/utils/layoutClasses'
 
-// // ✅ Import API functions
-// import { playerId, sendNotification, getNotificationKeys } from '@/services/notificationApi'
+
 
 // const FooterContent = () => {
 //   const { isBreakpointReached } = useVerticalNav()
