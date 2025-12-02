@@ -2,11 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "downlevelIteration": true,
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ESNext"
-    ],
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,30 +15,15 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@core/*": [
-        "./src/@core/*"
-      ],
-      "@layouts/*": [
-        "./src/@layouts/*"
-      ],
-      "@menu/*": [
-        "./src/@menu/*"
-      ],
-      "@assets/*": [
-        "./src/assets/*"
-      ],
-      "@components/*": [
-        "./src/components/*"
-      ],
-      "@configs/*": [
-        "./src/configs/*"
-      ],
-      "@views/*": [
-        "./src/views/*"
-      ]
+      "@/*": ["./src/*"],
+      "@services/*": ["./src/services/*"],
+      "@core/*": ["./src/@core/*"],
+      "@layouts/*": ["./src/@layouts/*"],
+      "@menu/*": ["./src/@menu/*"],
+      "@assets/*": ["./src/assets/*"],
+      "@components/*": ["./src/components/*"],
+      "@configs/*": ["./src/configs/*"],
+      "@views/*": ["./src/views/*"]
     }
   },
   "include": [
@@ -51,7 +32,5 @@
     "**/*.js",
     "**/*.jsx"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
