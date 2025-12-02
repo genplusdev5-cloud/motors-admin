@@ -70,9 +70,9 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
 
           <MenuItem href={`/${locale}/vehicle-make`}>{'Vehicle Make'}</MenuItem>
           <MenuItem href={`/${locale}/colors`}>{'Colors'}</MenuItem>
-                 <MenuItem href={`/${locale}/mileage`}>{'Mileage'}</MenuItem>
+          <MenuItem href={`/${locale}/mileage`}>{'Mileage'}</MenuItem>
 
-           <MenuItem href={`/${locale}/vehicle-type`}>{'Vehicle Type'}</MenuItem>
+          <MenuItem href={`/${locale}/vehicle-type`}>{'Vehicle Type'}</MenuItem>
           <MenuItem href={`/${locale}/body-type`}>{'Body Type'}</MenuItem>
           <MenuItem href={`/${locale}/engine-type`}>{'Engine Type'}</MenuItem>
           <MenuItem href={`/${locale}/cylinders`}>{'Cylinders'}</MenuItem>
@@ -81,17 +81,18 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           <MenuItem href={`/${locale}/record-year`}>{'Record Year'}</MenuItem>
           <MenuItem href={`/${locale}/banners-type`}>{'Banners Type'}</MenuItem>
           <MenuItem href={`/${locale}/vehicle-model `}>{'Vehicle Model'}</MenuItem>
+          <MenuItem href={`/${locale}/subscription-type`}>{'Subscription Type'}</MenuItem>
+          <MenuItem href={`/${locale}/bank-finance`}>{'Bank & Finance'}</MenuItem>
+          <MenuItem href={`/${locale}/insurance`}>{'Insurance'}</MenuItem>
           <MenuItem href={`/${locale}/settings `}>{'Settings'}</MenuItem>
         </SubMenu>
 
-
-
         <SubMenu label='User Roles' icon={<i className='tabler-users' />}>
-          <MenuItem href={`/${locale}/admin-user-role`}>{'Admin User Roles'}</MenuItem>
-          <MenuItem href={`/${locale}/dealer-user-role`}>{'Dealer User Roles'}</MenuItem>
+          <MenuItem href={`/${locale}/admin-roles`}>{'Admin Roles'}</MenuItem>
+          <MenuItem href={`/${locale}/dealer-user-role`}>{'Dealer Roles'}</MenuItem>
         </SubMenu>
 
-         <MenuItem href={`/${locale}/plans`} icon={<i className='tabler-credit-card' />}>
+        <MenuItem href={`/${locale}/plans`} icon={<i className='tabler-credit-card' />}>
           Plans
         </MenuItem>
 

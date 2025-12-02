@@ -34,12 +34,7 @@ const UserRight = ({ tabContentList }) => {
                 label='Billing & Plans'
                 iconPosition='start'
               />
-              <Tab
-                icon={<i className='tabler-bell' />}
-                value='notifications'
-                label='Notifications'
-                iconPosition='start'
-              />
+              <Tab icon={<i className='' />} value='notifications' label='Notifications' iconPosition='start' />
               <Tab icon={<i className='tabler-link' />} value='connections' label='Connections' iconPosition='start' />
             </CustomTabList>
           </Grid>

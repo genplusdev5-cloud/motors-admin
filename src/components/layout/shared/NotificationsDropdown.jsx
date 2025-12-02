@@ -135,7 +135,7 @@ const NotificationDropdown = ({ notifications }) => {
 
   return (
     <>
-      <IconButton ref={anchorRef} onClick={handleToggle} className='text-textPrimary'>
+      {/* <IconButton ref={anchorRef} onClick={handleToggle} className='text-textPrimary'>
         <Badge
           color='error'
           className='cursor-pointer'
@@ -149,7 +149,7 @@ const NotificationDropdown = ({ notifications }) => {
         >
           <i className='tabler-bell' />
         </Badge>
-      </IconButton>
+      </IconButton> */}
       <Popper
         open={open}
         transition

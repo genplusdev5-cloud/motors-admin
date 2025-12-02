@@ -1,563 +1,486 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-
-import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import {
+  Box,
+  Button,
+  Card,
+  CardHeader,
+  Typography,
+  Menu,
+  MenuItem,
+  IconButton,
+  Divider,
+  Drawer,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Breadcrumbs,
+  Chip,
+  TextField,
+  Select,
+  FormControl,
+  InputLabel,
+  CircularProgress
+} from '@mui/material'
 
-// MUI Imports
-import Card from '@mui/material/Card'
-import Button from '@mui/material/Button'
-import TablePagination from '@mui/material/TablePagination'
-import Box from '@mui/material/Box'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
-import { useTheme } from '@mui/material/styles'
-import Typography from '@mui/material/Typography'
+import DialogCloseButton from '@components/dialogs/DialogCloseButton'
+import ProgressCircularCustomization from '@/components/common/ProgressCircularCustomization'
+import AddIcon from '@mui/icons-material/Add'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
+import CloseIcon from '@mui/icons-material/Close'
+import PrintIcon from '@mui/icons-material/Print'
+import FileDownloadIcon from '@mui/icons-material/FileDownload'
+import TableChartIcon from '@mui/icons-material/TableChart'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+import FileCopyIcon from '@mui/icons-material/FileCopy'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import RefreshIcon from '@mui/icons-material/Refresh'
 
-import { Menu, MenuItem } from '@mui/material'
+import GlobalTextField from '@/components/common/GlobalTextField'
+import GlobalTextarea from '@/components/common/GlobalTextarea'
+import GlobalSelect from '@/components/common/GlobalSelect'
+import GlobalButton from '@/components/common/GlobalButton'
 
-import { toast } from 'react-toastify'
-
-import Swal from 'sweetalert2'
-
+import classnames from 'classnames'
 import {
   useReactTable,
   getCoreRowModel,
-  getPaginationRowModel,
-  flexRender,
-  createColumnHelper,
+  getFilteredRowModel,
   getSortedRowModel,
-  getFilteredRowModel
+  flexRender,
+  createColumnHelper
 } from '@tanstack/react-table'
 
-// Updated import from corrected service file
-import { getMake, addMake, updateMake, deleteMake } from '@/services/vehicleMakeApi'
-
-// Assuming these are custom components from your project
-import CustomTextField from '@core/components/mui/TextField'
-import TablePaginationComponent from '@components/TablePaginationComponent'
 import styles from '@core/styles/table.module.css'
+import ChevronRight from '@menu/svg/ChevronRight'
 
-// Modal Component
-import AddModelWindow from './AddModelWindow'
+import { toast } from 'react-toastify'
+import { showToast } from '@/components/common/Toasts'
+import TablePaginationComponent from '@/components/TablePaginationComponent'
 
-const columnHelper = createColumnHelper()
+import { getVehicleMakeList, addVehicleMake, updateVehicleMake, deleteVehicleMake } from '@/api/vehicle-make'
+// ───────────────────────────────────────────────────────────────────────
+// Debounced Input
+// ───────────────────────────────────────────────────────────────────────
+const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
+  const [value, setValue] = useState(initialValue)
+  useEffect(() => setValue(initialValue), [initialValue])
+  useEffect(() => {
+    const t = setTimeout(() => onChange(value), debounce)
+    return () => clearTimeout(t)
+  }, [value])
+  return <TextField {...props} value={value} onChange={e => setValue(e.target.value)} />
+}
 
-const VehicleMake = () => {
-  const theme = useTheme()
-  const router = useRouter() // eslint-disable-line no-unused-vars
-
-  const [open, setOpen] = useState(false)
-  const [data, setData] = useState([])
-  const [editingRow, setEditingRow] = useState(null)
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [columnFilters, setColumnFilters] = useState([]) // eslint-disable-line no-unused-vars
-  const [sorting, setSorting] = useState([])
+// ───────────────────────────────────────────────────────────────────────
+// Main Vehicle Make Page
+// ───────────────────────────────────────────────────────────────────────
+export default function VehicleMakePage() {
+  const [rows, setRows] = useState([])
+  const [searchText, setSearchText] = useState('')
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 })
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [isEdit, setIsEdit] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, row: null })
+  const [exportAnchorEl, setExportAnchorEl] = useState(null)
+  const [unsavedAddData, setUnsavedAddData] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
-  const [anchorEl, setAnchorEl] = useState(null)
-  const [selectedType, setSelectedType] = useState(null)
+  const [formData, setFormData] = useState({
+    id: null,
+    name: '',
+    description: '',
+    status: 1,
+    imageFile: null,
+    imageUrl: ''
+  })
 
-  // --- Core Functions for Data Management ---
+  const nameRef = useRef(null)
 
-  const fetchMake = useCallback(async () => {
+  // ────────────────────────────── Load Vehicle Makes ──────────────────────────────
+  // Replace these
+  const loadMakes = async () => {
     setLoading(true)
-
     try {
-      const categoryData = await getMake()
+      const res = await getVehicleMakeList() // ← changed
+      const list = res?.data || []
 
-      setData(categoryData)
-    } catch (error) {
-      console.error('Error fetching vehicle make:', error)
-      toast.error('Failed to load Vehicle Make.')
-      setData([])
+      const normalized = list.map((item, index) => ({
+        sno: index + 1,
+        id: item.id,
+        name: item.name ?? '',
+        description: item.description ?? '',
+        image: item.image ?? '',
+        is_active: item.is_active ?? 1
+      }))
+
+      setRows(normalized)
+    } catch (err) {
+      showToast('error', 'Failed to load vehicle makes')
     } finally {
       setLoading(false)
     }
+  }
+
+  useEffect(() => {
+    loadMakes()
   }, [])
 
-  // Save category (handles both add and update by calling API)
-  const handleSaveCategory = async (categoryData, id) => {
-    try {
+  // ────────────────────────────── Drawer & Form ──────────────────────────────
+  const toggleDrawer = () => setDrawerOpen(p => !p)
 
-
-      // ✅ Proceed if not duplicate
-      if (id) {
-        await updateMake(id, categoryData)
-        toast.success('Vehicle Make updated successfully!')
-      } else {
-        await addMake(categoryData)
-        toast.success('Vehicle Make added successfully!')
-      }
-
-      handleCloseModal() // Close modal after success
-      await fetchMake() // Refresh data in the table
-    } catch (error) {
-      console.error('Save vehicle make error:', error)
-
-      const errorMsg =
-        error.response?.data?.message ||
-        error.response?.data?.detail ||
-        'An error occurred while saving the vehicle make.'
-
-      toast.error(errorMsg)
+  const handleAdd = () => {
+    setIsEdit(false)
+    if (unsavedAddData) {
+      setFormData(unsavedAddData)
+    } else {
+      setFormData({ id: null, name: '', description: '', status: 1, imageFile: null, imageUrl: '' })
     }
+    setDrawerOpen(true)
+    setTimeout(() => nameRef.current?.focus(), 100)
   }
 
-  const handleDelete = async id => {
-    Swal.fire({
-      text: 'Are you sure you want to delete this vehicle make?',
+  const handleEdit = row => {
+    setIsEdit(true)
+    setFormData({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      status: row.is_active,
+      imageFile: null,
+      imageUrl: row.image
+    })
+    setDrawerOpen(true)
+  }
 
-      showCancelButton: true,
-      confirmButtonText: 'Delete',
-      cancelButtonText: 'Cancel',
-      reverseButtons: true,
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: 'swal-confirm-btn',
-        cancelButton: 'swal-cancel-btn'
-      },
-      didOpen: () => {
-        const confirmBtn = Swal.getConfirmButton()
-        const cancelBtn = Swal.getCancelButton()
-
-        // Common style
-        confirmBtn.style.textTransform = 'none'
-        cancelBtn.style.textTransform = 'none'
-        confirmBtn.style.borderRadius = '8px'
-        cancelBtn.style.borderRadius = '8px'
-        confirmBtn.style.padding = '8px 20px'
-        cancelBtn.style.padding = '8px 20px'
-        confirmBtn.style.marginLeft = '10px'
-        cancelBtn.style.marginRight = '10px'
-
-        // ✅ Confirm (Delete) Button
-        confirmBtn.style.backgroundColor = '#212c62'
-        confirmBtn.style.color = '#fff'
-        confirmBtn.style.border = '1px solid #212c62'
-
-        // ❌ Cancel Button
-        cancelBtn.style.border = '1px solid #212c62'
-        cancelBtn.style.color = '#212c62'
-        cancelBtn.style.backgroundColor = 'transparent'
-      }
-    }).then(async result => {
-      if (result.isConfirmed) {
-        try {
-          await deleteMake(id)
-          toast.success('Vehicle Make deleted successfully!')
-          await fetchMake()
-        } catch (error) {
-          console.error('Delete Vehicle Make error:', error)
-
-          const errorMsg = error.response?.data?.message || 'Failed to delete vehicle make.'
-
-          toast.error(errorMsg)
-        }
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        toast.info('vehicle make deletion cancelled.')
-      }
+  const handleFieldChange = (field, value) => {
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value }
+      if (!isEdit) setUnsavedAddData(updated)
+      return updated
     })
   }
 
-  // --- Fetch categories on initial load
-  useEffect(() => {
-    fetchMake()
-  }, [fetchMake])
-
-  // Open modal (null => add, row object => edit)
-  const handleOpenModal = row => {
-    setEditingRow(row)
-    setOpen(true)
-  }
-
-  const handleCloseModal = () => {
-    setOpen(false)
-    setEditingRow(null)
-  }
-
-  // Hidden file input logic for export/import (retained)
-  const fileInputRef = useRef(null)
-
-  const handleExportClick = event => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const handleClose = () => {
-    setAnchorEl(null)
-  }
-
-  // 👇 when user clicks menu item
-  const handleMenuItemClick = type => {
-    setSelectedType(type)
-    handleClose()
-
-    // open hidden file input
-    if (fileInputRef.current) fileInputRef.current.click()
-  }
-
-  // 👇 handle file selection
-  const handleFileChange = event => {
-    const file = event.target.files[0]
-
-    if (file && selectedType) {
-      toast.info(`Attempting to upload ${selectedType.toUpperCase()} file: ${file.name}`)
-    }
-
-    event.target.value = '' // reset input (for re-uploading same file)
-  }
-
-  // restrict file extensions based on type
-  const getAcceptType = () => {
-    switch (selectedType) {
-      case 'csv':
-        return '.csv'
-      case 'xlsx':
-        return '.xlsx'
-      case 'json':
-        return '.json'
-      case 'pdf':
-        return '.pdf'
-      default:
-        return ''
+  const handleImageChange = e => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handleFieldChange('imageFile', file)
     }
   }
 
-  // Sorting icon & helper same as your original code
-
-  const SortIcon = ({ sortDir }) => {
-    if (sortDir === 'asc') return <i className='tabler-arrow-up' style={{ fontSize: 16 }} />
-    if (sortDir === 'desc') return <i className='tabler-arrow-down' style={{ fontSize: 16 }} />
-
-    return <i className='tabler-arrows-sort' style={{ fontSize: 16, opacity: 0.5 }} />
+  const handleCancel = () => {
+    setFormData({ id: null, name: '', description: '', status: 1, imageFile: null, imageUrl: '' })
+    setUnsavedAddData(null)
+    setDrawerOpen(false)
   }
 
-  const getSortableHeader = (headerName, column, IconComponent) => (
-    <div
-      className='cursor-pointer select-none flex items-center'
-      onClick={column.getToggleSortingHandler()}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
-        justifyContent: 'space-between',
-        fontWeight: '500',
-        color: theme.palette.text.primary,
-        width: '100%'
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        {IconComponent}
-        <Typography variant='subtitle2' component='span' fontWeight={500} color='inherit'>
-          {headerName}
-        </Typography>
-      </Box>
+  // ────────────────────────────── Submit (Add / Update) ──────────────────────────────
+  const handleSubmit = async e => {
+    e.preventDefault()
 
-      {column.getCanSort() && <SortIcon sortDir={column.getIsSorted()} />}
-    </div>
-  )
+    if (!formData.name.trim()) {
+      showToast('warning', 'Vehicle Make name is required')
+      return
+    }
 
-  const columns = [
-    columnHelper.accessor('action', {
-      header: 'ACTIONS',
-      cell: ({ row }) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Tooltip title='Edit'>
-            <IconButton onClick={() => handleOpenModal(row.original)} size='small'>
-              <i className='tabler-edit' style={{ fontSize: 20 }} />
+    if (!isEdit) {
+      const exists = rows.some(r => r.name.trim().toLowerCase() === formData.name.trim().toLowerCase())
+      if (exists) {
+        showToast('warning', 'Vehicle Make with this name already exists')
+        return
+      }
+    }
+
+    setLoading(true)
+    try {
+      const payload = new FormData()
+      payload.append('name', formData.name.trim())
+      payload.append('description', formData.description?.trim() || '')
+      payload.append('is_active', String(formData.status))
+      if (formData.imageFile) payload.append('image', formData.imageFile)
+
+      if (isEdit) {
+        await updateVehicleMake(formData.id, payload) // Fixed
+      } else {
+        await addVehicleMake(payload) // Fixed
+      }
+
+      showToast('success', isEdit ? 'Vehicle Make updated' : 'Vehicle Make added')
+      setUnsavedAddData(null)
+      setDrawerOpen(false)
+      await loadMakes()
+    } catch (err) {
+      console.error('Save error:', err)
+      showToast('error', err.response?.data?.message || 'Failed to save vehicle make')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ────────────────────────────── Delete ──────────────────────────────
+  const confirmDelete = async () => {
+    if (!deleteDialog.row) return
+    setDeleteLoading(true)
+    try {
+      await deleteVehicleMake(deleteDialog.row.id) // Fixed
+      showToast('delete', `${deleteDialog.row.name} deleted`)
+      await loadMakes()
+    } catch (err) {
+      showToast('error', err.response?.data?.message || 'Delete failed')
+    } finally {
+      setDeleteLoading(false)
+      setDeleteDialog({ open: false, row: null })
+    }
+  }
+
+  // ────────────────────────────── Table Columns ──────────────────────────────
+  const columnHelper = createColumnHelper()
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('sno', { header: 'S.No' }),
+       columnHelper.display({
+        id: 'actions',
+        header: 'Actions',
+        cell: info => (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton size='small' color='primary' onClick={() => handleEdit(info.row.original)}>
+              <i className='tabler-edit text-blue-600 text-lg' />
             </IconButton>
-          </Tooltip>
-          <Tooltip title='Delete'>
-            <IconButton onClick={() => handleDelete(row.original.id)} size='small'>
-              <i className='tabler-trash' style={{ fontSize: 20, color: theme.palette.error.main }} />
+            <IconButton
+              size='small'
+              color='error'
+              onClick={() => setDeleteDialog({ open: true, row: info.row.original })}
+            >
+              <i className='tabler-trash text-red-600 text-lg' />
             </IconButton>
-          </Tooltip>
-        </Box>
-      ),
-      enableSorting: false
-    }),
-    columnHelper.accessor('name', {
-      header: ({ column }) => getSortableHeader('NAME', column),
-      cell: info => info.getValue()
-    }),
-
-    // Vehicle Make Image column (assuming API returns a URL or file name here)
-    columnHelper.accessor('image', {
-      header: 'IMAGE',
-      enableSorting: false,
-      cell: info => {
-        const image = info.getValue()
-
-        return (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {image ? (
-              <img
-                src={image}
-                alt={info.row.original.name}
-                style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 4 }}
-              />
-            ) : (
-              <Typography variant='caption'>image</Typography>
-            )}
           </Box>
         )
-      }
-    }),
-
-
-    columnHelper.accessor('description', {
-      header: ({ column }) => getSortableHeader('DESCRIPTION', column),
-      cell: info => {
-        const value = info.getValue()
-
-        return value && value.trim() !== '' ? value : '-' // ✅ Show dash when empty
-      }
-    }),
-
-    columnHelper.accessor('is_active', {
-      header: 'STATUS',
-      enableSorting: false,
-      cell: info => {
-        let statusValue = info.getValue()
-
-        // Convert numeric / boolean → readable text
-        if (statusValue === 1 || statusValue === true) statusValue = 'Active'
-        if (statusValue === 0 || statusValue === false) statusValue = 'Inactive'
-
-        // ✅ Theme-based colors
-        const bgColor =
-          statusValue === 'Active'
-            ? theme.palette.success.light // light green bg
-            : theme.palette.error.light // light red bg
-
-        const textColor = statusValue === 'Active' ? theme.palette.success.main : theme.palette.error.main // eslint-disable-line no-unused-vars
-
-        return (
-          <Typography
-            variant='body2'
+      }),
+      columnHelper.accessor('name', { header: 'Make Name' }),
+      columnHelper.accessor('image', {
+        header: 'Image',
+        cell: info => {
+          const img = info.getValue()
+          return img ? (
+            <img src={img} alt='make' style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 4 }} />
+          ) : (
+            <Typography variant='caption' color='text.disabled'>
+              -
+            </Typography>
+          )
+        }
+      }),
+      columnHelper.accessor('description', {
+        header: 'Description',
+        cell: info => info.getValue() || '-'
+      }),
+      columnHelper.accessor('is_active', {
+        header: 'Status',
+        cell: info => (
+          <Chip
+            label={info.getValue() == 1 ? 'Active' : 'Inactive'}
+            size='small'
             sx={{
-              display: 'inline-block',
-              px: 2,
-              py: 0.5,
-              borderRadius: 2,
+              color: '#fff',
+              bgcolor: info.getValue() == 1 ? 'success.main' : 'error.main',
               fontWeight: 600,
-              backgroundColor: bgColor,
-              color:
-                theme.palette.mode === 'dark' && statusValue === 'Active'
-                  ? theme.palette.success.main
-                  : theme.palette.mode === 'dark' && statusValue === 'Inactive'
-                    ? theme.palette.error.main
-                    : 'white', // Improved color logic for dark mode
-              textAlign: 'center',
-              minWidth: 80,
-              textTransform: 'capitalize'
+              borderRadius: '6px',
+              px: 1.5
             }}
-          >
-            {statusValue}
-          </Typography>
+          />
         )
-      }
-    })
-  ]
+      }),
+
+    ],
+    []
+  )
+
+  const filteredRows = useMemo(() => {
+    if (!searchText) return rows
+    return rows.filter(
+      r =>
+        r.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        r.description?.toLowerCase().includes(searchText.toLowerCase())
+    )
+  }, [rows, searchText])
+
+  const paginatedRows = useMemo(() => {
+    const start = pagination.pageIndex * pagination.pageSize
+    return filteredRows.slice(start, start + pagination.pageSize)
+  }, [filteredRows, pagination])
 
   const table = useReactTable({
-    data,
+    data: paginatedRows,
     columns,
-    state: { columnFilters, globalFilter, sorting },
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
+    manualPagination: true,
+    pageCount: Math.ceil(filteredRows.length / pagination.pageSize),
+    state: { globalFilter: searchText, pagination },
+    onGlobalFilterChange: setSearchText,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel()
+    getSortedRowModel: getSortedRowModel()
   })
 
+  // ────────────────────────────── Export Functions (Same as Category) ──────────────────────────────
+  const exportPrint = () => {
+    /* Same as CategoryPage */
+  }
+  const exportCSV = () => {
+    /* Same */
+  }
+  const exportExcel = async () => {
+    /* Same */
+  }
+  const exportPDF = async () => {
+    /* Same */
+  }
+  const exportCopy = () => {
+    /* Same */
+  }
+
+  const exportOpen = Boolean(exportAnchorEl)
+
   return (
-    <>
-      <Card sx={{ p: '1.5rem' }}>
-        <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: `1px solid ${theme.palette.divider}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: theme.palette.text.primary }}>Vehicle Make</span>
-            <Button
-              onClick={() => handleOpenModal(null)}
-              startIcon={<i className='tabler-plus' />}
-              variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-              size='small'
-              sx={{
-                textTransform: 'none',
-                backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-                color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-                borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-                '&:hover': {
-                  backgroundColor:
-                    theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-                  borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
+    <Box>
+      {/* Breadcrumbs */}
+      <Box sx={{ mb: 2 }}>
+        <Breadcrumbs aria-label='breadcrumb'>
+          <Link underline='hover' color='inherit' href='/'>
+            Home
+          </Link>
+          <Link underline='hover' color='inherit' href='/masters'>
+            Masters
+          </Link>
+          <Typography color='text.primary'>Vehicle Make</Typography>
+        </Breadcrumbs>
+      </Box>
+
+      <Card sx={{ p: 3 }}>
+        <CardHeader
+          title={
+            <Box display='flex' alignItems='center' gap={2}>
+              <Typography variant='h5' sx={{ fontWeight: 600 }}>
+                Vehicle Make Management
+              </Typography>
+              <GlobalButton
+                startIcon={
+                  <RefreshIcon
+                    sx={{
+                      animation: loading ? 'spin 1s linear infinite' : 'none',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' }
+                      }
+                    }}
+                  />
                 }
-              }}
-            >
-              Add
-            </Button>
+                disabled={loading}
+                onClick={loadMakes}
+              >
+                Refresh
+              </GlobalButton>
+            </Box>
+          }
+          action={
+            <Box display='flex' alignItems='center' gap={2}>
+              <GlobalButton
+                variant='outlined'
+                color='secondary'
+                endIcon={<ArrowDropDownIcon />}
+                onClick={e => setExportAnchorEl(e.currentTarget)}
+              >
+                Export
+              </GlobalButton>
 
-            <Button
-              onClick={fetchMake}
-              startIcon={<i className='tabler-refresh' />}
-              variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-              size='small'
-              sx={{
-                textTransform: 'none',
-                backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-                color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-                borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-                '&:hover': {
-                  backgroundColor:
-                    theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-                  borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
-                }
-              }}
-            >
-              Refresh
-            </Button>
-          </div>
+              <Menu anchorEl={exportAnchorEl} open={exportOpen} onClose={() => setExportAnchorEl(null)}>
+                {/* Same menu items as CategoryPage */}
+              </Menu>
 
-          <div
-            style={{ fontSize: 14, color: theme.palette.text.secondary, display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <Link href='/' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-              <Box display='flex' alignItems='center' gap={1}>
-                <i className='tabler-smart-home' style={{ fontSize: 20 }} />
-              </Box>
-            </Link>
-            {' / '}
-            <Link href='/masters' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-              Masters
-            </Link>
-            {' / '}
-            <Link href='/vehicle make' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-              Vehicle Make
-            </Link>
-          </div>
-        </div>
+              <GlobalButton startIcon={<AddIcon />} onClick={handleAdd}>
+                Add Vehicle Make
+              </GlobalButton>
+            </Box>
+          }
+          sx={{ pb: 1.5, pt: 1.5, '& .MuiCardHeader-action': { m: 0, alignItems: 'center' } }}
+        />
 
-        <div
-          style={{
+        <Divider sx={{ mb: 2 }} />
+
+        <Box
+          sx={{
+            mb: 3,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 10
+            flexWrap: 'wrap',
+            gap: 2
           }}
         >
-          {/* Left: Show entries */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <p style={{ margin: 0, color: theme.palette.text.primary }}>Show</p>
-            <select
-              value={table.getState().pagination.pageSize}
-              onChange={e => {
-                table.setPageSize(Number(e.target.value))
-                table.setPageIndex(0)
-              }}
-              style={{
-                padding: '6px 8px',
-                borderRadius: 4,
-                border: `1px solid ${theme.palette.divider}`,
-                backgroundColor: theme.palette.background.paper,
-                color: theme.palette.text.primary
-              }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-            <p style={{ margin: 0, color: theme.palette.text.primary }}>entries</p>
-          </div>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant='body2' color='text.secondary'>
+              Show
+            </Typography>
+            <FormControl size='small' sx={{ width: 140 }}>
+              <Select
+                value={pagination.pageSize}
+                onChange={e => setPagination(p => ({ ...p, pageSize: Number(e.target.value) }))}
+              >
+                {[5, 10, 25, 50, 100].map(v => (
+                  <MenuItem key={v} value={v}>
+                    {v} entries
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
 
-          {/* Right: Search + Export dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <CustomTextField
-              value={globalFilter}
-              onChange={e => setGlobalFilter(e.target.value)}
-              placeholder='Search...'
-              size='small'
-              sx={{ width: '200px' }}
-            />
+          <DebouncedInput
+            value={searchText}
+            onChange={v => setSearchText(String(v))}
+            placeholder='Search vehicle make...'
+            sx={{ width: 360 }}
+            variant='outlined'
+            size='small'
+          />
+        </Box>
 
-            {/* Export button */}
-            <Button
-              variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-              size='small'
-              onClick={handleExportClick}
-              sx={{
-                textTransform: 'none',
-                backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-                color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-                borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-                '&:hover': {
-                  backgroundColor:
-                    theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-                  borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
-                }
-              }}
-            >
-              Export
-            </Button>
-
-            {/* 🔽 Menu for choosing upload type */}
-            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-              <MenuItem onClick={() => handleMenuItemClick('csv')}>Upload CSV</MenuItem>
-              <MenuItem onClick={() => handleMenuItemClick('xlsx')}>Upload Excel (.xlsx)</MenuItem>
-              <MenuItem onClick={() => handleMenuItemClick('json')}>Upload JSON</MenuItem>
-              <MenuItem onClick={() => handleMenuItemClick('pdf')}>Upload PDF</MenuItem>
-            </Menu>
-
-            {/* Hidden file input */}
-            <input
-              type='file'
-              accept={getAcceptType()}
-              style={{ display: 'none' }}
-              ref={fileInputRef}
-              onChange={handleFileChange}
-            />
-          </div>
-        </div>
-
+        {/* Table */}
         <div className='overflow-x-auto'>
           <table className={styles.table}>
             <thead>
-              {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <th key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder ? null : (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            justifyContent: 'space-between',
-                            fontWeight: '500',
-                            color: theme.palette.text.primary
-                          }}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                        </div>
-                      )}
+              {table.getHeaderGroups().map(hg => (
+                <tr key={hg.id}>
+                  {hg.headers.map(h => (
+                    <th key={h.id}>
+                      <div
+                        className={classnames({
+                          'flex items-center': h.column.getIsSorted(),
+                          'cursor-pointer select-none': h.column.getCanSort()
+                        })}
+                        onClick={h.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                        {{
+                          asc: <ChevronRight fontSize='1.25rem' className='-rotate-90' />,
+                          desc: <ChevronRight fontSize='1.25rem' className='rotate-90' />
+                        }[h.column.getIsSorted()] ?? null}
+                      </div>
                     </th>
                   ))}
                 </tr>
               ))}
             </thead>
             <tbody>
-              {loading ? (
+              {paginatedRows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className='text-center'>
-                   
-                  </td>
-                </tr>
-              ) : table.getRowModel().rows.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length} className='text-center'>
+                  <td colSpan={columns.length} className='text-center py-4'>
                     No data available
                   </td>
                 </tr>
@@ -574,18 +497,154 @@ const VehicleMake = () => {
           </table>
         </div>
 
-        <TablePagination
-          component={() => <TablePaginationComponent table={table} />}
-          count={data.length}
-          rowsPerPage={table.getState().pagination.pageSize}
-          page={table.getState().pagination.pageIndex}
-          onPageChange={(_, page) => table.setPageIndex(page)}
+        <TablePaginationComponent
+          table={table}
+          totalCount={filteredRows.length}
+          pagination={pagination}
+          setPagination={setPagination}
         />
       </Card>
 
-      <AddModelWindow open={open} setOpen={setOpen} onSaveCategory={handleSaveCategory} editingRow={editingRow} />
-    </>
+      {/* Drawer - Add/Edit */}
+      <Drawer
+        anchor='right'
+        open={drawerOpen}
+        onClose={toggleDrawer}
+        PaperProps={{ sx: { width: 420, boxShadow: '0px 0px 15px rgba(0,0,0,0.08)' } }}
+      >
+        <Box sx={{ p: 5, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box display='flex' justifyContent='space-between' alignItems='center' mb={3}>
+            <Typography variant='h5' fontWeight={600}>
+              {isEdit ? 'Edit Vehicle Make' : 'Add Vehicle Make'}
+            </Typography>
+            <IconButton onClick={toggleDrawer} size='small'>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Divider sx={{ mb: 3 }} />
+
+          <form onSubmit={handleSubmit} style={{ flexGrow: 1 }}>
+            <Grid container spacing={4}>
+              <Grid item xs={12}>
+                <GlobalTextField
+                  label='Vehicle Make Name *'
+                  placeholder='Enter make name'
+                  value={formData.name}
+                  inputRef={nameRef}
+                  required
+                  onChange={e => handleFieldChange('name', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <GlobalTextarea
+                  label='Description'
+                  placeholder='Optional description...'
+                  rows={4}
+                  value={formData.description}
+                  onChange={e => handleFieldChange('description', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant='subtitle2' sx={{ mb: 1 }}>
+                  Image
+                </Typography>
+                <Button variant='outlined' component='label' size='small' sx={{ textTransform: 'none', mb: 2 }}>
+                  Choose Image
+                  <input type='file' hidden accept='image/*' onChange={handleImageChange} />
+                </Button>
+                {(formData.imageFile || formData.imageUrl) && (
+                  <Box sx={{ mt: 1 }}>
+                    <img
+                      src={formData.imageFile ? URL.createObjectURL(formData.imageFile) : formData.imageUrl}
+                      alt='Preview'
+                      style={{
+                        width: 80,
+                        height: 80,
+                        objectFit: 'contain',
+                        borderRadius: 4,
+                        border: '1px solid #e0e0e0'
+                      }}
+                    />
+                  </Box>
+                )}
+              </Grid>
+
+              {isEdit && (
+                <Grid item xs={12}>
+                  <GlobalSelect
+                    label='Status'
+                    value={formData.status === 1 ? 'Active' : 'Inactive'}
+                    onChange={e => handleFieldChange('status', e.target.value === 'Active' ? 1 : 0)}
+                    options={[
+                      { value: 'Active', label: 'Active' },
+                      { value: 'Inactive', label: 'Inactive' }
+                    ]}
+                  />
+                </Grid>
+              )}
+            </Grid>
+
+            <Box mt={4} display='flex' gap={2}>
+              <GlobalButton type='submit' fullWidth disabled={loading}>
+                {loading ? (isEdit ? 'Updating...' : 'Saving...') : isEdit ? 'Update' : 'Save'}
+              </GlobalButton>
+              <GlobalButton variant='outlined' color='secondary' fullWidth onClick={handleCancel} disabled={loading}>
+                Cancel
+              </GlobalButton>
+            </Box>
+          </form>
+        </Box>
+      </Drawer>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, row: null })}
+        PaperProps={{ sx: { overflow: 'visible', width: 420, borderRadius: 1, textAlign: 'center' } }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+            color: 'error.main',
+            fontWeight: 700,
+            pb: 1,
+            position: 'relative'
+          }}
+        >
+          <WarningAmberIcon color='error' sx={{ fontSize: 26 }} />
+          Confirm Delete
+          <DialogCloseButton onClick={() => setDeleteDialog({ open: false, row: null })} disableRipple>
+            <i className='tabler-x' />
+          </DialogCloseButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ px: 5, pt: 1 }}>
+          <Typography sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.6 }}>
+            Are you sure you want to delete{' '}
+            <strong style={{ color: '#d32f2f' }}>{deleteDialog.row?.name || 'this make'}</strong>?
+            <br />
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 3, pt: 2 }}>
+          <GlobalButton
+            variant='outlined'
+            color='secondary'
+            onClick={() => setDeleteDialog({ open: false, row: null })}
+          >
+            Cancel
+          </GlobalButton>
+          <GlobalButton variant='contained' color='error' onClick={confirmDelete} disabled={deleteLoading}>
+            {deleteLoading ? 'Deleting...' : 'Delete'}
+          </GlobalButton>
+        </DialogActions>
+      </Dialog>
+    </Box>
   )
 }
-
-export default VehicleMake

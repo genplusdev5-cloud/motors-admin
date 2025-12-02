@@ -1,1177 +1,583 @@
-// 'use client'
-
-// import { useState, useEffect, useRef, useCallback } from 'react'
-
-// import { useRouter } from 'next/navigation'
-// import Link from 'next/link'
-
-// // MUI Imports
-// import Card from '@mui/material/Card'
-// import Button from '@mui/material/Button'
-// import TablePagination from '@mui/material/TablePagination'
-// import Box from '@mui/material/Box'
-// import IconButton from '@mui/material/IconButton'
-// import Tooltip from '@mui/material/Tooltip'
-// import { useTheme } from '@mui/material/styles'
-// import Typography from '@mui/material/Typography'
-// import { Menu, MenuItem } from '@mui/material'
-
-// import { toast } from 'react-toastify'
-// import Swal from 'sweetalert2'
-
-// import {
-//   useReactTable,
-//   getCoreRowModel,
-//   getPaginationRowModel,
-//   flexRender,
-//   createColumnHelper,
-//   getSortedRowModel,
-//   getFilteredRowModel
-// } from '@tanstack/react-table'
-
-// // Updated import from corrected service file
-// import { getBannerType, addBannerType , updateBannerType, deleteBannerType } from '@/services/bannerstypeApi'
-
-// // Assuming these are custom components from your project
-// import CustomTextField from '@core/components/mui/TextField'
-// import TablePaginationComponent from '@components/TablePaginationComponent'
-// import styles from '@core/styles/table.module.css'
-
-// // Modal Component
-// import AddModelWindow from './AddModelWindow'
-
-// const columnHelper = createColumnHelper()
-
-// const BannerTypePage = () => { // Renamed from 'bannerType' for clarity
-//   const theme = useTheme()
-//   const router = useRouter() // eslint-disable-line no-unused-vars
-
-//   const [open, setOpen] = useState(false)
-//   const [data, setData] = useState([])
-//   const [editingRow, setEditingRow] = useState(null)
-//   const [globalFilter, setGlobalFilter] = useState('')
-//   const [columnFilters, setColumnFilters] = useState([]) // eslint-disable-line no-unused-vars
-//   const [sorting, setSorting] = useState([])
-//   const [loading, setLoading] = useState(false)
-
-//   const [anchorEl, setAnchorEl] = useState(null)
-//   const [selectedType, setSelectedType] = useState(null)
-
-//   // --- Core Functions for Data Management ---
-
-//   const fetchBannerTypes = useCallback(async () => { // Renamed from fetchMileage
-//     setLoading(true)
-
-//     try {
-//       const categoryData = await getBannerType()
-
-//       setData(categoryData)
-//     } catch (error) {
-//       console.error('Error fetching banner type:', error)
-//       toast.error('Failed to load banner type.')
-//       setData([])
-//     } finally {
-//       setLoading(false)
-//     }
-//   }, [])
-
-//   // Save category (handles both add and update by calling API)
-//  const handleSaveCategory = async (formData, id) => {
-//   try {
-//     const name = formData.get('name');
-
-//     // Frontend duplicate check
-//     const existingItem = data.find(
-//       item => item.name?.trim().toLowerCase() === name?.trim().toLowerCase()
-//     );
-
-//     const isDuplicate = existingItem && existingItem.id !== id;
-
-//     if (isDuplicate) {
-//       toast.warning('Name already exists. Please use a different name.');
-
-// return;
-//     }
-
-//     let savedItem;
-
-//     if (id) {
-//       savedItem = await updateBannerType(id, formData);
-//       toast.success('Banner type updated successfully!');
-
-//       // Update table data locally
-//       setData(prev => prev.map(item => (item.id === id ? savedItem : item)));
-//     } else {
-//       savedItem = await addBannerType(formData);
-//       toast.success('Banner type added successfully!');
-
-//       // Add new item to table locally
-//       setData(prev => [...prev, savedItem]);
-//     }
-
-//     handleCloseModal(); // Close modal
-//   } catch (error) {
-//     const errorMsg = error.response?.data?.message || 'An error occurred while saving the banner type.';
-
-//     toast.error(errorMsg);
-//   }
-// };
-
-
-//   const handleDelete = async id => {
-//     Swal.fire({
-//       text: 'Are you sure you want to delete this banner type?',
-//       showCancelButton: true,
-//       confirmButtonText: 'Delete',
-//       cancelButtonText: 'Cancel',
-//       reverseButtons: true,
-//       buttonsStyling: false,
-//       customClass: {
-//         confirmButton: 'swal-confirm-btn',
-//         cancelButton: 'swal-cancel-btn'
-//       },
-//       didOpen: () => {
-//         const confirmBtn = Swal.getConfirmButton()
-//         const cancelBtn = Swal.getCancelButton()
-
-//         // Apply custom styles (keeping your original style settings)
-//         confirmBtn.style.textTransform = 'none'
-//         cancelBtn.style.textTransform = 'none'
-//         confirmBtn.style.borderRadius = '8px'
-//         cancelBtn.style.borderRadius = '8px'
-//         confirmBtn.style.padding = '8px 20px'
-//         cancelBtn.style.padding = '8px 20px'
-//         confirmBtn.style.marginLeft = '10px'
-//         cancelBtn.style.marginRight = '10px'
-
-//         confirmBtn.style.backgroundColor = '#212c62'
-//         confirmBtn.style.color = '#fff'
-//         confirmBtn.style.border = '1px solid #212c62'
-
-//         cancelBtn.style.border = '1px solid #212c62'
-//         cancelBtn.style.color = '#212c62'
-//         cancelBtn.style.backgroundColor = 'transparent'
-//       }
-//     }).then(async result => {
-//       if (result.isConfirmed) {
-//         try {
-//           await deleteBannerType (id)
-//           toast.success('Banner type deleted successfully!')
-//           await fetchBannerTypes()
-//         } catch (error) {
-//           console.error('Delete banner type error:', error)
-
-//           const errorMsg = error.response?.data?.message || 'Failed to delete banner type.'
-
-//           toast.error(errorMsg)
-//         }
-//       } else if (result.dismiss === Swal.DismissReason.cancel) {
-//         toast.info('Banner type deletion cancelled.')
-//       }
-//     })
-//   }
-
-//   // --- Fetch categories on initial load
-//   useEffect(() => {
-//     fetchBannerTypes()
-//   }, [fetchBannerTypes])
-
-//   // Open modal (null => add, row object => edit)
-//   const handleOpenModal = row => {
-//     setEditingRow(row)
-//     setOpen(true)
-//   }
-
-//   const handleCloseModal = () => {
-//     setOpen(false)
-//     setEditingRow(null)
-//   }
-
-//   // Hidden file input
-//   const fileInputRef = useRef(null)
-
-//   const handleExportClick = event => {
-//     setAnchorEl(event.currentTarget)
-//   }
-
-//   const handleClose = () => {
-//     setAnchorEl(null)
-//   }
-
-//   // 👇 when user clicks menu item
-//   const handleMenuItemClick = type => {
-//     setSelectedType(type)
-//     handleClose()
-
-//     // open hidden file input
-//     if (fileInputRef.current) fileInputRef.current.click()
-//   }
-
-//   // 👇 handle file selection (for Import)
-//   const handleFileChange = event => {
-//     const file = event.target.files[0]
-
-//     if (file && selectedType) {
-//       // NOTE: Placeholder for actual import logic
-//       toast.info(`Attempting to upload ${selectedType.toUpperCase()} file: ${file.name}`)
-//     }
-
-//     event.target.value = '' // reset input (for re-uploading same file)
-//   }
-
-//   // restrict file extensions based on type
-//   const getAcceptType = () => {
-//     switch (selectedType) {
-//       case 'csv':
-//         return '.csv'
-//       case 'xlsx':
-//         return '.xlsx'
-//       case 'json':
-//         return '.json'
-//       case 'pdf':
-//         return '.pdf'
-//       default:
-//         return ''
-//     }
-//   }
-
-//   // Sorting icon & helper
-//   const SortIcon = ({ sortDir }) => {
-//     if (sortDir === 'asc') return <i className='tabler-arrow-up' style={{ fontSize: 16 }} />
-//     if (sortDir === 'desc') return <i className='tabler-arrow-down' style={{ fontSize: 16 }} />
-
-//     return <i className='tabler-arrows-sort' style={{ fontSize: 16, opacity: 0.5 }} />
-//   }
-
-//   const getSortableHeader = (headerName, column, IconComponent) => (
-//     <div
-//       className='cursor-pointer select-none flex items-center'
-//       onClick={column.getToggleSortingHandler()}
-//       style={{
-//         display: 'flex',
-//         alignItems: 'center',
-//         gap: 4,
-//         justifyContent: 'space-between',
-//         fontWeight: '500',
-//         color: theme.palette.text.primary,
-//         width: '100%'
-//       }}
-//     >
-//       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-//         {IconComponent}
-//         <Typography variant='subtitle2' component='span' fontWeight={500} color='inherit'>
-//           {headerName}
-//         </Typography>
-//       </Box>
-
-//       {column.getCanSort() && <SortIcon sortDir={column.getIsSorted()} />}
-//     </div>
-//   )
-
-//   const columns = [
-//     columnHelper.accessor('action', {
-//       header: 'ACTIONS',
-//       cell: ({ row }) => (
-//         <Box sx={{ display: 'flex', gap: 1 }}>
-//           <Tooltip title='Edit'>
-//             <IconButton onClick={() => handleOpenModal(row.original)} size='small'>
-//               <i className='tabler-edit' style={{ fontSize: 20 }} />
-//             </IconButton>
-//           </Tooltip>
-//           <Tooltip title='Delete'>
-//             <IconButton onClick={() => handleDelete(row.original.id)} size='small'>
-//               <i className='tabler-trash' style={{ fontSize: 20, color: theme.palette.error.main }} />
-//             </IconButton>
-//           </Tooltip>
-//         </Box>
-//       ),
-//       enableSorting: false
-//     }),
-//     columnHelper.accessor('name', {
-//       header: ({ column }) => getSortableHeader('NAME', column),
-//       cell: info => info.getValue()
-//     }),
-//   columnHelper.accessor('image', {
-//     header: ({ column }) => getSortableHeader('IMAGE', column),
-//     cell: info => {
-//       const imageUrl = info.getValue()
-
-//       return (
-//         <Box
-//           sx={{
-//             display: 'flex',
-//             justifyContent: 'center',
-//             alignItems: 'center',
-//             width: 80, // Container width
-//             height: 40, // Container height
-//             border: `1px solid ${theme.palette.divider}`,
-//             borderRadius: 1,
-//             overflow: 'hidden'
-//           }}
-//         >
-//           {imageUrl ? (
-//             <img
-//               src={imageUrl}
-//               alt="Banner Thumbnail"
-//               style={{
-//                 maxWidth: '100%',
-//                 maxHeight: '100%',
-//                 objectFit: 'contain' // Ensures the image fits within the box without cropping
-//               }}
-//             />
-//           ) : (
-//             <i className='' style={{ color: theme.palette.text.secondary }} />
-//           )}
-//         </Box>
-//       )
-//     }
-//   }),
-
-//     columnHelper.accessor('width', {
-//       header: ({ column }) => getSortableHeader('WIDTH', column),
-//       cell: info => info.getValue()
-//     }),
-//     columnHelper.accessor('height', {
-//       header: ({ column }) => getSortableHeader('HEIGHT', column),
-//       cell: info => info.getValue()
-//     }),
-
-//     columnHelper.accessor('description', {
-//       header: ({ column }) => getSortableHeader('DESCRIPTION', column),
-//       cell: info => {
-//         const value = info.getValue()
-
-//         return value && value.trim() !== '' ? value : '-' // ✅ Show dash when empty
-//       }
-//     }),
-
-//     columnHelper.accessor('is_active', {
-//       header: 'STATUS',
-//       enableSorting: false,
-//       cell: info => {
-//         let statusValue = info.getValue()
-
-//         // Convert numeric / boolean → readable text
-//         if (statusValue === 1 || statusValue === true) statusValue = 'Active'
-//         if (statusValue === 0 || statusValue === false) statusValue = 'Inactive'
-
-//         // ✅ Theme-based colors
-//         const bgColor =
-//           statusValue === 'Active'
-//             ? theme.palette.success.light // light green bg
-//             : theme.palette.error.light // light red bg
-
-//         const textColor = statusValue === 'Active' ? theme.palette.success.main : theme.palette.error.main // eslint-disable-line no-unused-vars
-
-//         return (
-//           <Typography
-//             variant='body2'
-//             sx={{
-//               display: 'inline-block',
-//               px: 2,
-//               py: 0.5,
-//               borderRadius: 2,
-//               fontWeight: 600,
-//               backgroundColor: bgColor,
-//               color:
-//                 theme.palette.mode === 'dark' && statusValue === 'Active'
-//                   ? theme.palette.success.main
-//                   : theme.palette.mode === 'dark' && statusValue === 'Inactive'
-//                     ? theme.palette.error.main
-//                     : 'white', // Improved color logic for dark mode
-//               textAlign: 'center',
-//               minWidth: 80,
-//               textTransform: 'capitalize'
-//             }}
-//           >
-//             {statusValue}
-//           </Typography>
-//         )
-//       }
-//     })
-//   ]
-
-//   const table = useReactTable({
-//     data,
-//     columns,
-//     state: { columnFilters, globalFilter, sorting },
-//     onColumnFiltersChange: setColumnFilters,
-//     onGlobalFilterChange: setGlobalFilter,
-//     onSortingChange: setSorting,
-//     getCoreRowModel: getCoreRowModel(),
-//     getPaginationRowModel: getPaginationRowModel(),
-//     getSortedRowModel: getSortedRowModel(),
-//     getFilteredRowModel: getFilteredRowModel()
-//   })
-
-//   return (
-//     <>
-//       <Card sx={{ p: '1.5rem' }}>
-//         <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: `1px solid ${theme.palette.divider}` }}>
-//           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-//             <span style={{ fontSize: 16, fontWeight: 500, color: theme.palette.text.primary }}>Banner Type</span>
-//             <Button
-//               onClick={() => handleOpenModal(null)}
-//               startIcon={<i className='tabler-plus' />}
-//               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-//               size='small'
-//               sx={{
-//                 textTransform: 'none',
-//                 backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-//                 color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-//                 borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-//                 '&:hover': {
-//                   backgroundColor:
-//                     theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-//                   borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
-//                 }
-//               }}
-//             >
-//               Add
-//             </Button>
-
-//             <Button
-//               onClick={fetchBannerTypes}
-//               startIcon={<i className='tabler-refresh' />}
-//               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-//               size='small'
-//               sx={{
-//                 textTransform: 'none',
-//                 backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-//                 color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-//                 borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-//                 '&:hover': {
-//                   backgroundColor:
-//                     theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-//                   borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
-//                 }
-//               }}
-//             >
-//               Refresh
-//             </Button>
-//           </div>
-
-//           <div
-//             style={{ fontSize: 14, color: theme.palette.text.secondary, display: 'flex', alignItems: 'center', gap: 6 }}
-//           >
-//             <Link href='/' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-//               <Box display='flex' alignItems='center' gap={1}>
-//                 <i className='tabler-smart-home' style={{ fontSize: 20 }} />
-//               </Box>
-//             </Link>
-//             {' / '}
-//             <Link href='/masters' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-//               Masters
-//             </Link>
-//             {' / '}
-//             <Link href='/banner-type' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-//             Banner Type
-//             </Link>
-//           </div>
-//         </div>
-
-//         <div
-//           style={{
-//             display: 'flex',
-//             justifyContent: 'space-between',
-//             alignItems: 'center',
-//             marginBottom: 10
-//           }}
-//         >
-//           {/* Left: Show entries */}
-//           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-//             <p style={{ margin: 0, color: theme.palette.text.primary }}>Show</p>
-//             <select
-//               value={table.getState().pagination.pageSize}
-//               onChange={e => {
-//                 table.setPageSize(Number(e.target.value))
-//                 table.setPageIndex(0)
-//               }}
-//               style={{
-//                 padding: '6px 8px',
-//                 borderRadius: 4,
-//                 border: `1px solid ${theme.palette.divider}`,
-//                 backgroundColor: theme.palette.background.paper,
-//                 color: theme.palette.text.primary
-//               }}
-//             >
-//               <option value={5}>5</option>
-//               <option value={10}>10</option>
-//               <option value={25}>25</option>
-//               <option value={50}>50</option>
-//             </select>
-//             <p style={{ margin: 0, color: theme.palette.text.primary }}>entries</p>
-//           </div>
-
-//           {/* Right: Search + Export dropdown */}
-//           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-//             <CustomTextField
-//               value={globalFilter}
-//               onChange={e => setGlobalFilter(e.target.value)}
-//               placeholder='Search...'
-//               size='small'
-//               sx={{ width: '200px' }}
-//             />
-
-//             {/* Export button */}
-//             <Button
-//               variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-//               size='small'
-//               onClick={handleExportClick}
-//               sx={{
-//                 textTransform: 'none',
-//                 backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-//                 color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-//                 borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-//                 '&:hover': {
-//                   backgroundColor:
-//                     theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-//                   borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
-//                 }
-//               }}
-//             >
-//               Export
-//             </Button>
-
-//             {/* 🔽 Menu for choosing upload type */}
-//             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-//               <MenuItem onClick={() => handleMenuItemClick('csv')}>Upload CSV</MenuItem>
-//               <MenuItem onClick={() => handleMenuItemClick('xlsx')}>Upload Excel (.xlsx)</MenuItem>
-//               <MenuItem onClick={() => handleMenuItemClick('json')}>Upload JSON</MenuItem>
-//               <MenuItem onClick={() => handleMenuItemClick('pdf')}>Upload PDF</MenuItem>
-//             </Menu>
-
-//             {/* Hidden file input */}
-//             <input
-//               type='file'
-//               accept={getAcceptType()}
-//               style={{ display: 'none' }}
-//               ref={fileInputRef}
-//               onChange={handleFileChange}
-//             />
-//           </div>
-//         </div>
-
-//         <div className='overflow-x-auto'>
-//           <table className={styles.table}>
-//             <thead>
-//               {table.getHeaderGroups().map(headerGroup => (
-//                 <tr key={headerGroup.id}>
-//                   {headerGroup.headers.map(header => (
-//                     <th key={header.id} colSpan={header.colSpan}>
-//                       {header.isPlaceholder ? null : (
-//                         <div
-//                           style={{
-//                             display: 'flex',
-//                             alignItems: 'center',
-//                             gap: 4,
-//                             justifyContent: 'space-between',
-//                             fontWeight: '500',
-//                             color: theme.palette.text.primary
-//                           }}
-//                         >
-//                           {flexRender(header.column.columnDef.header, header.getContext())}
-//                         </div>
-//                       )}
-//                     </th>
-//                   ))}
-//                 </tr>
-//               ))}
-//             </thead>
-//             <tbody>
-//               {loading ? (
-//                 <tr>
-//                   <td colSpan={columns.length} className='text-center'>
-//                      Loading...
-//                   </td>
-//                 </tr>
-//               ) : table.getRowModel().rows.length === 0 ? (
-//                 <tr>
-//                   <td colSpan={columns.length} className='text-center'>
-//                     No data available
-//                   </td>
-//                 </tr>
-//               ) : (
-//                 table.getRowModel().rows.map(row => (
-//                   <tr key={row.id}>
-//                     {row.getVisibleCells().map(cell => (
-//                       <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-//                     ))}
-//                   </tr>
-//                 ))
-//               )}
-//             </tbody>
-//           </table>
-//         </div>
-
-//         <TablePagination
-//           component={() => <TablePaginationComponent table={table} />}
-//           count={data.length}
-//           rowsPerPage={table.getState().pagination.pageSize}
-//           page={table.getState().pagination.pageIndex}
-//           onPageChange={(_, page) => table.setPageIndex(page)}
-//         />
-//       </Card>
-
-//       <AddModelWindow open={open} setOpen={setOpen} onSave={handleSaveCategory} initialData={editingRow} />
-//     </>
-//   )
-// }
-
-// export default BannerTypePage
-
-
-
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-
-import { useRouter } from 'next/navigation'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import {
+  Box,
+  Button,
+  Card,
+  CardHeader,
+  Typography,
+  Menu,
+  MenuItem,
+  IconButton,
+  Divider,
+  Drawer,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Breadcrumbs,
+  Chip,
+  TextField,
+  Select,
+  FormControl,
+  MenuItem as MuiMenuItem,
+  CircularProgress,
+  Avatar,
+  List,
+  ListItem
+} from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import AddIcon from '@mui/icons-material/Add'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import PrintIcon from '@mui/icons-material/Print'
+import FileDownloadIcon from '@mui/icons-material/FileDownload'
+import TableChartIcon from '@mui/icons-material/TableChart'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+import FileCopyIcon from '@mui/icons-material/FileCopy'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 
-// MUI Imports
-import Card from '@mui/material/Card'
-import Button from '@mui/material/Button'
-import TablePagination from '@mui/material/TablePagination'
-import Box from '@mui/material/Box'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
-import { useTheme } from '@mui/material/styles'
-import Typography from '@mui/material/Typography'
+import { showToast } from '@/components/common/Toasts'
 
-import { Menu, MenuItem } from '@mui/material'
+import { useDropzone } from 'react-dropzone'
 
-import { toast } from 'react-toastify'
-
-import Swal from 'sweetalert2'
-
+// Table
 import {
   useReactTable,
   getCoreRowModel,
-  getPaginationRowModel,
-  flexRender,
-  createColumnHelper,
   getSortedRowModel,
-  getFilteredRowModel
+  flexRender,
+  createColumnHelper
 } from '@tanstack/react-table'
 
-// Updated import from corrected service file
-import { getBannerType, addBannerType, updateBannerType, deleteBannerType } from '@/services/bannerstypeApi'
-
-// Assuming these are custom components from your project
-import CustomTextField from '@core/components/mui/TextField'
-import TablePaginationComponent from '@components/TablePaginationComponent'
+import { useTheme } from '@mui/material/styles'
 import styles from '@core/styles/table.module.css'
 
-// Modal Component
-import AddModelWindow from './AddModelWindow'
+// API (you provided these functions earlier)
+import { getBannerTypeList, addBannerType, updateBannerType, deleteBannerType } from '@/api/bannerType'
 
-const columnHelper = createColumnHelper()
+// Re-usable local components (if you have them in your project you can keep these imports)
+import DialogCloseButton from '@components/dialogs/DialogCloseButton'
+import TablePaginationComponent from '@/components/TablePaginationComponent'
+import GlobalButton from '@/components/common/GlobalButton'
+import GlobalTextField from '@/components/common/GlobalTextField'
+import GlobalTextarea from '@/components/common/GlobalTextarea'
+import GlobalSelect from '@/components/common/GlobalSelect'
 
-const VehicleMake = () => {
+// ------------------------- Dropzone Uploader (single image) -------------------------
+const SingleImageUploader = ({ file, setFile, previewWidth = 120 }) => {
+  const onDrop = acceptedFiles => {
+    if (!acceptedFiles || acceptedFiles.length === 0) return
+    const f = acceptedFiles[0]
+    setFile(Object.assign(f))
+  }
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    maxFiles: 1,
+    maxSize: 5 * 1024 * 1024,
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.gif'] },
+    onDropRejected: () => {
+      showToast('info', 'Please upload a single image (max 5 MB).')
+    }
+  })
+
+  const removeFile = () => setFile(null)
+
+  return (
+    <div>
+      <div
+        {...getRootProps({ className: 'dropzone' })}
+        style={{
+          border: '1px dashed rgba(0,0,0,0.12)',
+          padding: 12,
+          borderRadius: 6,
+          cursor: 'pointer',
+          textAlign: 'center'
+        }}
+      >
+        <input {...getInputProps()} />
+        <Avatar variant='rounded' sx={{ mx: 'auto', mb: 1 }}>
+          <i className='tabler-cloud-upload' />
+        </Avatar>
+        <Typography variant='body2'>Drop image here, or click to select</Typography>
+        <Typography variant='caption'>Allowed: png, jpg, jpeg, gif (max 5 MB)</Typography>
+      </div>
+
+      {file && (
+        <List sx={{ mt: 2 }}>
+          <ListItem sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <img src={URL.createObjectURL(file)} alt={file.name} style={{ width: previewWidth, height: 'auto' }} />
+              <Box>
+                <Typography sx={{ fontWeight: 600 }}>{file.name}</Typography>
+                <Typography variant='body2'>{Math.round(file.size / 1024)} KB</Typography>
+              </Box>
+            </Box>
+
+            <Box>
+              <Button variant='outlined' color='error' onClick={removeFile} size='small'>
+                Remove
+              </Button>
+            </Box>
+          </ListItem>
+        </List>
+      )}
+    </div>
+  )
+}
+
+// ------------------------- Main Component -------------------------
+export default function BannerTypePage() {
   const theme = useTheme()
-  const router = useRouter() // eslint-disable-line no-unused-vars
 
-  const [open, setOpen] = useState(false)
-  const [data, setData] = useState([])
-  const [editingRow, setEditingRow] = useState(null)
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [columnFilters, setColumnFilters] = useState([]) // eslint-disable-line no-unused-vars
-  const [sorting, setSorting] = useState([])
+  // data
+  const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
+  const [searchText, setSearchText] = useState('')
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 })
 
-  const [anchorEl, setAnchorEl] = useState(null)
-  const [selectedType, setSelectedType] = useState(null)
+  // drawer form state
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [isEdit, setIsEdit] = useState(false)
+  const [formData, setFormData] = useState({ id: null, name: '', description: '', is_active: 1 })
+  const [imageFile, setImageFile] = useState(null)
+  const nameRef = useRef(null)
 
-  // --- Core Functions for Data Management ---
+  // delete dialog
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, row: null })
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
-  const fetchMake = useCallback(async () => {
+  // export menu
+  const [exportAnchorEl, setExportAnchorEl] = useState(null)
+
+  // robust parse for list api output
+  const parseBannerList = payload => {
+    // payload could be:
+    // - an array
+    // - { status, message, data: [...] }
+    // - { data: [...] }
+    if (!payload) return []
+    if (Array.isArray(payload)) return payload
+    if (Array.isArray(payload.data)) return payload.data
+    if (Array.isArray(payload.result)) return payload.result
+    // older endpoints might nest further
+    if (Array.isArray(payload.data?.data)) return payload.data.data
+    return []
+  }
+
+  // fetch list
+  const loadBannerTypes = useCallback(async () => {
     setLoading(true)
-
     try {
-      const categoryData = await getBannerType()
+      const res = await getBannerTypeList() // this returns res.data per your helper
+      const list = parseBannerList(res)
+      if (!Array.isArray(list)) {
+        showToast('error', 'Invalid response from server')
+        setRows([])
+        return
+      }
 
-      setData(categoryData)
-    } catch (error) {
-      console.error('Error fetching banner type:', error)
-      toast.error('Failed to load banner type')
-      setData([])
+      const normalized = list.map((item, i) => ({
+        sno: i + 1,
+        id: item.id,
+        name: item.name,
+        description: item.description || '',
+        image: item.image || '',
+        is_active: item.is_active ?? 1
+      }))
+
+      setRows(normalized)
+    } catch (err) {
+      console.error('LOAD BANNER TYPES ERROR', err)
+      showToast('error', err?.message || 'Failed to load banner types')
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // Save category (handles both add and update by calling API)
-  const handleSaveCategory = async (categoryData, id) => {
-    try {
-
-
-      // ✅ Proceed if not duplicate
-      if (id) {
-        await updateBannerType(id, categoryData)
-        toast.success('Banner Type updated successfully!')
-      } else {
-        await addBannerType(categoryData)
-        toast.success('Banner type  added successfully!')
-      }
-
-      handleCloseModal() // Close modal after success
-      await fetchMake() // Refresh data in the table
-    } catch (error) {
-      console.error('Save Banner type  error:', error)
-
-      const errorMsg =
-        error.response?.data?.message ||
-        error.response?.data?.detail ||
-        'An error occurred while saving the banner type .'
-
-      toast.error(errorMsg)
-    }
-  }
-
-  const handleDelete = async id => {
-    Swal.fire({
-      text: 'Are you sure you want to delete this Banner Type ?',
-
-      showCancelButton: true,
-      confirmButtonText: 'Delete',
-      cancelButtonText: 'Cancel',
-      reverseButtons: true,
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: 'swal-confirm-btn',
-        cancelButton: 'swal-cancel-btn'
-      },
-      didOpen: () => {
-        const confirmBtn = Swal.getConfirmButton()
-        const cancelBtn = Swal.getCancelButton()
-
-        // Common style
-        confirmBtn.style.textTransform = 'none'
-        cancelBtn.style.textTransform = 'none'
-        confirmBtn.style.borderRadius = '8px'
-        cancelBtn.style.borderRadius = '8px'
-        confirmBtn.style.padding = '8px 20px'
-        cancelBtn.style.padding = '8px 20px'
-        confirmBtn.style.marginLeft = '10px'
-        cancelBtn.style.marginRight = '10px'
-
-        // ✅ Confirm (Delete) Button
-        confirmBtn.style.backgroundColor = '#212c62'
-        confirmBtn.style.color = '#fff'
-        confirmBtn.style.border = '1px solid #212c62'
-
-        // ❌ Cancel Button
-        cancelBtn.style.border = '1px solid #212c62'
-        cancelBtn.style.color = '#212c62'
-        cancelBtn.style.backgroundColor = 'transparent'
-      }
-    }).then(async result => {
-      if (result.isConfirmed) {
-        try {
-          await deleteBannerType(id)
-          toast.success('banner type deleted successfully!')
-          await fetchMake()
-        } catch (error) {
-          console.error('Delete banner type error:', error)
-
-          const errorMsg = error.response?.data?.message || 'Failed to delete vehicle banner type.'
-
-          toast.error(errorMsg)
-        }
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        toast.info('banner type  deletion cancelled.')
-      }
-    })
-  }
-
-  // --- Fetch categories on initial load
   useEffect(() => {
-    fetchMake()
-  }, [fetchMake])
+    loadBannerTypes()
+  }, [loadBannerTypes])
 
-  // Open modal (null => add, row object => edit)
-  const handleOpenModal = row => {
-    setEditingRow(row)
-    setOpen(true)
+  // open drawer add
+  const handleAdd = () => {
+    setIsEdit(false)
+    setFormData({ id: null, name: '', description: '', is_active: 1 })
+    setImageFile(null)
+    setDrawerOpen(true)
+    setTimeout(() => nameRef.current?.focus(), 120)
   }
 
-  const handleCloseModal = () => {
-    setOpen(false)
-    setEditingRow(null)
+  // open drawer edit
+  const handleEdit = row => {
+    setIsEdit(true)
+    setFormData({ id: row.id, name: row.name, description: row.description, is_active: row.is_active })
+    setImageFile(null) // user can upload new image if they want
+    setDrawerOpen(true)
+    setTimeout(() => nameRef.current?.focus(), 120)
   }
 
-  // Hidden file input logic for export/import (retained)
-  const fileInputRef = useRef(null)
+  const handleFieldChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }))
 
-  const handleExportClick = event => {
-    setAnchorEl(event.currentTarget)
+  const handleCancel = () => {
+    setFormData({ id: null, name: '', description: '', is_active: 1 })
+    setImageFile(null)
+    setDrawerOpen(false)
   }
 
-  const handleClose = () => {
-    setAnchorEl(null)
-  }
+  // Submit (add / update)
+  const handleSubmit = async e => {
+    e.preventDefault()
 
-  // 👇 when user clicks menu item
-  const handleMenuItemClick = type => {
-    setSelectedType(type)
-    handleClose()
-
-    // open hidden file input
-    if (fileInputRef.current) fileInputRef.current.click()
-  }
-
-  // 👇 handle file selection
-  const handleFileChange = event => {
-    const file = event.target.files[0]
-
-    if (file && selectedType) {
-      toast.info(`Attempting to upload ${selectedType.toUpperCase()} file: ${file.name}`)
+    if (!formData.name.trim()) {
+      showToast('warning', 'Name is required')
+      return
     }
 
-    event.target.value = '' // reset input (for re-uploading same file)
-  }
+    // frontend duplicate check
+    const exists = rows.find(
+      r => r.name?.trim().toLowerCase() === formData.name.trim().toLowerCase() && r.id !== formData.id
+    )
+    if (exists) {
+      showToast('warning', 'Banner type with this name already exists')
+      return
+    }
 
-  // restrict file extensions based on type
-  const getAcceptType = () => {
-    switch (selectedType) {
-      case 'csv':
-        return '.csv'
-      case 'xlsx':
-        return '.xlsx'
-      case 'json':
-        return '.json'
-      case 'pdf':
-        return '.pdf'
-      default:
-        return ''
+    setLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('name', formData.name.trim())
+      fd.append('description', formData.description || '')
+      fd.append('is_active', Number(formData.is_active))
+
+      if (imageFile) fd.append('image', imageFile)
+
+      let res
+      // call your API helpers (they return res.data)
+      if (isEdit && formData.id) {
+        // many backends accept PATCH for file update; your helper uses PUT but keep using your helper
+        res = await updateBannerType(formData.id, fd)
+      } else {
+        res = await addBannerType(fd)
+      }
+
+      // success
+      showToast('success', isEdit ? 'Banner type updated' : 'Banner type added')
+      setDrawerOpen(false)
+      await loadBannerTypes()
+    } catch (err) {
+      console.error('SAVE BANNER TYPE ERROR', err)
+      // backend error object may be nested
+      const errMsg = (err && (err.message || err.detail || err?.data?.message)) || 'Failed to save banner type'
+      showToast('error', errMsg)
+    } finally {
+      setLoading(false)
     }
   }
 
-  // Sorting icon & helper same as your original code
-
-  const SortIcon = ({ sortDir }) => {
-    if (sortDir === 'asc') return <i className='tabler-arrow-up' style={{ fontSize: 16 }} />
-    if (sortDir === 'desc') return <i className='tabler-arrow-down' style={{ fontSize: 16 }} />
-
-    return <i className='tabler-arrows-sort' style={{ fontSize: 16, opacity: 0.5 }} />
+  // delete
+  const confirmDelete = async () => {
+    if (!deleteDialog.row) return
+    setDeleteLoading(true)
+    try {
+      await deleteBannerType(deleteDialog.row.id)
+      showToast('delete', `${deleteDialog.row.name} deleted`)
+      await loadBannerTypes()
+      setDeleteDialog({ open: false, row: null })
+    } catch (err) {
+      console.error('DELETE ERROR', err)
+      showToast('error', err?.message || 'Delete failed')
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
-  const getSortableHeader = (headerName, column, IconComponent) => (
-    <div
-      className='cursor-pointer select-none flex items-center'
-      onClick={column.getToggleSortingHandler()}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
-        justifyContent: 'space-between',
-        fontWeight: '500',
-        color: theme.palette.text.primary,
-        width: '100%'
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        {IconComponent}
-        <Typography variant='subtitle2' component='span' fontWeight={500} color='inherit'>
-          {headerName}
-        </Typography>
-      </Box>
+  // Export helpers
+  const exportPrint = () => {
+    const w = window.open('', '_blank')
+    const html = `
+      <html><head><title>Banner Type List</title><style>
+        body{font-family:Arial;padding:24px;}
+        table{width:100%;border-collapse:collapse;}
+        th,td{border:1px solid #ccc;padding:8px;text-align:left;}
+        th{background:#f4f4f4;}
+      </style></head><body>
+      <h2>Banner Type List</h2>
+      <table><thead><tr>
+        <th>S.No</th><th>Name</th><th>Description</th><th>Status</th>
+      </tr></thead><tbody>
+      ${rows.map(r => `<tr><td>${r.sno}</td><td>${r.name}</td><td>${r.description || '-'}</td><td>${r.is_active == 1 ? 'Active' : 'Inactive'}</td></tr>`).join('')}
+      </tbody></table></body></html>`
+    w?.document.write(html)
+    w?.document.close()
+    w?.print()
+  }
 
-      {column.getCanSort() && <SortIcon sortDir={column.getIsSorted()} />}
-    </div>
-  )
+  const exportCSV = () => {
+    const headers = ['S.No', 'Name', 'Description', 'Status']
+    const csv = [
+      headers.join(','),
+      ...rows.map(r =>
+        [
+          r.sno,
+          `"${(r.name || '').replace(/"/g, '""')}"`,
+          `"${(r.description || '-').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`,
+          r.is_active == 1 ? 'Active' : 'Inactive'
+        ].join(',')
+      )
+    ].join('\n')
+    const link = document.createElement('a')
+    link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
+    link.download = 'BannerType_List.csv'
+    link.click()
+    showToast('success', 'CSV downloaded')
+  }
 
-  const columns = [
-    columnHelper.accessor('action', {
-      header: 'ACTIONS',
-      cell: ({ row }) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Tooltip title='Edit'>
-            <IconButton onClick={() => handleOpenModal(row.original)} size='small'>
-              <i className='tabler-edit' style={{ fontSize: 20 }} />
+  const exportExcel = async () => {
+    if (typeof window === 'undefined') return
+    const { utils, writeFile } = await import('xlsx')
+    const ws = utils.json_to_sheet(
+      rows.map(r => ({
+        'S.No': r.sno,
+        Name: r.name,
+        Description: r.description || '-',
+        Status: r.is_active == 1 ? 'Active' : 'Inactive'
+      }))
+    )
+    const wb = utils.book_new()
+    utils.book_append_sheet(wb, ws, 'BannerTypes')
+    writeFile(wb, 'BannerType_List.xlsx')
+    showToast('success', 'Excel downloaded')
+  }
+
+  const exportPDF = async () => {
+    if (typeof window === 'undefined') return
+    const { jsPDF } = await import('jspdf')
+    const autoTable = (await import('jspdf-autotable')).default
+    const doc = new jsPDF()
+    doc.text('Banner Type List', 14, 15)
+    autoTable(doc, {
+      startY: 25,
+      head: [['S.No', 'Name', 'Description', 'Status']],
+      body: rows.map(r => [r.sno, r.name, r.description || '-', r.is_active == 1 ? 'Active' : 'Inactive'])
+    })
+    doc.save('BannerType_List.pdf')
+    showToast('success', 'PDF exported')
+  }
+
+  const exportCopy = () => {
+    const text = rows
+      .map(r => `${r.sno}. ${r.name} | ${r.description || '-'} | ${r.is_active == 1 ? 'Active' : 'Inactive'}`)
+      .join('\n')
+    navigator.clipboard.writeText(text)
+    showToast('info', 'Copied to clipboard')
+  }
+
+  // Table setup
+  const filteredRows = useMemo(() => {
+    if (!searchText) return rows
+    const q = searchText.toLowerCase()
+    return rows.filter(r => (r.name || '').toLowerCase().includes(q) || (r.description || '').toLowerCase().includes(q))
+  }, [rows, searchText])
+
+  const paginatedRows = useMemo(() => {
+    const start = pagination.pageIndex * pagination.pageSize
+    return filteredRows.slice(start, start + pagination.pageSize)
+  }, [filteredRows, pagination])
+
+  const columnHelper = createColumnHelper()
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('sno', { header: 'S.No' }),
+      columnHelper.display({
+        id: 'actions',
+        header: 'Actions',
+        cell: info => (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton size='small' color='primary' onClick={() => handleEdit(info.row.original)}>
+              <i className='tabler-edit' style={{ fontSize: 18 }} />
             </IconButton>
-          </Tooltip>
-          <Tooltip title='Delete'>
-            <IconButton onClick={() => handleDelete(row.original.id)} size='small'>
-              <i className='tabler-trash' style={{ fontSize: 20, color: theme.palette.error.main }} />
+            <IconButton
+              size='small'
+              color='error'
+              onClick={() => setDeleteDialog({ open: true, row: info.row.original })}
+            >
+              <i className='tabler-trash' style={{ fontSize: 18 }} />
             </IconButton>
-          </Tooltip>
-        </Box>
-      ),
-      enableSorting: false
-    }),
-    columnHelper.accessor('name', {
-      header: ({ column }) => getSortableHeader('NAME', column),
-      cell: info => info.getValue()
-    }),
-
-    // Vehicle Make Image column (assuming API returns a URL or file name here)
- columnHelper.accessor('image', {
-      header: 'IMAGE',
-      enableSorting: false,
-      cell: info => {
-        const image = info.getValue()
-
-        return (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {image ? (
-              <img
-                src={image}
-                alt={info.row.original.name}
-                style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 4 }}
-              />
-            ) : (
-              <Typography variant='caption'>image</Typography>
-            )}
           </Box>
         )
-      }
-    }),
-
-
-
-       columnHelper.accessor('width', {
-      header: ({ column }) => getSortableHeader('WIDTH', column),
-      cell: info => info.getValue()
-    }),
-       columnHelper.accessor('height', {
-      header: ({ column }) => getSortableHeader('HEIGHT', column),
-      cell: info => info.getValue()
-    }),
-
-
-
-
-
-    columnHelper.accessor('is_active', {
-      header: 'STATUS',
-      enableSorting: false,
-      cell: info => {
-        let statusValue = info.getValue()
-
-        // Convert numeric / boolean → readable text
-        if (statusValue === 1 || statusValue === true) statusValue = 'Active'
-        if (statusValue === 0 || statusValue === false) statusValue = 'Inactive'
-
-        // ✅ Theme-based colors
-        const bgColor =
-          statusValue === 'Active'
-            ? theme.palette.success.light // light green bg
-            : theme.palette.error.light // light red bg
-
-        const textColor = statusValue === 'Active' ? theme.palette.success.main : theme.palette.error.main // eslint-disable-line no-unused-vars
-
-        return (
-          <Typography
-            variant='body2'
-            sx={{
-              display: 'inline-block',
-              px: 2,
-              py: 0.5,
-              borderRadius: 2,
-              fontWeight: 600,
-              backgroundColor: bgColor,
-              color:
-                theme.palette.mode === 'dark' && statusValue === 'Active'
-                  ? theme.palette.success.main
-                  : theme.palette.mode === 'dark' && statusValue === 'Inactive'
-                    ? theme.palette.error.main
-                    : 'white', // Improved color logic for dark mode
-              textAlign: 'center',
-              minWidth: 80,
-              textTransform: 'capitalize'
-            }}
-          >
-            {statusValue}
-          </Typography>
+      }),
+      columnHelper.accessor('name', { header: 'Name' }),
+      columnHelper.accessor('description', { header: 'Description' }),
+      columnHelper.accessor('is_active', {
+        header: 'Status',
+        cell: info => (
+          <Chip
+            label={info.getValue() == 1 ? 'Active' : 'Inactive'}
+            size='small'
+            sx={{ color: '#fff', bgcolor: info.getValue() == 1 ? 'success.main' : 'error.main', fontWeight: 600 }}
+          />
         )
-      }
-    })
-  ]
+      })
+    ],
+    []
+  )
 
   const table = useReactTable({
-    data,
+    data: paginatedRows,
     columns,
-    state: { columnFilters, globalFilter, sorting },
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
+    manualPagination: true,
+    pageCount: Math.ceil(filteredRows.length / pagination.pageSize) || 1,
+    state: { globalFilter: searchText, pagination },
+    onGlobalFilterChange: setSearchText,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel()
+    getSortedRowModel: getSortedRowModel()
   })
 
   return (
-    <>
-      <Card sx={{ p: '1.5rem' }}>
-        <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: `1px solid ${theme.palette.divider}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: theme.palette.text.primary }}>Banner Type</span>
-            <Button
-              onClick={() => handleOpenModal(null)}
-              startIcon={<i className='tabler-plus' />}
-              variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-              size='small'
-              sx={{
-                textTransform: 'none',
-                backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-                color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-                borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-                '&:hover': {
-                  backgroundColor:
-                    theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-                  borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
+    <Box>
+      <Box sx={{ mb: 2 }}>
+        <Breadcrumbs aria-label='breadcrumb'>
+          <Link href='/' style={{ textDecoration: 'none' }}>
+            Home
+          </Link>
+          <Typography color='text.primary'>Banner Type</Typography>
+        </Breadcrumbs>
+      </Box>
+
+      <Card sx={{ p: 3 }}>
+        <CardHeader
+          title={
+            <Box display='flex' alignItems='center' gap={2}>
+              <Typography variant='h5' sx={{ fontWeight: 600 }}>
+                Banner Type Management
+              </Typography>
+              <GlobalButton
+                startIcon={
+                  <RefreshIcon
+                    sx={{
+                      animation: loading ? 'spin 1s linear infinite' : 'none',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' }
+                      }
+                    }}
+                  />
                 }
-              }}
-            >
-              Add
-            </Button>
+                disabled={loading}
+                onClick={loadBannerTypes}
+              >
+                Refresh
+              </GlobalButton>
+            </Box>
+          }
+          action={
+            <Box display='flex' alignItems='center' gap={2}>
+              <GlobalButton
+                variant='outlined'
+                color='secondary'
+                endIcon={<ArrowDropDownIcon />}
+                onClick={e => setExportAnchorEl(e.currentTarget)}
+              >
+                Export
+              </GlobalButton>
 
-            <Button
-              onClick={fetchMake}
-              startIcon={<i className='tabler-refresh' />}
-              variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-              size='small'
-              sx={{
-                textTransform: 'none',
-                backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-                color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-                borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-                '&:hover': {
-                  backgroundColor:
-                    theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-                  borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
-                }
-              }}
-            >
-              Refresh
-            </Button>
-          </div>
+              <Menu anchorEl={exportAnchorEl} open={Boolean(exportAnchorEl)} onClose={() => setExportAnchorEl(null)}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportPrint()
+                  }}
+                >
+                  <PrintIcon fontSize='small' sx={{ mr: 1 }} /> Print
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportCSV()
+                  }}
+                >
+                  <FileDownloadIcon fontSize='small' sx={{ mr: 1 }} /> CSV
+                </MenuItem>
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportExcel()
+                  }}
+                >
+                  <TableChartIcon fontSize='small' sx={{ mr: 1 }} /> Excel
+                </MenuItem>
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportPDF()
+                  }}
+                >
+                  <PictureAsPdfIcon fontSize='small' sx={{ mr: 1 }} /> PDF
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportCopy()
+                  }}
+                >
+                  <FileCopyIcon fontSize='small' sx={{ mr: 1 }} /> Copy
+                </MenuItem>
+              </Menu>
 
-          <div
-            style={{ fontSize: 14, color: theme.palette.text.secondary, display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <Link href='/' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-              <Box display='flex' alignItems='center' gap={1}>
-                <i className='tabler-smart-home' style={{ fontSize: 20 }} />
-              </Box>
-            </Link>
-            {' / '}
-            <Link href='/masters' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-              Masters
-            </Link>
-            {' / '}
-            <Link href='/banner-type' style={{ textDecoration: 'none', color: theme.palette.text.primary }}>
-              Banner Type
-            </Link>
-          </div>
-        </div>
+              <GlobalButton startIcon={<AddIcon />} onClick={handleAdd}>
+                Add Banner Type
+              </GlobalButton>
+            </Box>
+          }
+          sx={{ pb: 1.5, pt: 1.5, '& .MuiCardHeader-action': { m: 0, alignItems: 'center' } }}
+        />
 
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 10
-          }}
-        >
-          {/* Left: Show entries */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <p style={{ margin: 0, color: theme.palette.text.primary }}>Show</p>
-            <select
-              value={table.getState().pagination.pageSize}
-              onChange={e => {
-                table.setPageSize(Number(e.target.value))
-                table.setPageIndex(0)
-              }}
-              style={{
-                padding: '6px 8px',
-                borderRadius: 4,
-                border: `1px solid ${theme.palette.divider}`,
-                backgroundColor: theme.palette.background.paper,
-                color: theme.palette.text.primary
-              }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-            <p style={{ margin: 0, color: theme.palette.text.primary }}>entries</p>
-          </div>
+        <Divider sx={{ mb: 2 }} />
 
-          {/* Right: Search + Export dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <CustomTextField
-              value={globalFilter}
-              onChange={e => setGlobalFilter(e.target.value)}
-              placeholder='Search...'
-              size='small'
-              sx={{ width: '200px' }}
-            />
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant='body2' color='text.secondary'>
+              Show
+            </Typography>
+            <FormControl size='small' sx={{ width: 140 }}>
+              <Select
+                value={pagination.pageSize}
+                onChange={e => setPagination(p => ({ ...p, pageSize: Number(e.target.value) }))}
+              >
+                {[5, 10, 25, 50, 100].map(v => (
+                  <MuiMenuItem key={v} value={v}>
+                    {v} entries
+                  </MuiMenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
 
-            {/* Export button */}
-            <Button
-              variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'}
-              size='small'
-              onClick={handleExportClick}
-              sx={{
-                textTransform: 'none',
-                backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.main : 'transparent',
-                color: theme.palette.mode === 'light' ? theme.palette.primary.contrastText : theme.palette.text.primary,
-                borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none',
-                '&:hover': {
-                  backgroundColor:
-                    theme.palette.mode === 'light' ? theme.palette.primary.dark : 'rgba(255,255,255,0.08)',
-                  borderColor: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'none'
-                }
-              }}
-            >
-              Export
-            </Button>
-
-            {/* 🔽 Menu for choosing upload type */}
-            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-              <MenuItem onClick={() => handleMenuItemClick('csv')}>Upload CSV</MenuItem>
-              <MenuItem onClick={() => handleMenuItemClick('xlsx')}>Upload Excel (.xlsx)</MenuItem>
-              <MenuItem onClick={() => handleMenuItemClick('json')}>Upload JSON</MenuItem>
-              <MenuItem onClick={() => handleMenuItemClick('pdf')}>Upload PDF</MenuItem>
-            </Menu>
-
-            {/* Hidden file input */}
-            <input
-              type='file'
-              accept={getAcceptType()}
-              style={{ display: 'none' }}
-              ref={fileInputRef}
-              onChange={handleFileChange}
-            />
-          </div>
-        </div>
+          <TextField
+            size='small'
+            placeholder='Search banner type...'
+            value={searchText}
+            onChange={e => setSearchText(e.target.value)}
+            sx={{ width: 360 }}
+          />
+        </Box>
 
         <div className='overflow-x-auto'>
           <table className={styles.table}>
             <thead>
-              {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <th key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder ? null : (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            justifyContent: 'space-between',
-                            fontWeight: '500',
-                            color: theme.palette.text.primary
-                          }}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                        </div>
-                      )}
+              {table.getHeaderGroups().map(hg => (
+                <tr key={hg.id}>
+                  {hg.headers.map(h => (
+                    <th key={h.id}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                      </div>
                     </th>
                   ))}
                 </tr>
@@ -1180,13 +586,13 @@ const VehicleMake = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={columns.length} className='text-center'>
-
+                  <td colSpan={columns.length} style={{ textAlign: 'center', padding: 16 }}>
+                    Loading...
                   </td>
                 </tr>
-              ) : table.getRowModel().rows.length === 0 ? (
+              ) : paginatedRows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className='text-center'>
+                  <td colSpan={columns.length} style={{ textAlign: 'center', padding: 16 }}>
                     No data available
                   </td>
                 </tr>
@@ -1203,18 +609,148 @@ const VehicleMake = () => {
           </table>
         </div>
 
-        <TablePagination
-          component={() => <TablePaginationComponent table={table} />}
-          count={data.length}
-          rowsPerPage={table.getState().pagination.pageSize}
-          page={table.getState().pagination.pageIndex}
-          onPageChange={(_, page) => table.setPageIndex(page)}
+        <TablePaginationComponent
+          table={table}
+          totalCount={filteredRows.length}
+          pagination={pagination}
+          setPagination={setPagination}
         />
       </Card>
 
-      <AddModelWindow open={open} setOpen={setOpen} onSaveCategory={handleSaveCategory} editingRow={editingRow} />
-    </>
+      {/* Drawer for Add/Edit */}
+      <Drawer anchor='right' open={drawerOpen} onClose={() => setDrawerOpen(false)} PaperProps={{ sx: { width: 420 } }}>
+        <Box sx={{ p: 5, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box display='flex' justifyContent='space-between' alignItems='center' mb={3}>
+            <Typography variant='h5' fontWeight={600}>
+              {isEdit ? 'Edit Banner Type' : 'Add Banner Type'}
+            </Typography>
+            <IconButton onClick={() => setDrawerOpen(false)} size='small'>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          <Divider sx={{ mb: 3 }} />
+
+          <form onSubmit={handleSubmit} style={{ flexGrow: 1 }}>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <GlobalTextField
+                  label='Name *'
+                  placeholder='Enter banner type name'
+                  value={formData.name}
+                  inputRef={nameRef}
+                  required
+                  onChange={e => handleFieldChange('name', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <SingleImageUploader file={imageFile} setFile={setImageFile} previewWidth={160} />
+              </Grid>
+
+              <Grid item xs={12}>
+                <GlobalTextarea
+                  label='Description'
+                  placeholder='Optional description...'
+                  rows={4}
+                  value={formData.description}
+                  onChange={e => handleFieldChange('description', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <GlobalSelect
+                  label='Status'
+                  value={formData.is_active === 1 ? 'Active' : 'Inactive'}
+                  onChange={e => handleFieldChange('is_active', e.target.value === 'Active' ? 1 : 0)}
+                  options={[
+                    { value: 'Active', label: 'Active' },
+                    { value: 'Inactive', label: 'Inactive' }
+                  ]}
+                />
+              </Grid>
+            </Grid>
+
+            <Box mt={4} display='flex' gap={2}>
+              <GlobalButton type='submit' fullWidth disabled={loading}>
+                {loading ? (isEdit ? 'Updating...' : 'Saving...') : isEdit ? 'Update' : 'Save'}
+              </GlobalButton>
+              <GlobalButton variant='outlined' color='secondary' fullWidth onClick={handleCancel} disabled={loading}>
+                Cancel
+              </GlobalButton>
+            </Box>
+          </form>
+        </Box>
+      </Drawer>
+
+      {/* Delete Dialog */}
+      <Dialog
+        onClose={() => setDeleteDialog({ open: false, row: null })}
+        aria-labelledby='customized-dialog-title'
+        open={deleteDialog.open}
+        closeAfterTransition={false}
+        PaperProps={{
+          sx: {
+            overflow: 'visible',
+            width: 420,
+            borderRadius: 1,
+            textAlign: 'center'
+          }
+        }}
+      >
+        {/* 🔴 Title with Warning Icon */}
+        <DialogTitle
+          id='customized-dialog-title'
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+            color: 'error.main',
+            fontWeight: 700,
+            pb: 1,
+            position: 'relative'
+          }}
+        >
+          <WarningAmberIcon color='error' sx={{ fontSize: 26 }} />
+          Confirm Delete
+          {/* ❌ Close Button */}
+          <DialogCloseButton onClick={() => setDeleteDialog({ open: false, row: null })} disableRipple>
+            <i className='tabler-x' />
+          </DialogCloseButton>
+        </DialogTitle>
+
+        {/* Centered text */}
+        <DialogContent sx={{ px: 5, pt: 1 }}>
+          <Typography sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.6 }}>
+            Are you sure you want to delete{' '}
+            <strong style={{ color: '#d32f2f' }}>{deleteDialog.row?.name || 'this category'}</strong>
+            ?
+            <br />
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+
+        {/* Centered Buttons */}
+        <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 3, pt: 2 }}>
+          <GlobalButton
+            variant='outlined'
+            color='secondary'
+            onClick={() => setDeleteDialog({ open: false, row: null })}
+          >
+            Cancel
+          </GlobalButton>
+
+          <GlobalButton
+            variant='contained'
+            color='error'
+            onClick={confirmDelete}
+            disabled={deleteLoading} // 🔥 disable during delete
+          >
+            {deleteLoading ? 'Deleting...' : 'Delete'}
+          </GlobalButton>
+        </DialogActions>
+      </Dialog>
+    </Box>
   )
 }
-
-export default VehicleMake
