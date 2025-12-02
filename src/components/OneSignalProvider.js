@@ -4,7 +4,6 @@ import { useEffect } from 'react'
 
 import { toast } from 'react-toastify'
 
-import axiosInstance from '@/utils/token' // your API config
 
 const updatePlayerId = async payload => {
   const res = await axiosInstance.post('api/save-player/', payload)
