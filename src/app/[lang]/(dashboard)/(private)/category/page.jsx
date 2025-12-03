@@ -415,7 +415,7 @@ export default function CategoryPage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Category Management
+                Category 
               </Typography>
               <GlobalButton
                 startIcon={

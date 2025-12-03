@@ -58,12 +58,7 @@ import { showToast } from '@/components/common/Toasts'
 import TablePaginationComponent from '@/components/TablePaginationComponent'
 
 // API
-import {
-  getVehicleTypeList,
-  addVehicleType,
-  updateVehicleType,
-  deleteVehicleType
-} from '@/api/vehicle-type'
+import { getVehicleTypeList, addVehicleType, updateVehicleType, deleteVehicleType } from '@/api/vehicle-type'
 
 // Debounced Input
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
@@ -280,8 +275,7 @@ export default function VehicleTypePage() {
             }}
           />
         )
-      }),
-
+      })
     ],
     []
   )
@@ -391,7 +385,7 @@ export default function VehicleTypePage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Vehicle Type Management
+                Vehicle Type
               </Typography>
               <GlobalButton
                 startIcon={
@@ -424,19 +418,44 @@ export default function VehicleTypePage() {
               </GlobalButton>
 
               <Menu anchorEl={exportAnchorEl} open={exportOpen} onClose={() => setExportAnchorEl(null)}>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportPrint() }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportPrint()
+                  }}
+                >
                   <PrintIcon fontSize='small' sx={{ mr: 1 }} /> Print
                 </MenuItem>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportCSV() }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportCSV()
+                  }}
+                >
                   <FileDownloadIcon fontSize='small' sx={{ mr: 1 }} /> CSV
                 </MenuItem>
-                <MenuItem onClick={async () => { setExportAnchorEl(null); await exportExcel() }}>
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportExcel()
+                  }}
+                >
                   <TableChartIcon fontSize='small' sx={{ mr: 1 }} /> Excel
                 </MenuItem>
-                <MenuItem onClick={async () => { setExportAnchorEl(null); await exportPDF() }}>
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportPDF()
+                  }}
+                >
                   <PictureAsPdfIcon fontSize='small' sx={{ mr: 1 }} /> PDF
                 </MenuItem>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportCopy() }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportCopy()
+                  }}
+                >
                   <FileCopyIcon fontSize='small' sx={{ mr: 1 }} /> Copy
                 </MenuItem>
               </Menu>
@@ -666,12 +685,7 @@ export default function VehicleTypePage() {
             Cancel
           </GlobalButton>
 
-          <GlobalButton
-            variant='contained'
-            color='error'
-            onClick={confirmDelete}
-            disabled={deleteLoading}
-          >
+          <GlobalButton variant='contained' color='error' onClick={confirmDelete} disabled={deleteLoading}>
             {deleteLoading ? 'Deleting...' : 'Delete'}
           </GlobalButton>
         </DialogActions>

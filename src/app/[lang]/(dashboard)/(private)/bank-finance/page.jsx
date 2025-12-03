@@ -24,6 +24,7 @@ import {
   FormControl
 } from '@mui/material'
 
+// Icons
 import AddIcon from '@mui/icons-material/Add'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import CloseIcon from '@mui/icons-material/Close'
@@ -32,16 +33,20 @@ import FileCopyIcon from '@mui/icons-material/FileCopy'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import RefreshIcon from '@mui/icons-material/Refresh'
 
+// Global Components
 import GlobalTextField from '@/components/common/GlobalTextField'
 import GlobalTextarea from '@/components/common/GlobalTextarea'
 import GlobalSelect from '@/components/common/GlobalSelect'
 import GlobalButton from '@/components/common/GlobalButton'
 import DialogCloseButton from '@components/dialogs/DialogCloseButton'
 
+// API
+import { bankListApi, bankAddApi, bankUpdateApi, bankDeleteApi } from '@/api/bank'
+
+// Table
 import {
   useReactTable,
   getCoreRowModel,
-  getFilteredRowModel,
   getSortedRowModel,
   flexRender,
   createColumnHelper
@@ -51,44 +56,17 @@ import styles from '@core/styles/table.module.css'
 import { showToast } from '@/components/common/Toasts'
 import TablePaginationComponent from '@/components/TablePaginationComponent'
 
-// Fake API (replace with real later)
-const delay = ms => new Promise(res => setTimeout(res, ms))
-
-const getList = async () => {
-  await delay(500)
-  return [
-    { id: 1, name: 'SBI Bank', description: 'State Bank of India', is_active: 1 },
-    { id: 2, name: 'HDFC Finance', description: 'Home loans & personal finance', is_active: 1 },
-    { id: 3, name: 'Axis Bank', description: 'Private sector bank', is_active: 1 },
-    { id: 4, name: 'Bajaj Finance', description: 'Consumer durable loans', is_active: 0 },
-    { id: 5, name: 'ICICI Bank', description: 'Full banking services', is_active: 1 }
-  ]
-}
-
-const addItem = async data => {
-  await delay(600)
-  console.log('Added:', data)
-  return { success: true }
-}
-const updateItem = async (id, data) => {
-  await delay(600)
-  console.log('Updated:', id, data)
-  return { success: true }
-}
-const deleteItem = async id => {
-  await delay(600)
-  console.log('Deleted:', id)
-  return { success: true }
-}
-
-// Debounced Search Input
+// Debounce Search
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
   const [value, setValue] = useState(initialValue)
+
   useEffect(() => setValue(initialValue), [initialValue])
+
   useEffect(() => {
     const t = setTimeout(() => onChange(value), debounce)
     return () => clearTimeout(t)
   }, [value])
+
   return <TextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
@@ -105,7 +83,7 @@ export default function BankFinancePage() {
   const [formData, setFormData] = useState({
     id: null,
     name: '',
-    description: '',
+    remarks: '',
     status: 1
   })
 
@@ -115,14 +93,16 @@ export default function BankFinancePage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const res = await getList()
-      const normalized = res.map((item, i) => ({
+      const result = await bankListApi()
+
+      const normalized = result?.data?.map((item, i) => ({
         sno: i + 1,
         ...item
       }))
+
       setRows(normalized)
     } catch (err) {
-      showToast('error', 'Failed to load bank/finance list')
+      showToast('error', 'Failed to load bank list')
     } finally {
       setLoading(false)
     }
@@ -132,27 +112,30 @@ export default function BankFinancePage() {
     loadData()
   }, [])
 
-  // Drawer Controls
+  // Drawer OPEN for Add
   const handleAdd = () => {
     setIsEdit(false)
-    setFormData({ id: null, name: '', description: '', status: 1 })
+    setFormData({ id: null, name: '', remarks: '', status: 1 })
     setDrawerOpen(true)
     setTimeout(() => nameRef.current?.querySelector('input')?.focus(), 100)
   }
 
+  // Drawer OPEN for Edit
   const handleEdit = row => {
     setIsEdit(true)
     setFormData({
       id: row.id,
       name: row.name,
-      description: row.description || '',
+      remarks: row.remarks || '',
       status: row.is_active
     })
     setDrawerOpen(true)
   }
 
+  // Add / Update API Handler
   const handleSubmit = async e => {
     e.preventDefault()
+
     if (!formData.name.trim()) {
       showToast('warning', 'Name is required')
       return
@@ -162,14 +145,18 @@ export default function BankFinancePage() {
     try {
       const payload = {
         name: formData.name.trim(),
-        description: formData.description?.trim() || '',
+        remarks: formData.remarks?.trim() || '',
         is_active: Number(formData.status)
       }
 
-      if (isEdit) await updateItem(formData.id, payload)
-      else await addItem(payload)
+      if (isEdit) {
+        await bankUpdateApi(formData.id, payload)
+        showToast('success', 'Bank updated successfully')
+      } else {
+        await bankAddApi(payload)
+        showToast('success', 'Bank added successfully')
+      }
 
-      showToast('success', isEdit ? 'Bank/Finance updated' : 'Bank/Finance added')
       setDrawerOpen(false)
       loadData()
     } catch (err) {
@@ -179,10 +166,11 @@ export default function BankFinancePage() {
     }
   }
 
+  // DELETE API Handler
   const confirmDelete = async () => {
     try {
-      await deleteItem(deleteDialog.row.id)
-      showToast('success', `${deleteDialog.row.name} deleted`)
+      await bankDeleteApi(deleteDialog.row.id)
+      showToast('delete', `${deleteDialog.row.name} deleted`)
       loadData()
     } catch (err) {
       showToast('error', 'Delete failed')
@@ -191,13 +179,13 @@ export default function BankFinancePage() {
     }
   }
 
-  // Filter & Pagination
+  // Filter Logic
   const filteredRows = useMemo(() => {
     if (!searchText) return rows
     return rows.filter(
       r =>
         r.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        (r.description && r.description.toLowerCase().includes(searchText.toLowerCase()))
+        (r.remarks && r.remarks.toLowerCase().includes(searchText.toLowerCase()))
     )
   }, [rows, searchText])
 
@@ -210,6 +198,7 @@ export default function BankFinancePage() {
   const columnHelper = createColumnHelper()
   const columns = [
     columnHelper.accessor('sno', { header: 'S.No' }),
+
     columnHelper.display({
       id: 'actions',
       header: 'Actions',
@@ -228,8 +217,10 @@ export default function BankFinancePage() {
         </Box>
       )
     }),
+
     columnHelper.accessor('name', { header: 'Bank / Finance Name' }),
-    columnHelper.accessor('description', { header: 'Description' }),
+    columnHelper.accessor('remarks', { header: 'Description' }),
+
     columnHelper.accessor('is_active', {
       header: 'Status',
       cell: info => (
@@ -259,30 +250,33 @@ export default function BankFinancePage() {
     getSortedRowModel: getSortedRowModel()
   })
 
-  // Export Functions
+  // EXPORT CSV
   const exportCSV = () => {
     const csv = [
       ['S.No', 'Name', 'Description', 'Status'].join(','),
-      ...rows.map(r => [r.sno, r.name, r.description || '', r.is_active ? 'Active' : 'Inactive'].join(','))
+      ...rows.map(r => [r.sno, r.name, r.remarks || '', r.is_active ? 'Active' : 'Inactive'].join(','))
     ].join('\n')
+
     const link = document.createElement('a')
     link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
     link.download = 'Bank_Finance_List.csv'
     link.click()
+
     showToast('success', 'CSV downloaded')
   }
 
+  // EXPORT COPY
   const exportCopy = () => {
     const text = rows
-      .map(r => `${r.sno}. ${r.name} | ${r.description || '-'} | ${r.is_active ? 'Active' : 'Inactive'}`)
+      .map(r => `${r.sno}. ${r.name} | ${r.remarks || '-'} | ${r.is_active ? 'Active' : 'Inactive'}`)
       .join('\n')
+
     navigator.clipboard.writeText(text)
     showToast('info', 'Copied to clipboard')
   }
 
   return (
     <Box>
-      {/* Breadcrumbs */}
       <Breadcrumbs aria-label='breadcrumb' sx={{ mb: 3 }}>
         <Link href='/'>Home</Link>
         <Typography color='text.primary'>Bank & Finance</Typography>
@@ -293,8 +287,9 @@ export default function BankFinancePage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' fontWeight={600}>
-                Bank & Finance Management
+                Bank & Finance
               </Typography>
+
               <GlobalButton
                 startIcon={<RefreshIcon sx={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />}
                 disabled={loading}
@@ -314,6 +309,7 @@ export default function BankFinancePage() {
               >
                 Export
               </GlobalButton>
+
               <Menu anchorEl={exportAnchorEl} open={Boolean(exportAnchorEl)} onClose={() => setExportAnchorEl(null)}>
                 <MenuItem
                   onClick={() => {
@@ -338,12 +334,11 @@ export default function BankFinancePage() {
               </GlobalButton>
             </Box>
           }
-          sx={{ pb: 1.5 }}
         />
 
         <Divider sx={{ mb: 2 }} />
 
-        {/* Search + Entries */}
+        {/* Search & Page Size */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
           <FormControl size='small' sx={{ width: 140 }}>
             <Select
@@ -380,11 +375,12 @@ export default function BankFinancePage() {
                 </tr>
               ))}
             </thead>
+
             <tbody>
               {paginatedRows.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className='text-center py-8'>
-                    {searchText ? 'No results found' : 'No bank/finance records'}
+                    {searchText ? 'No results found' : 'No bank records'}
                   </td>
                 </tr>
               ) : (
@@ -408,15 +404,17 @@ export default function BankFinancePage() {
         />
       </Card>
 
-      {/* Add/Edit Drawer */}
+      {/* Add / Edit Drawer */}
       <Drawer anchor='right' open={drawerOpen} onClose={() => setDrawerOpen(false)} PaperProps={{ sx: { width: 420 } }}>
         <Box sx={{ p: 5 }}>
           <Box display='flex' justifyContent='space-between' alignItems='center'>
             <Typography variant='h6'>{isEdit ? 'Edit Bank / Finance' : 'Add Bank / Finance'}</Typography>
+
             <IconButton onClick={() => setDrawerOpen(false)}>
               <CloseIcon />
             </IconButton>
           </Box>
+
           <Divider sx={{ my: 2 }} />
 
           <form onSubmit={handleSubmit}>
@@ -430,31 +428,37 @@ export default function BankFinancePage() {
                   autoFocus
                 />
               </Grid>
+
               <Grid item xs={12}>
                 <GlobalTextarea
                   label='Description'
                   rows={4}
-                  value={formData.description}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  value={formData.remarks}
+                  onChange={e => setFormData({ ...formData, remarks: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12}>
-                <GlobalSelect
-                  label='Status'
-                  value={formData.status === 1 ? 'Active' : 'Inactive'}
-                  onChange={e => setFormData({ ...formData, status: e.target.value === 'Active' ? 1 : 0 })}
-                  options={[
-                    { value: 'Active', label: 'Active' },
-                    { value: 'Inactive', label: 'Inactive' }
-                  ]}
-                />
-              </Grid>
+
+              {/* Status should be visible ONLY during EDIT */}
+              {isEdit && (
+                <Grid item xs={12}>
+                  <GlobalSelect
+                    label='Status'
+                    value={formData.status === 1 ? 'Active' : 'Inactive'}
+                    onChange={e => setFormData({ ...formData, status: e.target.value === 'Active' ? 1 : 0 })}
+                    options={[
+                      { value: 'Active', label: 'Active' },
+                      { value: 'Inactive', label: 'Inactive' }
+                    ]}
+                  />
+                </Grid>
+              )}
             </Grid>
 
             <Box mt={4} display='flex' gap={2}>
               <GlobalButton type='submit' fullWidth loading={loading}>
                 {isEdit ? 'Update' : 'Save'}
               </GlobalButton>
+
               <GlobalButton variant='outlined' color='secondary' fullWidth onClick={() => setDrawerOpen(false)}>
                 Cancel
               </GlobalButton>
@@ -476,13 +480,15 @@ export default function BankFinancePage() {
             <i className='tabler-x' />
           </DialogCloseButton>
         </DialogTitle>
+
         <DialogContent sx={{ px: 5, pt: 1 }}>
           <Typography sx={{ color: 'text.secondary', fontSize: 15 }}>
-            Are you sure you want to delete <strong style={{ color: '#d32f2f' }}>{deleteDialog.row?.name}</strong>?
+            Are you sure you want to delete <strong style={{ color: '#d32f2f' }}>{deleteDialog.row?.name}</strong>?{' '}
             <br />
             This action cannot be undone.
           </Typography>
         </DialogContent>
+
         <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 3 }}>
           <GlobalButton
             variant='outlined'
@@ -491,6 +497,7 @@ export default function BankFinancePage() {
           >
             Cancel
           </GlobalButton>
+
           <GlobalButton variant='contained' color='error' onClick={confirmDelete}>
             Delete
           </GlobalButton>

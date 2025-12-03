@@ -43,6 +43,8 @@ export async function middleware(req) {
 }
 
 export const config = {
-  // Apply to all app routes
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)']
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|images|public|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.svg$).*)'
+  ]
 }
+

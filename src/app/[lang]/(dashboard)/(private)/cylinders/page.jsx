@@ -367,7 +367,7 @@ export default function CylinderPage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Cylinder Management
+                Cylinder
               </Typography>
               <GlobalButton
                 startIcon={

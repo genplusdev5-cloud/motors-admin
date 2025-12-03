@@ -56,12 +56,7 @@ import ChevronRight from '@menu/svg/ChevronRight'
 import { showToast } from '@/components/common/Toasts'
 import TablePaginationComponent from '@/components/TablePaginationComponent'
 
-import {
-  getEngineTypeList,
-  addEngineType,
-  updateEngineType,
-  deleteEngineType
-} from '@/api/engine-type'
+import { getEngineTypeList, addEngineType, updateEngineType, deleteEngineType } from '@/api/engine-type'
 
 // Debounced Input
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
@@ -213,9 +208,10 @@ export default function EngineTypePage() {
   // Table Data
   const filteredRows = useMemo(() => {
     if (!searchText) return rows
-    return rows.filter(r =>
-      r.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-      r.description?.toLowerCase().includes(searchText.toLowerCase())
+    return rows.filter(
+      r =>
+        r.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        r.description?.toLowerCase().includes(searchText.toLowerCase())
     )
   }, [rows, searchText])
 
@@ -225,46 +221,48 @@ export default function EngineTypePage() {
   }, [filteredRows, pagination])
 
   const columnHelper = createColumnHelper()
-  const columns = useMemo(() => [
-    columnHelper.accessor('sno', { header: 'S.No' }),
-     columnHelper.display({
-      id: 'actions',
-      header: 'Actions',
-      cell: info => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <IconButton size='small' color='primary' onClick={() => handleEdit(info.row.original)}>
-            <i className='tabler-edit text-blue-600 text-lg' />
-          </IconButton>
-          <IconButton
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('sno', { header: 'S.No' }),
+      columnHelper.display({
+        id: 'actions',
+        header: 'Actions',
+        cell: info => (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton size='small' color='primary' onClick={() => handleEdit(info.row.original)}>
+              <i className='tabler-edit text-blue-600 text-lg' />
+            </IconButton>
+            <IconButton
+              size='small'
+              color='error'
+              onClick={() => setDeleteDialog({ open: true, row: info.row.original })}
+            >
+              <i className='tabler-trash text-red-600 text-lg' />
+            </IconButton>
+          </Box>
+        )
+      }),
+      columnHelper.accessor('name', { header: 'Engine Type' }),
+      columnHelper.accessor('description', { header: 'Description' }),
+      columnHelper.accessor('is_active', {
+        header: 'Status',
+        cell: info => (
+          <Chip
+            label={info.getValue() == 1 ? 'Active' : 'Inactive'}
             size='small'
-            color='error'
-            onClick={() => setDeleteDialog({ open: true, row: info.row.original })}
-          >
-            <i className='tabler-trash text-red-600 text-lg' />
-          </IconButton>
-        </Box>
-      )
-    }),
-    columnHelper.accessor('name', { header: 'Engine Type' }),
-    columnHelper.accessor('description', { header: 'Description' }),
-    columnHelper.accessor('is_active', {
-      header: 'Status',
-      cell: info => (
-        <Chip
-          label={info.getValue() == 1 ? 'Active' : 'Inactive'}
-          size='small'
-          sx={{
-            color: '#fff',
-            bgcolor: info.getValue() == 1 ? 'success.main' : 'error.main',
-            fontWeight: 600,
-            borderRadius: '6px',
-            px: 1.5
-          }}
-        />
-      )
-    }),
-
-  ], [])
+            sx={{
+              color: '#fff',
+              bgcolor: info.getValue() == 1 ? 'success.main' : 'error.main',
+              fontWeight: 600,
+              borderRadius: '6px',
+              px: 1.5
+            }}
+          />
+        )
+      })
+    ],
+    []
+  )
 
   const table = useReactTable({
     data: paginatedRows,
@@ -369,7 +367,7 @@ export default function EngineTypePage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Engine Type Management
+                Engine Type
               </Typography>
               <GlobalButton
                 startIcon={
@@ -402,19 +400,44 @@ export default function EngineTypePage() {
               </GlobalButton>
 
               <Menu anchorEl={exportAnchorEl} open={exportOpen} onClose={() => setExportAnchorEl(null)}>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportPrint(); }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportPrint()
+                  }}
+                >
                   <PrintIcon fontSize='small' sx={{ mr: 1 }} /> Print
                 </MenuItem>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportCSV(); }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportCSV()
+                  }}
+                >
                   <FileDownloadIcon fontSize='small' sx={{ mr: 1 }} /> CSV
                 </MenuItem>
-                <MenuItem onClick={async () => { setExportAnchorEl(null); await exportExcel(); }}>
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportExcel()
+                  }}
+                >
                   <TableChartIcon fontSize='small' sx={{ mr: 1 }} /> Excel
                 </MenuItem>
-                <MenuItem onClick={async () => { setExportAnchorEl(null); await exportPDF(); }}>
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportPDF()
+                  }}
+                >
                   <PictureAsPdfIcon fontSize='small' sx={{ mr: 1 }} /> PDF
                 </MenuItem>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportCopy(); }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportCopy()
+                  }}
+                >
                   <FileCopyIcon fontSize='small' sx={{ mr: 1 }} /> Copy
                 </MenuItem>
               </Menu>
@@ -430,16 +453,29 @@ export default function EngineTypePage() {
         <Divider sx={{ mb: 2 }} />
 
         {/* Entries & Search */}
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+        <Box
+          sx={{
+            mb: 3,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant='body2' color='text.secondary'>Show</Typography>
+            <Typography variant='body2' color='text.secondary'>
+              Show
+            </Typography>
             <FormControl size='small' sx={{ width: 140 }}>
               <Select
                 value={pagination.pageSize}
                 onChange={e => setPagination(p => ({ ...p, pageSize: Number(e.target.value) }))}
               >
                 {[5, 10, 25, 50, 100].map(v => (
-                  <MenuItem key={v} value={v}>{v} entries</MenuItem>
+                  <MenuItem key={v} value={v}>
+                    {v} entries
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -578,7 +614,18 @@ export default function EngineTypePage() {
         onClose={() => setDeleteDialog({ open: false, row: null })}
         PaperProps={{ sx: { overflow: 'visible', width: 420, borderRadius: 1, textAlign: 'center' } }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, color: 'error.main', fontWeight: 700, pb: 1, position: 'relative' }}>
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+            color: 'error.main',
+            fontWeight: 700,
+            pb: 1,
+            position: 'relative'
+          }}
+        >
           <WarningAmberIcon color='error' sx={{ fontSize: 26 }} />
           Confirm Delete
           <DialogCloseButton onClick={() => setDeleteDialog({ open: false, row: null })} disableRipple>
@@ -596,7 +643,11 @@ export default function EngineTypePage() {
         </DialogContent>
 
         <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 3, pt: 2 }}>
-          <GlobalButton variant='outlined' color='secondary' onClick={() => setDeleteDialog({ open: false, row: null })}>
+          <GlobalButton
+            variant='outlined'
+            color='secondary'
+            onClick={() => setDeleteDialog({ open: false, row: null })}
+          >
             Cancel
           </GlobalButton>
           <GlobalButton variant='contained' color='error' onClick={confirmDelete} disabled={deleteLoading}>

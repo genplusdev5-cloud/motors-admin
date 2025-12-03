@@ -367,7 +367,7 @@ export default function VehicleMakePage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Vehicle Make Management
+                Vehicle Make 
               </Typography>
               <GlobalButton
                 startIcon={

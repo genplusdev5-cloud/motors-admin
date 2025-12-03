@@ -180,9 +180,7 @@ export default function ColorPage() {
 
     // Duplicate check (skip for edit)
     if (!isEdit) {
-      const exists = rows.some(
-        r => r.name.trim().toLowerCase() === formData.name.trim().toLowerCase()
-      )
+      const exists = rows.some(r => r.name.trim().toLowerCase() === formData.name.trim().toLowerCase())
       if (exists) {
         showToast('warning', 'Color with this value already exists')
         return
@@ -258,7 +256,7 @@ export default function ColorPage() {
   const columns = useMemo(
     () => [
       columnHelper.accessor('sno', { header: 'S.No' }),
-       columnHelper.display({
+      columnHelper.display({
         id: 'actions',
         header: 'Actions',
         cell: info => (
@@ -310,8 +308,7 @@ export default function ColorPage() {
             }}
           />
         )
-      }),
-
+      })
     ],
     []
   )
@@ -421,7 +418,7 @@ export default function ColorPage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Color Management
+                Color
               </Typography>
               <GlobalButton
                 startIcon={
@@ -454,19 +451,44 @@ export default function ColorPage() {
               </GlobalButton>
 
               <Menu anchorEl={exportAnchorEl} open={exportOpen} onClose={() => setExportAnchorEl(null)}>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportPrint() }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportPrint()
+                  }}
+                >
                   <PrintIcon fontSize='small' sx={{ mr: 1 }} /> Print
                 </MenuItem>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportCSV() }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportCSV()
+                  }}
+                >
                   <FileDownloadIcon fontSize='small' sx={{ mr: 1 }} /> CSV
                 </MenuItem>
-                <MenuItem onClick={async () => { setExportAnchorEl(null); await exportExcel() }}>
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportExcel()
+                  }}
+                >
                   <TableChartIcon fontSize='small' sx={{ mr: 1 }} /> Excel
                 </MenuItem>
-                <MenuItem onClick={async () => { setExportAnchorEl(null); await exportPDF() }}>
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportPDF()
+                  }}
+                >
                   <PictureAsPdfIcon fontSize='small' sx={{ mr: 1 }} /> PDF
                 </MenuItem>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportCopy() }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportCopy()
+                  }}
+                >
                   <FileCopyIcon fontSize='small' sx={{ mr: 1 }} /> Copy
                 </MenuItem>
               </Menu>
@@ -482,7 +504,16 @@ export default function ColorPage() {
         <Divider sx={{ mb: 2 }} />
 
         {/* Entries & Search */}
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+        <Box
+          sx={{
+            mb: 3,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant='body2' color='text.secondary'>
               Show
@@ -493,7 +524,9 @@ export default function ColorPage() {
                 onChange={e => setPagination(p => ({ ...p, pageSize: Number(e.target.value) }))}
               >
                 {[5, 10, 25, 50, 100].map(v => (
-                  <MenuItem key={v} value={v}>{v} entries</MenuItem>
+                  <MenuItem key={v} value={v}>
+                    {v} entries
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -674,12 +707,7 @@ export default function ColorPage() {
             Cancel
           </GlobalButton>
 
-          <GlobalButton
-            variant='contained'
-            color='error'
-            onClick={confirmDelete}
-            disabled={deleteLoading}
-          >
+          <GlobalButton variant='contained' color='error' onClick={confirmDelete} disabled={deleteLoading}>
             {deleteLoading ? 'Deleting...' : 'Delete'}
           </GlobalButton>
         </DialogActions>

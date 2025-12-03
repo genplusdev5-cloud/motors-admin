@@ -478,7 +478,7 @@ export default function SubCategoryPage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                SubCategory Management
+                SubCategory
               </Typography>
               <GlobalButton
                 startIcon={

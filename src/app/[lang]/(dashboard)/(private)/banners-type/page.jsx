@@ -455,7 +455,7 @@ export default function BannerTypePage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Banner Type Management
+                Banner Type
               </Typography>
               <GlobalButton
                 startIcon={

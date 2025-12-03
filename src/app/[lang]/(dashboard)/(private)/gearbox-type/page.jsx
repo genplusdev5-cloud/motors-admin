@@ -218,7 +218,7 @@ export default function GearboxPage() {
   const columnHelper = createColumnHelper()
   const columns = [
     columnHelper.accessor('sno', { header: 'S.No' }),
-     columnHelper.display({
+    columnHelper.display({
       id: 'actions',
       header: 'Actions',
       cell: info => (
@@ -252,8 +252,7 @@ export default function GearboxPage() {
           }}
         />
       )
-    }),
-
+    })
   ]
 
   const table = useReactTable({
@@ -304,7 +303,7 @@ export default function GearboxPage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' fontWeight={600}>
-                Gearbox Management
+                Gearbox
               </Typography>
               <GlobalButton
                 startIcon={

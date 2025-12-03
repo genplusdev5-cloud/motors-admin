@@ -39,6 +39,13 @@ import GlobalButton from '@/components/common/GlobalButton'
 import DialogCloseButton from '@components/dialogs/DialogCloseButton'
 
 import {
+  subscriptionTypeListApi,
+  subscriptionTypeAddApi,
+  subscriptionTypeUpdateApi,
+  subscriptionTypeDeleteApi
+} from '@/api/subscription-type'
+
+import {
   useReactTable,
   getCoreRowModel,
   getFilteredRowModel,
@@ -50,24 +57,6 @@ import {
 import styles from '@core/styles/table.module.css'
 import { showToast } from '@/components/common/Toasts'
 import TablePaginationComponent from '@/components/TablePaginationComponent'
-
-// Fake API with dummy data (replace later)
-const delay = ms => new Promise(res => setTimeout(res, ms))
-
-const getList = async () => {
-  await delay(500)
-  return [
-    { id: 1, name: 'Basic Plan', description: 'Free tier with limited features', is_active: 1 },
-    { id: 2, name: 'Pro Monthly', description: 'Full access - billed monthly', is_active: 1 },
-    { id: 3, name: 'Pro Yearly', description: 'Full access - billed yearly (save 20%)', is_active: 1 },
-    { id: 4, name: 'Enterprise', description: 'Custom pricing & support', is_active: 1 },
-    { id: 5, name: 'Legacy Plan', description: 'Old pricing - discontinued', is_active: 0 }
-  ]
-}
-
-const addItem = async data => { await delay(600); console.log('Added:', data); return { success: true } }
-const updateItem = async (id, data) => { await delay(600); console.log('Updated:', id, data); return { success: true } }
-const deleteItem = async id => { await delay(600); console.log('Deleted:', id); return { success: true } }
 
 // Debounced Search
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
@@ -94,6 +83,9 @@ export default function SubscriptionTypePage() {
     id: null,
     name: '',
     description: '',
+    color: '',
+    days: '',
+    icon: '',
     status: 1
   })
 
@@ -103,11 +95,13 @@ export default function SubscriptionTypePage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const res = await getList()
-      const normalized = res.map((item, i) => ({
+      const res = await subscriptionTypeListApi()
+
+      const normalized = res?.data?.map((item, i) => ({
         sno: i + 1,
         ...item
       }))
+
       setRows(normalized)
     } catch (err) {
       showToast('error', 'Failed to load subscription types')
@@ -133,7 +127,10 @@ export default function SubscriptionTypePage() {
     setFormData({
       id: row.id,
       name: row.name,
-      description: row.description || '',
+      description: row.description,
+      color: row.color,
+      days: row.days,
+      icon: row.icon,
       status: row.is_active
     })
     setDrawerOpen(true)
@@ -141,27 +138,36 @@ export default function SubscriptionTypePage() {
 
   const handleSubmit = async e => {
     e.preventDefault()
+
     if (!formData.name.trim()) {
       showToast('warning', 'Name is required')
       return
     }
 
     setLoading(true)
+
     try {
       const payload = {
-        name: formData.name.trim(),
-        description: formData.description?.trim() || '',
+        name: formData.name,
+        description: formData.description,
+        color: formData.color,
+        days: Number(formData.days),
+        icon: formData.icon,
         is_active: Number(formData.status)
       }
 
-      if (isEdit) await updateItem(formData.id, payload)
-      else await addItem(payload)
+      if (isEdit) {
+        await subscriptionTypeUpdateApi(formData.id, payload)
+        showToast('success', 'Subscription type updated')
+      } else {
+        await subscriptionTypeAddApi(payload)
+        showToast('success', 'Subscription type added')
+      }
 
-      showToast('success', isEdit ? 'Subscription type updated' : 'Subscription type added')
       setDrawerOpen(false)
       loadData()
     } catch (err) {
-      showToast('error', 'Operation failed')
+      showToast('error', err?.response?.data?.message || 'Operation failed')
     } finally {
       setLoading(false)
     }
@@ -169,7 +175,8 @@ export default function SubscriptionTypePage() {
 
   const confirmDelete = async () => {
     try {
-      await deleteItem(deleteDialog.row.id)
+      await subscriptionTypeDeleteApi(deleteDialog.row.id)
+
       showToast('success', `${deleteDialog.row.name} deleted`)
       loadData()
     } catch (err) {
@@ -182,9 +189,10 @@ export default function SubscriptionTypePage() {
   // Filter & Pagination
   const filteredRows = useMemo(() => {
     if (!searchText) return rows
-    return rows.filter(r =>
-      r.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      (r.description && r.description.toLowerCase().includes(searchText.toLowerCase()))
+    return rows.filter(
+      r =>
+        r.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        (r.description && r.description.toLowerCase().includes(searchText.toLowerCase()))
     )
   }, [rows, searchText])
 
@@ -205,7 +213,11 @@ export default function SubscriptionTypePage() {
           <IconButton size='small' color='primary' onClick={() => handleEdit(info.row.original)}>
             <i className='tabler-edit text-blue-600 text-lg' />
           </IconButton>
-          <IconButton size='small' color='error' onClick={() => setDeleteDialog({ open: true, row: info.row.original })}>
+          <IconButton
+            size='small'
+            color='error'
+            onClick={() => setDeleteDialog({ open: true, row: info.row.original })}
+          >
             <i className='tabler-trash text-red-600 text-lg' />
           </IconButton>
         </Box>
@@ -227,8 +239,7 @@ export default function SubscriptionTypePage() {
           }}
         />
       )
-    }),
-
+    })
   ]
 
   const table = useReactTable({
@@ -257,7 +268,9 @@ export default function SubscriptionTypePage() {
   }
 
   const exportCopy = () => {
-    const text = rows.map(r => `${r.sno}. ${r.name} | ${r.description || '-'} | ${r.is_active ? 'Active' : 'Inactive'}`).join('\n')
+    const text = rows
+      .map(r => `${r.sno}. ${r.name} | ${r.description || '-'} | ${r.is_active ? 'Active' : 'Inactive'}`)
+      .join('\n')
     navigator.clipboard.writeText(text)
     showToast('info', 'Copied to clipboard')
   }
@@ -274,7 +287,9 @@ export default function SubscriptionTypePage() {
         <CardHeader
           title={
             <Box display='flex' alignItems='center' gap={2}>
-              <Typography variant='h5' fontWeight={600}>Subscription Type Management</Typography>
+              <Typography variant='h5' fontWeight={600}>
+                Subscription Type{' '}
+              </Typography>
               <GlobalButton
                 startIcon={<RefreshIcon sx={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />}
                 disabled={loading}
@@ -295,10 +310,20 @@ export default function SubscriptionTypePage() {
                 Export
               </GlobalButton>
               <Menu anchorEl={exportAnchorEl} open={Boolean(exportAnchorEl)} onClose={() => setExportAnchorEl(null)}>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportCSV() }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportCSV()
+                  }}
+                >
                   <FileDownloadIcon sx={{ mr: 1 }} /> CSV
                 </MenuItem>
-                <MenuItem onClick={() => { setExportAnchorEl(null); exportCopy() }}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportCopy()
+                  }}
+                >
                   <FileCopyIcon sx={{ mr: 1 }} /> Copy
                 </MenuItem>
               </Menu>
@@ -321,7 +346,9 @@ export default function SubscriptionTypePage() {
               onChange={e => setPagination(p => ({ ...p, pageSize: e.target.value }))}
             >
               {[10, 25, 50, 100].map(v => (
-                <MenuItem key={v} value={v}>{v} entries</MenuItem>
+                <MenuItem key={v} value={v}>
+                  {v} entries
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -343,9 +370,7 @@ export default function SubscriptionTypePage() {
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map(header => (
-                    <th key={header.id}>
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                    </th>
+                    <th key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</th>
                   ))}
                 </tr>
               ))}
@@ -361,9 +386,7 @@ export default function SubscriptionTypePage() {
                 table.getRowModel().rows.map(row => (
                   <tr key={row.id}>
                     {row.getVisibleCells().map(cell => (
-                      <td key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
+                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
                     ))}
                   </tr>
                 ))
@@ -372,7 +395,12 @@ export default function SubscriptionTypePage() {
           </table>
         </div>
 
-        <TablePaginationComponent table={table} totalCount={filteredRows.length} pagination={pagination} setPagination={setPagination} />
+        <TablePaginationComponent
+          table={table}
+          totalCount={filteredRows.length}
+          pagination={pagination}
+          setPagination={setPagination}
+        />
       </Card>
 
       {/* Add/Edit Drawer */}
@@ -380,7 +408,9 @@ export default function SubscriptionTypePage() {
         <Box sx={{ p: 5 }}>
           <Box display='flex' justifyContent='space-between' alignItems='center'>
             <Typography variant='h6'>{isEdit ? 'Edit Subscription Type' : 'Add Subscription Type'}</Typography>
-            <IconButton onClick={() => setDrawerOpen(false)}><CloseIcon /></IconButton>
+            <IconButton onClick={() => setDrawerOpen(false)}>
+              <CloseIcon />
+            </IconButton>
           </Box>
           <Divider sx={{ my: 2 }} />
 
@@ -429,21 +459,31 @@ export default function SubscriptionTypePage() {
       </Drawer>
 
       {/* Delete Dialog */}
-      <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, row: null })}
-        PaperProps={{ sx: { overflow: 'visible', width: 440, borderRadius: 2, textAlign: 'center' } }}>
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, row: null })}
+        PaperProps={{ sx: { overflow: 'visible', width: 440, borderRadius: 2, textAlign: 'center' } }}
+      >
         <DialogTitle sx={{ color: 'error.main', fontWeight: 700, pb: 1, position: 'relative' }}>
           <WarningAmberIcon color='error' sx={{ fontSize: 28, mr: 1 }} />
           Confirm Delete
-          <DialogCloseButton onClick={() => setDeleteDialog({ open: false, row: null })}><i className='tabler-x' /></DialogCloseButton>
+          <DialogCloseButton onClick={() => setDeleteDialog({ open: false, row: null })}>
+            <i className='tabler-x' />
+          </DialogCloseButton>
         </DialogTitle>
         <DialogContent sx={{ px: 5, pt: 1 }}>
           <Typography sx={{ color: 'text.secondary', fontSize: 15 }}>
-            Are you sure you want to delete <strong style={{ color: '#d32f2f' }}>{deleteDialog.row?.name}</strong>?<br />
+            Are you sure you want to delete <strong style={{ color: '#d32f2f' }}>{deleteDialog.row?.name}</strong>?
+            <br />
             This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 3 }}>
-          <GlobalButton variant='outlined' color='secondary' onClick={() => setDeleteDialog({ open: false, row: null })}>
+          <GlobalButton
+            variant='outlined'
+            color='secondary'
+            onClick={() => setDeleteDialog({ open: false, row: null })}
+          >
             Cancel
           </GlobalButton>
           <GlobalButton variant='contained' color='error' onClick={confirmDelete}>

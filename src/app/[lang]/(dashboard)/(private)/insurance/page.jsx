@@ -42,6 +42,8 @@ import GlobalSelect from '@/components/common/GlobalSelect'
 import GlobalButton from '@/components/common/GlobalButton'
 import DialogCloseButton from '@components/dialogs/DialogCloseButton'
 
+import { insuranceListApi, insuranceAddApi, insuranceUpdateApi, insuranceDeleteApi } from '@/api/insurance'
+
 import {
   useReactTable,
   getCoreRowModel,
@@ -57,33 +59,6 @@ import TablePaginationComponent from '@/components/TablePaginationComponent'
 
 // Fake API (replace with real ones later)
 const delay = ms => new Promise(res => setTimeout(res, ms))
-
-const getList = async () => {
-  await delay(500)
-  return [
-    { id: 1, name: 'Health Insurance', description: 'Covers medical expenses', is_active: 1 },
-    { id: 2, name: 'Car Insurance', description: 'Vehicle damage & liability', is_active: 1 },
-    { id: 3, name: 'Life Insurance', description: 'Financial protection', is_active: 0 },
-    { id: 4, name: 'Home Insurance', description: 'Property protection', is_active: 1 },
-    { id: 5, name: 'Travel Insurance', description: 'Trip cancellation coverage', is_active: 1 }
-  ]
-}
-
-const addItem = async data => {
-  await delay(600)
-  console.log('Added:', data)
-  return { success: true }
-}
-const updateItem = async (id, data) => {
-  await delay(600)
-  console.log('Updated:', id, data)
-  return { success: true }
-}
-const deleteItem = async id => {
-  await delay(600)
-  console.log('Deleted:', id)
-  return { success: true }
-}
 
 // Debounced Input
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
@@ -109,7 +84,12 @@ export default function InsurancePage() {
   const [formData, setFormData] = useState({
     id: null,
     name: '',
-    description: '',
+    spoc_name: '',
+    spoc_email: '',
+    spoc_phone: '',
+    ikr_number: '',
+    rga_number: '',
+    remarks: '',
     status: 1
   })
 
@@ -119,11 +99,13 @@ export default function InsurancePage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const res = await getList()
-      const normalized = res.map((item, i) => ({
+      const res = await insuranceListApi()
+
+      const normalized = res?.data?.map((item, i) => ({
         sno: i + 1,
         ...item
       }))
+
       setRows(normalized)
     } catch (err) {
       showToast('error', 'Failed to load insurance list')
@@ -139,9 +121,18 @@ export default function InsurancePage() {
   // Drawer
   const handleAdd = () => {
     setIsEdit(false)
-    setFormData({ id: null, name: '', description: '', status: 1 })
+    setFormData({
+      id: null,
+      name: '',
+      spoc_name: '',
+      spoc_email: '',
+      spoc_phone: '',
+      ikr_number: '',
+      rga_number: '',
+      remarks: '',
+      status: 1
+    })
     setDrawerOpen(true)
-    setTimeout(() => nameRef.current?.querySelector('input')?.focus(), 100)
   }
 
   const handleEdit = row => {
@@ -149,7 +140,12 @@ export default function InsurancePage() {
     setFormData({
       id: row.id,
       name: row.name,
-      description: row.description || '',
+      spoc_name: row.spoc_name || '',
+      spoc_email: row.spoc_email || '',
+      spoc_phone: row.spoc_phone || '',
+      ikr_number: row.ikr_number || '',
+      rga_number: row.rga_number || '',
+      remarks: row.remarks || '',
       status: row.is_active
     })
     setDrawerOpen(true)
@@ -157,20 +153,30 @@ export default function InsurancePage() {
 
   const handleSubmit = async e => {
     e.preventDefault()
-    if (!formData.name.trim()) return showToast('warning', 'Name is required')
+
+    if (!formData.name.trim()) return showToast('warning', 'Insurance name is required')
 
     setLoading(true)
     try {
       const payload = {
-        name: formData.name.trim(),
-        description: formData.description?.trim() || '',
+        name: formData.name,
+        spoc_name: formData.spoc_name,
+        spoc_email: formData.spoc_email,
+        spoc_phone: formData.spoc_phone,
+        ikr_number: formData.ikr_number,
+        rga_number: formData.rga_number,
+        remarks: formData.remarks,
         is_active: Number(formData.status)
       }
 
-      if (isEdit) await updateItem(formData.id, payload)
-      else await addItem(payload)
+      if (isEdit) {
+        await insuranceUpdateApi(formData.id, payload)
+        showToast('success', 'Insurance updated successfully')
+      } else {
+        await insuranceAddApi(payload)
+        showToast('success', 'Insurance added successfully')
+      }
 
-      showToast('success', isEdit ? 'Insurance updated' : 'Insurance added')
       setDrawerOpen(false)
       loadData()
     } catch (err) {
@@ -182,8 +188,8 @@ export default function InsurancePage() {
 
   const confirmDelete = async () => {
     try {
-      await deleteItem(deleteDialog.row.id)
-      showToast('success', `${deleteDialog.row.name} deleted`)
+      await insuranceDeleteApi(deleteDialog.row.id)
+      showToast('delete', `${deleteDialog.row.name} deleted`)
       loadData()
     } catch (err) {
       showToast('error', 'Delete failed')
@@ -211,6 +217,7 @@ export default function InsurancePage() {
   const columnHelper = createColumnHelper()
   const columns = [
     columnHelper.accessor('sno', { header: 'S.No' }),
+
     columnHelper.display({
       id: 'actions',
       header: 'Actions',
@@ -229,8 +236,15 @@ export default function InsurancePage() {
         </Box>
       )
     }),
+
     columnHelper.accessor('name', { header: 'Insurance Name' }),
-    columnHelper.accessor('description', { header: 'Description' }),
+    columnHelper.accessor('spoc_name', { header: 'SPOC Name' }),
+    columnHelper.accessor('spoc_email', { header: 'Email' }),
+    columnHelper.accessor('spoc_phone', { header: 'Phone' }),
+    columnHelper.accessor('ikr_number', { header: 'IKR Number' }),
+    columnHelper.accessor('rga_number', { header: 'RGA Number' }),
+    columnHelper.accessor('remarks', { header: 'Remarks' }),
+
     columnHelper.accessor('is_active', {
       header: 'Status',
       cell: info => (
@@ -286,7 +300,7 @@ export default function InsurancePage() {
       {/* Breadcrumbs */}
       <Breadcrumbs aria-label='breadcrumb' sx={{ mb: 3 }}>
         <Link href='/'>Home</Link>
-        <Typography color='text.primary'>Insurance Management</Typography>
+        <Typography color='text.primary'>Insurance </Typography>
       </Breadcrumbs>
 
       <Card sx={{ p: 3 }}>
@@ -427,33 +441,75 @@ export default function InsurancePage() {
                   label='Insurance Name *'
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  inputRef={nameRef}
-                  autoFocus
                 />
               </Grid>
+
+              <Grid item xs={12}>
+                <GlobalTextField
+                  label='SPOC Name'
+                  value={formData.spoc_name}
+                  onChange={e => setFormData({ ...formData, spoc_name: e.target.value })}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <GlobalTextField
+                  label='SPOC Email'
+                  value={formData.spoc_email}
+                  onChange={e => setFormData({ ...formData, spoc_email: e.target.value })}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <GlobalTextField
+                  label='SPOC Phone'
+                  value={formData.spoc_phone}
+                  onChange={e => setFormData({ ...formData, spoc_phone: e.target.value })}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <GlobalTextField
+                  label='IKR Number'
+                  value={formData.ikr_number}
+                  onChange={e => setFormData({ ...formData, ikr_number: e.target.value })}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <GlobalTextField
+                  label='RGA Number'
+                  value={formData.rga_number}
+                  onChange={e => setFormData({ ...formData, rga_number: e.target.value })}
+                />
+              </Grid>
+
               <Grid item xs={12}>
                 <GlobalTextarea
-                  label='Description'
+                  label='Remarks'
                   rows={4}
-                  value={formData.description}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  value={formData.remarks}
+                  onChange={e => setFormData({ ...formData, remarks: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12}>
-                <GlobalSelect
-                  label='Status'
-                  value={formData.status === 1 ? 'Active' : 'Inactive'}
-                  onChange={e => setFormData({ ...formData, status: e.target.value === 'Active' ? 1 : 0 })}
-                  options={[
-                    { value: 'Active', label: 'Active' },
-                    { value: 'Inactive', label: 'Inactive' }
-                  ]}
-                />
-              </Grid>
+
+              {isEdit && (
+                <Grid item xs={12}>
+                  <GlobalSelect
+                    label='Status'
+                    value={formData.status === 1 ? 'Active' : 'Inactive'}
+                    onChange={e => setFormData({ ...formData, status: e.target.value === 'Active' ? 1 : 0 })}
+                    options={[
+                      { value: 'Active', label: 'Active' },
+                      { value: 'Inactive', label: 'Inactive' }
+                    ]}
+                  />
+                </Grid>
+              )}
             </Grid>
 
             <Box mt={4} display='flex' gap={2}>
-              <GlobalButton type='submit' fullWidth loading={loading}>
+              <GlobalButton type='submit' fullWidth loading={loading ? 'true' : undefined}>
                 {isEdit ? 'Update' : 'Save'}
               </GlobalButton>
               <GlobalButton variant='outlined' color='secondary' fullWidth onClick={() => setDrawerOpen(false)}>

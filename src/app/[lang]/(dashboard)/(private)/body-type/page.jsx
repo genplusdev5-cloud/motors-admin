@@ -307,7 +307,7 @@ export default function BodyTypePage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Body Type Management
+                Body Type
               </Typography>
               <GlobalButton
                 startIcon={<RefreshIcon sx={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />}

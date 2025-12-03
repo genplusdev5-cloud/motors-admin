@@ -419,7 +419,7 @@ export default function RecordYear() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Record Year Management
+                Record Year
               </Typography>
               <GlobalButton
                 startIcon={

@@ -1,12 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { showToast } from '@/components/common/Toasts.jsx'
+import SwiperLoop from '@/components/SwiperLoop'
 
-import useMediaQuery from '@mui/material/useMediaQuery'
+
+// react-hook-form & valibot
+import { Controller, useForm } from 'react-hook-form'
+import { valibotResolver } from '@hookform/resolvers/valibot'
+import { email, minLength, nonEmpty, object, pipe, string } from 'valibot'
+
+// MUI
 import { styled, useTheme } from '@mui/material/styles'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
@@ -14,27 +22,27 @@ import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
 
-import { signIn } from 'next-auth/react'
-import { Controller, useForm } from 'react-hook-form'
-import { valibotResolver } from '@hookform/resolvers/valibot'
-import { email, object, minLength, string, pipe, nonEmpty } from 'valibot'
-import classnames from 'classnames'
-
+// Custom components / utils in your project
 import Logo from '@components/layout/shared/Logo'
 import CustomTextField from '@core/components/mui/TextField'
-import { useImageVariant } from '@core/hooks/useImageVariant'
-import { useSettings } from '@core/hooks/useSettings'
 import { getLocalizedUrl } from '@/utils/i18n'
+import classnames from 'classnames'
 
+// Swiper (right side visuals)
+import { Swiper, SwiperSlide } from 'swiper/react'
+import { Autoplay, Pagination } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
+
+// API + token helper (you already had these in your project)
 import { adminLoginApi } from '@/api/auth/login'
-
-// ←------ ADDED: import saveTokens
 import { saveTokens } from '@/utils/tokenUtils'
+import { signIn } from 'next-auth/react'
 
-// -------------------- Styled Components --------------------
-
+// ---------------- Styled helpers used in your previous login file ----------------
 const LoginIllustration = styled('img')(({ theme }) => ({
-  zIndex: 2,
+  position: 'relative',
+  zIndex: 5,
   blockSize: 'auto',
   maxBlockSize: 680,
   maxInlineSize: '100%',
@@ -47,11 +55,10 @@ const MaskImg = styled('img')({
   inlineSize: '100%',
   position: 'absolute',
   insetBlockEnd: 0,
-  zIndex: -1
+  zIndex: 0
 })
 
-// -------------------- Validation Schema --------------------
-
+// ---------------- Validation Schema ----------------
 const schema = object({
   email: pipe(string(), minLength(1, 'This field is required'), email('Email is invalid')),
   password: pipe(
@@ -61,40 +68,20 @@ const schema = object({
   )
 })
 
-// -------------------- Component --------------------
-
-const Login = ({ mode }) => {
-  const [isPasswordShown, setIsPasswordShown] = useState(false)
-  const [errorMsg, setErrorMsg] = useState(null)
-  const [loading, setLoading] = useState(false)
-
+// ---------------- Main Component ----------------
+export default function LoginWithTabs() {
+  const theme = useTheme()
   const router = useRouter()
   const { lang: locale } = useParams()
-  const { settings } = useSettings()
-  const theme = useTheme()
   const hidden = useMediaQuery(theme.breakpoints.down('md'))
 
-  // Remove redirectTo query if present
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.has('redirectTo')) {
-      router.replace(`/${locale}/login`)
-    }
-  }, [locale, router])
+  // tab: 0 = Dealer Admin, 1 = Manager, 2 = Sales Rep
+  const [tab, setTab] = useState(0)
+  const [isPasswordShown, setIsPasswordShown] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState(null)
 
-  // Images
-  // Images
-  const authBackground = useImageVariant(mode, '/images/pages/auth-mask-light.png', '/images/pages/car-image.png')
-
-  const characterIllustration = useImageVariant(
-    mode,
-    '/images/illustrations/auth/car-imageLogin.png',
-    '/images/illustrations/auth/car-imageLogin.png',
-    '/images/illustrations/auth/v2-login-light-border.png',
-    '/images/illustrations/auth/v2-login-dark-border.png'
-  )
-
-  // Form
+  // form
   const {
     control,
     handleSubmit,
@@ -104,24 +91,41 @@ const Login = ({ mode }) => {
     defaultValues: { email: '', password: '' }
   })
 
+  useEffect(() => {
+    // remove redirectTo param if present (same as your previous file)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.has('redirectTo')) {
+        router.replace(`/${locale}/login`)
+      }
+    }
+  }, [locale, router])
+
   const handleClickShowPassword = () => setIsPasswordShown(s => !s)
+
+  // map tab to role string we send to backend
+  const roleMap = ['dealer', 'manager', 'sales']
+  const selectedRole = roleMap[tab] || 'dealer'
 
   const onSubmit = async formData => {
     setLoading(true)
     setErrorMsg(null)
 
     try {
-      // 1) Call backend login API
-      const apiResponse = await adminLoginApi({
+      // payload: include role so backend can distinguish if needed
+      const payload = {
         email: formData.email,
-        password: formData.password
-      })
+        password: formData.password,
+        role: selectedRole
+      }
 
-      console.log('🟢 API RAW RESPONSE:', apiResponse)
+      const apiResponse = await adminLoginApi(payload)
+      // console.log('API response', apiResponse)
 
-      if (apiResponse.status !== 'success') {
-        showToast('error', apiResponse.message || 'Login failed')
-        throw new Error(apiResponse.message || 'Login failed')
+      if (apiResponse?.status !== 'success') {
+        const msg = apiResponse?.message || 'Login failed'
+        showToast('error', msg)
+        throw new Error(msg)
       }
 
       const userData = apiResponse.data || {}
@@ -130,13 +134,13 @@ const Login = ({ mode }) => {
 
       if (!accessToken) {
         showToast('error', 'No access token returned from backend')
-        throw new Error('No access token returned from backend')
+        throw new Error('No access token returned')
       }
 
-      // 2) Save tokens locally — use object-style call so we also persist user
+      // save tokens + user
       saveTokens({ access: accessToken, refresh: refreshToken, user: userData })
 
-      // 3) Create NextAuth session
+      // create NextAuth session (if you use credentials provider)
       const signInResponse = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
@@ -145,54 +149,72 @@ const Login = ({ mode }) => {
       })
 
       if (signInResponse?.error) {
-        console.error('NextAuth sign-in error:', signInResponse.error)
         showToast('error', 'Session creation failed')
-        throw new Error('Session creation failed')
+        throw new Error(signInResponse.error)
       }
 
-      // 4) Mark active session in sessionStorage
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('active', 'true')
       }
 
-      // 5) Success toast + redirect
-      showToast('success', 'Login successful! Redirecting...')
+      showToast('success', 'Login successful!')
       router.replace(getLocalizedUrl('/dashboard', locale))
     } catch (err) {
-      console.error('❌ Login failed:', err)
+      // normalize message
       const msg = err?.response?.data?.message || err.message || 'Invalid email or password.'
       setErrorMsg(msg)
       showToast('error', msg)
+      console.error('Login error', err)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className='flex bs-full justify-center'>
-      {/* Left Illustration */}
-      <div
-        className={classnames(
-          'flex bs-full items-center justify-center flex-1 min-bs-[100dvh] relative p-6 max-md:hidden',
-          { 'border-ie': settings.skin === 'bordered' }
-        )}
-      >
-        <LoginIllustration src={characterIllustration} alt='character-illustration' />
-        {!hidden && <MaskImg alt='mask' src={authBackground} />}
-      </div>
+    <div className='flex bs-full justify-between items-stretch'>
+      {/* LEFT: form area (keeps your original left layout look) */}
+      <div className='w-1/2 relative bg-white px-16 flex'>
+        <div className='max-w-[820px] w-full pt-[120px] pb-10'>
+          <Link href={getLocalizedUrl('/', locale)} className='absolute top-6 left-8'>
+            <img
+              src='/images/MotorMatchMainLogo.png'
+              alt='Motor Match Logo'
+              width={260}
+              className='object-contain mt-4'
+            />
+          </Link>
 
-      {/* Right Form */}
-      <div className='flex justify-center items-center bs-full bg-backgroundPaper !min-is-full p-6 md:!min-is-[unset] md:p-12 md:is-[480px]'>
-        <div className='absolute block-start-5 sm:block-start-[33px] inline-start-6 sm:inline-start-[38px]'>
-          <Logo />
-        </div>
+          <Typography component='h3' variant='h2' className='mb-6 font-semibold text-black'>
+            Sign in
+          </Typography>
 
-        <div className='flex flex-col gap-6 is-full sm:is-auto md:is-full sm:max-is-[400px] md:max-is-[unset] mbs-8 sm:mbs-11 md:mbs-0'>
-          <div className='flex flex-col gap-1'>
-            <Typography variant='h4'>Welcome to MOTOR MATCH</Typography>
+          {/* TABS */}
+          <div className='flex bg-[#F7F7F8] p-1 rounded-xl mb-8 w-full max-w-[560px]'>
+            {['Dealer Admin', 'Manager', 'Sales Rep'].map((label, index) => (
+              <button
+                key={index}
+                onClick={() => setTab(index)}
+                className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all cursor-pointer ${tab === index ? 'bg-[#333333] text-white' : 'text-[#333]'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
-          <form noValidate autoComplete='off' onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-6'>
+          <form
+            noValidate
+            autoComplete='off'
+            onSubmit={handleSubmit(onSubmit)}
+            className='flex flex-col gap-4 w-full max-w-[560px]'
+          >
+            {/* ID field (readonly) */}
+            <CustomTextField
+              className='mt-2'
+              fullWidth
+              label={tab === 0 ? 'Dealer ID' : tab === 1 ? 'Manager ID' : 'Sales Rep ID'}
+              value='MM-ABC-2025'
+            />
+
             {/* Email */}
             <Controller
               name='email'
@@ -200,11 +222,10 @@ const Login = ({ mode }) => {
               render={({ field }) => (
                 <CustomTextField
                   {...field}
-                  autoFocus
                   fullWidth
                   type='email'
-                  label='Email'
-                  placeholder='admin@motormatch.com'
+                  label='E-mail'
+                  placeholder='hello@gmail.com'
                   error={!!errors.email}
                   helperText={errors.email?.message}
                 />
@@ -221,7 +242,7 @@ const Login = ({ mode }) => {
                   fullWidth
                   label='Password'
                   placeholder='············'
-                  id='login-password'
+                  id='form-password'
                   type={isPasswordShown ? 'text' : 'password'}
                   slotProps={{
                     input: {
@@ -232,7 +253,7 @@ const Login = ({ mode }) => {
                             onClick={handleClickShowPassword}
                             onMouseDown={e => e.preventDefault()}
                           >
-                            <i className={isPasswordShown ? 'tabler-eye' : 'tabler-eye-off'} />
+                            <i className={isPasswordShown ? 'tabler-eye-off' : 'tabler-eye'} />
                           </IconButton>
                         </InputAdornment>
                       )
@@ -244,21 +265,21 @@ const Login = ({ mode }) => {
               )}
             />
 
-            {/* Remember + Forgot */}
-            <div className='flex justify-between items-center gap-x-3 gap-y-1 flex-wrap'>
+            <div className='flex items-center justify-between mb-2 mt-2'>
               <FormControlLabel control={<Checkbox defaultChecked />} label='Remember me' />
-              <Typography
-                className='text-end'
-                color='primary.main'
-                component={Link}
-                href={getLocalizedUrl('/forgot-password', locale)}
-              >
-                Forgot password?
+              <Typography className='cursor-pointer text-sm text-gray-500'>
+                <Link href={getLocalizedUrl('/forgot-password', locale)}>Forgot password ?</Link>
               </Typography>
             </div>
 
-            {/* Submit */}
-            <Button fullWidth variant='contained' type='submit' disabled={loading}>
+            <Button
+              fullWidth
+              size='large'
+              variant='contained'
+              sx={{ backgroundColor: '#333333', borderRadius: '60px', paddingBlock: '10px' }}
+              type='submit'
+              disabled={loading}
+            >
               {loading ? 'Logging in...' : 'Login'}
             </Button>
 
@@ -270,8 +291,17 @@ const Login = ({ mode }) => {
           </form>
         </div>
       </div>
+
+      {/* RIGHT: Swiper visuals — hidden on small screens (keeps original look) */}
+      {/* RIGHT: Slider visuals — hidden on small screens */}
+      {!hidden && (
+        <div className='hidden lg:flex w-1/2 p-4 mt-6'>
+          <div className='relative w-full h-[90vh] rounded-3xl overflow-hidden'>
+            {/* Keen Slider */}
+            <SwiperLoop />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-
-export default Login
