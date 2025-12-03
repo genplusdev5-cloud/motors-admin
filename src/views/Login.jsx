@@ -28,6 +28,8 @@ import { getLocalizedUrl } from '@/utils/i18n'
 
 import { adminLoginApi } from '@/api/auth/login'
 
+// ←------ ADDED: import saveTokens
+import { saveTokens } from '@/utils/tokenUtils'
 
 // -------------------- Styled Components --------------------
 
@@ -81,6 +83,7 @@ const Login = ({ mode }) => {
   }, [locale, router])
 
   // Images
+  // Images
   const authBackground = useImageVariant(mode, '/images/pages/auth-mask-light.png', '/images/pages/car-image.png')
 
   const characterIllustration = useImageVariant(
@@ -130,8 +133,8 @@ const Login = ({ mode }) => {
         throw new Error('No access token returned from backend')
       }
 
-      // 2) Save tokens locally
-      saveTokens(accessToken, refreshToken)
+      // 2) Save tokens locally — use object-style call so we also persist user
+      saveTokens({ access: accessToken, refresh: refreshToken, user: userData })
 
       // 3) Create NextAuth session
       const signInResponse = await signIn('credentials', {

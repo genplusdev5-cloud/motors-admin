@@ -5,7 +5,7 @@ import axios from 'axios'
 import { clearTokens, getAccessToken } from './tokenUtils'
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL, // ✅ from .env
+  baseURL: process.env.NEXT_PUBLIC_API_URL, 
   timeout: 30000
 })
 
