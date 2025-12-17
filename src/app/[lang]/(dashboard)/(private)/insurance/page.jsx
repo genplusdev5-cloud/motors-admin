@@ -36,6 +36,10 @@ import FileCopyIcon from '@mui/icons-material/FileCopy'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import RefreshIcon from '@mui/icons-material/Refresh'
 
+import PrintIcon from '@mui/icons-material/Print'
+import TableChartIcon from '@mui/icons-material/TableChart'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+
 import GlobalTextField from '@/components/common/GlobalTextField'
 import GlobalTextarea from '@/components/common/GlobalTextarea'
 import GlobalSelect from '@/components/common/GlobalSelect'
@@ -307,11 +311,21 @@ export default function InsurancePage() {
         <CardHeader
           title={
             <Box display='flex' alignItems='center' gap={2}>
-              <Typography variant='h5' fontWeight={600}>
-                Insurance Management
+              <Typography variant='h5' sx={{ fontWeight: 600 }}>
+                Insurance
               </Typography>
               <GlobalButton
-                startIcon={<RefreshIcon sx={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />}
+                startIcon={
+                  <RefreshIcon
+                    sx={{
+                      animation: loading ? 'spin 1s linear infinite' : 'none',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' }
+                      }
+                    }}
+                  />
+                }
                 disabled={loading}
                 onClick={loadData}
               >
@@ -329,22 +343,51 @@ export default function InsurancePage() {
               >
                 Export
               </GlobalButton>
+
               <Menu anchorEl={exportAnchorEl} open={Boolean(exportAnchorEl)} onClose={() => setExportAnchorEl(null)}>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    exportPrint()
+                  }}
+                >
+                  <PrintIcon fontSize='small' sx={{ mr: 1 }} /> Print
+                </MenuItem>
+
                 <MenuItem
                   onClick={() => {
                     setExportAnchorEl(null)
                     exportCSV()
                   }}
                 >
-                  <FileDownloadIcon sx={{ mr: 1 }} /> CSV
+                  <FileDownloadIcon fontSize='small' sx={{ mr: 1 }} /> CSV
                 </MenuItem>
+
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportExcel()
+                  }}
+                >
+                  <TableChartIcon fontSize='small' sx={{ mr: 1 }} /> Excel
+                </MenuItem>
+
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportPDF()
+                  }}
+                >
+                  <PictureAsPdfIcon fontSize='small' sx={{ mr: 1 }} /> PDF
+                </MenuItem>
+
                 <MenuItem
                   onClick={() => {
                     setExportAnchorEl(null)
                     exportCopy()
                   }}
                 >
-                  <FileCopyIcon sx={{ mr: 1 }} /> Copy
+                  <FileCopyIcon fontSize='small' sx={{ mr: 1 }} /> Copy
                 </MenuItem>
               </Menu>
 
@@ -353,9 +396,8 @@ export default function InsurancePage() {
               </GlobalButton>
             </Box>
           }
-          sx={{ pb: 1.5 }}
+          sx={{ pb: 1.5, pt: 1.5, '& .MuiCardHeader-action': { m: 0, alignItems: 'center' } }}
         />
-
         <Divider sx={{ mb: 2 }} />
 
         {/* Search + Page Size */}
@@ -438,9 +480,19 @@ export default function InsurancePage() {
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <GlobalTextField
-                  label='Insurance Name *'
+                  label='Name '
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                 />
               </Grid>
 
@@ -449,6 +501,16 @@ export default function InsurancePage() {
                   label='SPOC Name'
                   value={formData.spoc_name}
                   onChange={e => setFormData({ ...formData, spoc_name: e.target.value })}
+                  required
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                 />
               </Grid>
 
@@ -457,6 +519,16 @@ export default function InsurancePage() {
                   label='SPOC Email'
                   value={formData.spoc_email}
                   onChange={e => setFormData({ ...formData, spoc_email: e.target.value })}
+                  required
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                 />
               </Grid>
 
@@ -465,6 +537,16 @@ export default function InsurancePage() {
                   label='SPOC Phone'
                   value={formData.spoc_phone}
                   onChange={e => setFormData({ ...formData, spoc_phone: e.target.value })}
+                  required
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                 />
               </Grid>
 
@@ -473,6 +555,16 @@ export default function InsurancePage() {
                   label='IKR Number'
                   value={formData.ikr_number}
                   onChange={e => setFormData({ ...formData, ikr_number: e.target.value })}
+                  required
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                 />
               </Grid>
 
@@ -481,13 +573,23 @@ export default function InsurancePage() {
                   label='RGA Number'
                   value={formData.rga_number}
                   onChange={e => setFormData({ ...formData, rga_number: e.target.value })}
+                  required
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                 />
               </Grid>
 
               <Grid item xs={12}>
                 <GlobalTextarea
                   label='Remarks'
-                  rows={4}
+                  rows={3}
                   value={formData.remarks}
                   onChange={e => setFormData({ ...formData, remarks: e.target.value })}
                 />

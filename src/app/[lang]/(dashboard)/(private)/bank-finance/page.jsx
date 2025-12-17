@@ -29,6 +29,9 @@ import AddIcon from '@mui/icons-material/Add'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import CloseIcon from '@mui/icons-material/Close'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
+import PrintIcon from '@mui/icons-material/Print'
+import TableChartIcon from '@mui/icons-material/TableChart'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import FileCopyIcon from '@mui/icons-material/FileCopy'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -277,21 +280,34 @@ export default function BankFinancePage() {
 
   return (
     <Box>
-      <Breadcrumbs aria-label='breadcrumb' sx={{ mb: 3 }}>
-        <Link href='/'>Home</Link>
-        <Typography color='text.primary'>Bank & Finance</Typography>
-      </Breadcrumbs>
+      <Box sx={{ mb: 2 }}>
+        <Breadcrumbs aria-label='breadcrumb'>
+          <Link underline='hover' color='inherit' href='/'>
+            Home
+          </Link>
+          <Typography color='text.primary'>Bank & Finance</Typography>
+        </Breadcrumbs>
+      </Box>
 
       <Card sx={{ p: 3 }}>
         <CardHeader
           title={
             <Box display='flex' alignItems='center' gap={2}>
-              <Typography variant='h5' fontWeight={600}>
+              <Typography variant='h5' sx={{ fontWeight: 600 }}>
                 Bank & Finance
               </Typography>
-
               <GlobalButton
-                startIcon={<RefreshIcon sx={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />}
+                startIcon={
+                  <RefreshIcon
+                    sx={{
+                      animation: loading ? 'spin 1s linear infinite' : 'none',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' }
+                      }
+                    }}
+                  />
+                }
                 disabled={loading}
                 onClick={loadData}
               >
@@ -314,18 +330,46 @@ export default function BankFinancePage() {
                 <MenuItem
                   onClick={() => {
                     setExportAnchorEl(null)
+                    exportPrint()
+                  }}
+                >
+                  <PrintIcon fontSize='small' sx={{ mr: 1 }} /> Print
+                </MenuItem>
+
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
                     exportCSV()
                   }}
                 >
-                  <FileDownloadIcon sx={{ mr: 1 }} /> CSV
+                  <FileDownloadIcon fontSize='small' sx={{ mr: 1 }} /> CSV
                 </MenuItem>
+
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportExcel()
+                  }}
+                >
+                  <TableChartIcon fontSize='small' sx={{ mr: 1 }} /> Excel
+                </MenuItem>
+
+                <MenuItem
+                  onClick={async () => {
+                    setExportAnchorEl(null)
+                    await exportPDF()
+                  }}
+                >
+                  <PictureAsPdfIcon fontSize='small' sx={{ mr: 1 }} /> PDF
+                </MenuItem>
+
                 <MenuItem
                   onClick={() => {
                     setExportAnchorEl(null)
                     exportCopy()
                   }}
                 >
-                  <FileCopyIcon sx={{ mr: 1 }} /> Copy
+                  <FileCopyIcon fontSize='small' sx={{ mr: 1 }} /> Copy
                 </MenuItem>
               </Menu>
 
@@ -334,6 +378,7 @@ export default function BankFinancePage() {
               </GlobalButton>
             </Box>
           }
+          sx={{ pb: 1.5, pt: 1.5, '& .MuiCardHeader-action': { m: 0, alignItems: 'center' } }}
         />
 
         <Divider sx={{ mb: 2 }} />
@@ -421,9 +466,19 @@ export default function BankFinancePage() {
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <GlobalTextField
-                  label='Name *'
+                  label='Name'
                   value={formData.name}
+                  required
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                   inputRef={nameRef}
                   autoFocus
                 />
@@ -432,7 +487,7 @@ export default function BankFinancePage() {
               <Grid item xs={12}>
                 <GlobalTextarea
                   label='Description'
-                  rows={4}
+                  rows={3}
                   value={formData.remarks}
                   onChange={e => setFormData({ ...formData, remarks: e.target.value })}
                 />

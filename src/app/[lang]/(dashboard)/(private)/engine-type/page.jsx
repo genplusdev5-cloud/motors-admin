@@ -458,7 +458,6 @@ export default function EngineTypePage() {
             mb: 3,
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center',
             flexWrap: 'wrap',
             gap: 2
           }}
@@ -483,10 +482,9 @@ export default function EngineTypePage() {
 
           <DebouncedInput
             value={searchText}
-            onChange={v => setSearchText(String(v))}
+            onChange={setSearchText}
             placeholder='Search engine type...'
             sx={{ width: 360 }}
-            variant='outlined'
             size='small'
           />
         </Box>
@@ -562,12 +560,21 @@ export default function EngineTypePage() {
             <Grid container spacing={4}>
               <Grid item xs={12}>
                 <GlobalTextField
-                  label='Engine Type Name *'
+                  label='Name'
                   placeholder='Enter engine type name'
                   value={formData.name}
                   inputRef={nameRef}
                   required
                   onChange={e => handleFieldChange('name', e.target.value)}
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                 />
               </Grid>
 
@@ -575,7 +582,7 @@ export default function EngineTypePage() {
                 <GlobalTextarea
                   label='Description'
                   placeholder='Optional description...'
-                  rows={4}
+                  rows={3}
                   value={formData.description}
                   onChange={e => handleFieldChange('description', e.target.value)}
                 />

@@ -35,6 +35,7 @@ import TableChartIcon from '@mui/icons-material/TableChart'
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import FileCopyIcon from '@mui/icons-material/FileCopy'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import FileUploaderSingle from '@/components/common/FileUploaderSingle' // 👈 Make sure correct path
 
 import { showToast } from '@/components/common/Toasts'
 
@@ -386,8 +387,40 @@ export default function VehicleModelPage() {
           </Box>
         )
       }),
-      columnHelper.accessor('name', { header: 'Model Name' }),
+      columnHelper.accessor('name', { header: ' Name' }),
       columnHelper.accessor('vehicle_type_name', { header: 'Vehicle Type' }),
+
+      columnHelper.accessor('image', {
+        header: 'Image',
+        cell: info => {
+          const img = info.getValue()
+          if (!img) {
+            return (
+              <Typography variant='caption' color='text.disabled'>
+                -
+              </Typography>
+            )
+          }
+
+          const finalImg = img.startsWith('http') ? img : `${BASE_URL}/${img}`
+
+          return (
+            <img
+              src={finalImg}
+              alt='make'
+              style={{
+                width: 42,
+                height: 42,
+                objectFit: 'cover',
+                borderRadius: 4,
+                border: '1px solid #ddd',
+                cursor: 'pointer'
+              }}
+              onClick={() => setPreviewImage(finalImg)}
+            />
+          )
+        }
+      }),
       columnHelper.accessor('make_name', { header: 'Make' }),
       columnHelper.accessor('mileage_name', { header: 'Mileage' }),
       columnHelper.accessor('is_active', {
@@ -616,9 +649,20 @@ export default function VehicleModelPage() {
 
           <form onSubmit={handleSubmit} style={{ flexGrow: 1 }}>
             <Grid container spacing={2}>
+              {/* 1️⃣ Make ID */}
               <Grid item xs={12}>
                 <GlobalTextField
-                  label='Model Name *'
+                  label='Make ID'
+                  value={formData.make_id}
+                  onChange={e => handleFieldChange('make_id', e.target.value)}
+                  required
+                />
+              </Grid>
+
+              {/* 2️⃣ Name */}
+              <Grid item xs={12}>
+                <GlobalTextField
+                  label='Name'
                   value={formData.name}
                   inputRef={nameRef}
                   required
@@ -626,22 +670,26 @@ export default function VehicleModelPage() {
                 />
               </Grid>
 
-              {/* Simple selects — replace options with API-driven data as needed */}
-              <Grid item xs={6}>
+              {/* 3️⃣ Type ID */}
+              <Grid item xs={12}>
                 <GlobalTextField
                   label='Vehicle Type ID'
                   value={formData.vehicle_type_id}
                   onChange={e => handleFieldChange('vehicle_type_id', e.target.value)}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <GlobalTextField
-                  label='Make ID'
-                  value={formData.make_id}
-                  onChange={e => handleFieldChange('make_id', e.target.value)}
+                  required
                 />
               </Grid>
 
+              {/* 4️⃣ Image Upload */}
+              <Grid item xs={12}>
+                <Typography sx={{ mb: 1, fontWeight: 500, color: 'text.secondary' }}>Model Image</Typography>
+                <FileUploaderSingle
+                  value={formData.image || null}
+                  onChange={file => handleFieldChange('image', file)}
+                />
+              </Grid>
+
+              {/* 5️⃣ Remarks */}
               <Grid item xs={12}>
                 <GlobalTextarea
                   label='Remarks'
@@ -650,28 +698,7 @@ export default function VehicleModelPage() {
                   onChange={e => handleFieldChange('remarks', e.target.value)}
                 />
               </Grid>
-
-              <Grid item xs={6}>
-                <GlobalSelect
-                  label='Status'
-                  value={formData.is_active === 1 ? 'Active' : 'Inactive'}
-                  onChange={e => handleFieldChange('is_active', e.target.value === 'Active' ? 1 : 0)}
-                  options={[
-                    { value: 'Active', label: 'Active' },
-                    { value: 'Inactive', label: 'Inactive' }
-                  ]}
-                />
-              </Grid>
-
-              <Grid item xs={6}>
-                <GlobalTextField
-                  label='Seating Capacity'
-                  value={formData.seating_capacity}
-                  onChange={e => handleFieldChange('seating_capacity', e.target.value)}
-                />
-              </Grid>
             </Grid>
-
             <Box mt={3} display='flex' gap={2}>
               <GlobalButton type='submit' fullWidth disabled={loading}>
                 {loading ? (isEdit ? 'Updating...' : 'Saving...') : isEdit ? 'Update' : 'Save'}

@@ -94,6 +94,7 @@ export default function ColorPage() {
 
   const [formData, setFormData] = useState({
     id: null,
+    name: '#000000', // 👈 default color
     name: '',
     description: '',
     status: 1
@@ -618,12 +619,23 @@ export default function ColorPage() {
             <Grid container spacing={4}>
               <Grid item xs={12}>
                 <GlobalTextField
-                  label='Color Value *'
-                  placeholder='e.g. #FF5733 or Red'
-                  value={formData.name}
-                  inputRef={nameRef}
+                  label='Color'
+                  type='color'
+                  value={formData.name || '#000000'} // 👈 name holds the color value
                   required
-                  onChange={e => handleFieldChange('name', e.target.value)}
+                  onChange={e => handleFieldChange('name', e.target.value)} // 👈 update name field
+                  sx={{
+                    '& input[type="color"]': {
+                      padding: 0,
+                      height: '32px',
+                      cursor: 'pointer',
+                      borderRadius: '6px'
+                    },
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    }
+                  }}
                 />
               </Grid>
 
@@ -631,7 +643,7 @@ export default function ColorPage() {
                 <GlobalTextarea
                   label='Description'
                   placeholder='Optional description...'
-                  rows={4}
+                  rows={3}
                   value={formData.description}
                   onChange={e => handleFieldChange('description', e.target.value)}
                 />

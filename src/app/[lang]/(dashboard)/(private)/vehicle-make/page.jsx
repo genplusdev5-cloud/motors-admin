@@ -41,6 +41,8 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import FileCopyIcon from '@mui/icons-material/FileCopy'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import FileUploaderSingle from '@components/common/FileUploaderSingle'
+import GlobalDialog from '@/components/common/GlobalDialog'
 
 import GlobalTextField from '@/components/common/GlobalTextField'
 import GlobalTextarea from '@/components/common/GlobalTextarea'
@@ -92,6 +94,7 @@ export default function VehicleMakePage() {
   const [exportAnchorEl, setExportAnchorEl] = useState(null)
   const [unsavedAddData, setUnsavedAddData] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [previewImage, setPreviewImage] = useState(null)
 
   const [formData, setFormData] = useState({
     id: null,
@@ -182,9 +185,17 @@ export default function VehicleMakePage() {
   }
 
   // ────────────────────────────── Submit (Add / Update) ──────────────────────────────
+  const slugify = text =>
+    text
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+
   const handleSubmit = async e => {
     e.preventDefault()
 
+    // Validation
     if (!formData.name.trim()) {
       showToast('warning', 'Vehicle Make name is required')
       return
@@ -199,20 +210,29 @@ export default function VehicleMakePage() {
     }
 
     setLoading(true)
+
     try {
+      // Prepare payload
       const payload = new FormData()
       payload.append('name', formData.name.trim())
+      payload.append('slug', slugify(formData.name)) // 🔥 Added
       payload.append('description', formData.description?.trim() || '')
       payload.append('is_active', String(formData.status))
-      if (formData.imageFile) payload.append('image', formData.imageFile)
 
-      if (isEdit) {
-        await updateVehicleMake(formData.id, payload) // Fixed
-      } else {
-        await addVehicleMake(payload) // Fixed
+      if (formData.imageFile) {
+        payload.append('image', formData.imageFile) // 🔥 File included
       }
 
-      showToast('success', isEdit ? 'Vehicle Make updated' : 'Vehicle Make added')
+      // API Call
+      if (isEdit) {
+        await updateVehicleMake(formData.id, payload)
+        showToast('success', 'Vehicle Make updated')
+      } else {
+        await addVehicleMake(payload)
+        showToast('success', 'Vehicle Make added')
+      }
+
+      // Reset Form
       setUnsavedAddData(null)
       setDrawerOpen(false)
       await loadMakes()
@@ -245,7 +265,7 @@ export default function VehicleMakePage() {
   const columns = useMemo(
     () => [
       columnHelper.accessor('sno', { header: 'S.No' }),
-       columnHelper.display({
+      columnHelper.display({
         id: 'actions',
         header: 'Actions',
         cell: info => (
@@ -268,12 +288,30 @@ export default function VehicleMakePage() {
         header: 'Image',
         cell: info => {
           const img = info.getValue()
-          return img ? (
-            <img src={img} alt='make' style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 4 }} />
-          ) : (
-            <Typography variant='caption' color='text.disabled'>
-              -
-            </Typography>
+          if (!img) {
+            return (
+              <Typography variant='caption' color='text.disabled'>
+                -
+              </Typography>
+            )
+          }
+
+          const finalImg = img.startsWith('http') ? img : `${BASE_URL}/${img}`
+
+          return (
+            <img
+              src={finalImg}
+              alt='make'
+              style={{
+                width: 42,
+                height: 42,
+                objectFit: 'cover',
+                borderRadius: 4,
+                border: '1px solid #ddd',
+                cursor: 'pointer'
+              }}
+              onClick={() => setPreviewImage(finalImg)}
+            />
           )
         }
       }),
@@ -296,8 +334,7 @@ export default function VehicleMakePage() {
             }}
           />
         )
-      }),
-
+      })
     ],
     []
   )
@@ -367,7 +404,7 @@ export default function VehicleMakePage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Vehicle Make 
+                Vehicle Make
               </Typography>
               <GlobalButton
                 startIcon={
@@ -527,12 +564,21 @@ export default function VehicleMakePage() {
             <Grid container spacing={4}>
               <Grid item xs={12}>
                 <GlobalTextField
-                  label='Vehicle Make Name *'
+                  label=' Name'
                   placeholder='Enter make name'
                   value={formData.name}
                   inputRef={nameRef}
                   required
                   onChange={e => handleFieldChange('name', e.target.value)}
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                 />
               </Grid>
 
@@ -548,23 +594,33 @@ export default function VehicleMakePage() {
 
               <Grid item xs={12}>
                 <Typography variant='subtitle2' sx={{ mb: 1 }}>
-                  Image
+                  Upload Image
                 </Typography>
-                <Button variant='outlined' component='label' size='small' sx={{ textTransform: 'none', mb: 2 }}>
-                  Choose Image
-                  <input type='file' hidden accept='image/*' onChange={handleImageChange} />
-                </Button>
+
+                {/* Your file uploader component */}
+                <FileUploaderSingle
+                  value={formData.imageFile}
+                  onChange={file => handleFieldChange('imageFile', file)}
+                />
+
+                {/* Preview Existing Image (Edit Mode) */}
                 {(formData.imageFile || formData.imageUrl) && (
-                  <Box sx={{ mt: 1 }}>
+                  <Box sx={{ mt: 2, textAlign: 'center' }}>
                     <img
-                      src={formData.imageFile ? URL.createObjectURL(formData.imageFile) : formData.imageUrl}
+                      src={
+                        formData.imageFile
+                          ? URL.createObjectURL(formData.imageFile)
+                          : formData.imageUrl.startsWith('http')
+                            ? formData.imageUrl
+                            : `${BASE_URL}/${formData.imageUrl}`
+                      }
                       alt='Preview'
                       style={{
-                        width: 80,
-                        height: 80,
-                        objectFit: 'contain',
-                        borderRadius: 4,
-                        border: '1px solid #e0e0e0'
+                        width: 90,
+                        height: 90,
+                        objectFit: 'cover',
+                        borderRadius: 6,
+                        border: '1px solid #ddd'
                       }}
                     />
                   </Box>
@@ -644,6 +700,42 @@ export default function VehicleMakePage() {
             {deleteLoading ? 'Deleting...' : 'Delete'}
           </GlobalButton>
         </DialogActions>
+      </Dialog>
+
+      {/* Image Preview Dialog - Same style as CustomizedDialog */}
+      <Dialog
+        onClose={() => setPreviewImage(null)}
+        aria-labelledby='preview-dialog-title'
+        open={Boolean(previewImage)}
+        closeAfterTransition={false}
+        PaperProps={{ sx: { overflow: 'visible', borderRadius: 3 } }}
+      >
+        <DialogTitle id='preview-dialog-title' sx={{ position: 'relative', pb: 1 }}>
+          <Typography variant='h6' component='span'>
+            Image Preview
+          </Typography>
+
+          {/* Same Close Button style as your example */}
+          <DialogCloseButton onClick={() => setPreviewImage(null)} disableRipple>
+            <i className='tabler-x' />
+          </DialogCloseButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt='Preview'
+              style={{
+                width: '100%',
+                maxHeight: 350,
+                objectFit: 'contain',
+                borderRadius: 8,
+                display: 'block'
+              }}
+            />
+          )}
+        </DialogContent>
       </Dialog>
     </Box>
   )

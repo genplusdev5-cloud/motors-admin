@@ -43,12 +43,12 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
     <ScrollWrapper
       {...(isBreakpointReached
         ? {
-            className: 'bs-full overflow-y-auto overflow-x-hidden',
-            onScroll: container => scrollMenu(container, false)
+            className: 'bs-full overflow-y-auto overflow-x-hidden'
+            // ❌ Removed scrollMenu auto-scroll
           }
         : {
-            options: { wheelPropagation: false, suppressScrollX: true },
-            onScrollY: container => scrollMenu(container, true)
+            options: { wheelPropagation: false, suppressScrollX: true }
+            // ❌ Removed scrollMenu auto-scroll
           })}
     >
       {/* Vertical Menu */}
@@ -66,25 +66,26 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
         <SubMenu label='Masters' icon={<i className='tabler-database' />}>
           <MenuItem href={`/${locale}/company`}>{'Company'}</MenuItem>
           <MenuItem href={`/${locale}/category`}>{'Category'}</MenuItem>
-          <MenuItem href={`/${locale}/subcategory`}>{'SubCategory'}</MenuItem>
 
           <MenuItem href={`/${locale}/vehicle-make`}>{'Vehicle Make'}</MenuItem>
           <MenuItem href={`/${locale}/colors`}>{'Colors'}</MenuItem>
-          <MenuItem href={`/${locale}/mileage`}>{'Mileage'}</MenuItem>
 
-          <MenuItem href={`/${locale}/vehicle-type`}>{'Vehicle Type'}</MenuItem>
           <MenuItem href={`/${locale}/body-type`}>{'Body Type'}</MenuItem>
           <MenuItem href={`/${locale}/engine-type`}>{'Engine Type'}</MenuItem>
-          <MenuItem href={`/${locale}/cylinders`}>{'Cylinders'}</MenuItem>
-          <MenuItem href={`/${locale}/gearbox-type`}>{'GearBox Type'}</MenuItem>
-          <MenuItem href={`/${locale}/fuel-type`}>{' Fuel Type'}</MenuItem>
-          <MenuItem href={`/${locale}/record-year`}>{'Record Year'}</MenuItem>
-          <MenuItem href={`/${locale}/banners-type`}>{'Banners Type'}</MenuItem>
-          <MenuItem href={`/${locale}/vehicle-model `}>{'Vehicle Model'}</MenuItem>
+          <MenuItem href={`/${locale}/fuel-type`}>{'Fuel Type'}</MenuItem>
+          <MenuItem href={`/${locale}/vehicle-model`}>{'Vehicle Model'}</MenuItem>
           <MenuItem href={`/${locale}/subscription-type`}>{'Subscription Type'}</MenuItem>
           <MenuItem href={`/${locale}/bank-finance`}>{'Bank & Finance'}</MenuItem>
           <MenuItem href={`/${locale}/insurance`}>{'Insurance'}</MenuItem>
-          <MenuItem href={`/${locale}/settings `}>{'Settings'}</MenuItem>
+          <MenuItem href={`/${locale}/settings`}>{'Settings'}</MenuItem>
+
+          {/* 🔽 New masters */}
+          <MenuItem href={`/${locale}/suspension-type`}>{'Suspension Type'}</MenuItem>
+          <MenuItem href={`/${locale}/steering-type`}>{'Steering Type'}</MenuItem>
+          <MenuItem href={`/${locale}/tyre-size`}>{'Tyre Size'}</MenuItem>
+          <MenuItem href={`/${locale}/tyre-type`}>{'Tyre Type'}</MenuItem>
+          <MenuItem href={`/${locale}/garage`}>{'Garage'}</MenuItem>
+          <MenuItem href={`/${locale}/variant`}>{'Variant'}</MenuItem>
         </SubMenu>
 
         <SubMenu label='User Roles' icon={<i className='tabler-users' />}>

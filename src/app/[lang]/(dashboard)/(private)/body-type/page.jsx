@@ -35,6 +35,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import FileCopyIcon from '@mui/icons-material/FileCopy'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import FileUploaderSingle from '@components/common/FileUploaderSingle'
 
 import GlobalTextField from '@/components/common/GlobalTextField'
 import GlobalTextarea from '@/components/common/GlobalTextarea'
@@ -85,7 +86,9 @@ export default function BodyTypePage() {
     id: null,
     name: '',
     description: '',
-    status: 1
+    status: 1,
+    imageFile: null,
+    imageUrl: ''
   })
 
   const nameRef = useRef(null)
@@ -154,21 +157,40 @@ export default function BodyTypePage() {
   }
 
   // Submit
+  const slugify = text =>
+    text
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+
   const handleSubmit = async e => {
     e.preventDefault()
-    if (!formData.name.trim()) return showToast('warning', 'Body type name is required')
+
+    // Validation
+    if (!formData.name.trim()) {
+      return showToast('warning', 'Body type name is required')
+    }
 
     if (!isEdit) {
       const exists = rows.some(r => r.name.trim().toLowerCase() === formData.name.trim().toLowerCase())
-      if (exists) return showToast('warning', 'Body type already exists')
+      if (exists) {
+        return showToast('warning', 'Body type already exists')
+      }
     }
 
     setLoading(true)
+
     try {
-      const payload = {
-        name: formData.name.trim(),
-        description: formData.description?.trim() || '',
-        is_active: Number(formData.status)
+      // Use FormData for image upload
+      const payload = new FormData()
+      payload.append('name', formData.name.trim())
+      payload.append('slug', slugify(formData.name)) // 🔥 Fix slug duplicate error
+      payload.append('description', formData.description?.trim() || '')
+      payload.append('is_active', formData.status)
+
+      if (formData.imageFile) {
+        payload.append('image', formData.imageFile) // 🔥 ensure image uploads
       }
 
       if (isEdit) {
@@ -183,6 +205,7 @@ export default function BodyTypePage() {
       setDrawerOpen(false)
       await loadBodyTypes()
     } catch (err) {
+      console.error('Save error:', err)
       showToast('error', err.response?.data?.message || 'Failed to save')
     } finally {
       setLoading(false)
@@ -243,6 +266,69 @@ export default function BodyTypePage() {
         )
       }),
       columnHelper.accessor('name', { header: 'Body Type' }),
+      columnHelper.accessor('image', {
+        header: 'Image',
+        cell: info => {
+          const img = info.getValue()
+          if (!img)
+            return (
+              <Typography variant='caption' color='text.disabled'>
+                -
+              </Typography>
+            )
+
+          const finalImg = img.startsWith('http') ? img : `${BASE_URL}/${img}`
+
+          return (
+            <Box sx={{ position: 'relative', display: 'inline-block' }}>
+              {/* Thumbnail */}
+              <img
+                src={finalImg}
+                alt='body type'
+                style={{
+                  width: 45,
+                  height: 45,
+                  objectFit: 'cover',
+                  borderRadius: 4,
+                  border: '1px solid #ddd',
+                  cursor: 'zoom-in'
+                }}
+              />
+
+              {/* Hover Full Preview */}
+              <Box
+                className='image-hover-preview'
+                sx={{
+                  position: 'absolute',
+                  top: '-5px',
+                  left: '55px',
+                  zIndex: 20,
+                  p: 1,
+                  background: '#fff',
+                  borderRadius: 2,
+                  border: '1px solid #ccc',
+                  boxShadow: '0 4px 18px rgba(0,0,0,0.15)',
+                  transform: 'scale(0)',
+                  transition: '0.18s ease-in-out',
+                  pointerEvents: 'none'
+                }}
+              >
+                <img
+                  src={finalImg}
+                  alt='preview'
+                  style={{
+                    width: 150,
+                    height: 150,
+                    objectFit: 'contain',
+                    borderRadius: 6
+                  }}
+                />
+              </Box>
+            </Box>
+          )
+        }
+      }),
+
       columnHelper.accessor('description', { header: 'Description' }),
       columnHelper.accessor('is_active', {
         header: 'Status',
@@ -425,7 +511,7 @@ export default function BodyTypePage() {
         <Box sx={{ p: 5 }}>
           <Box display='flex' justifyContent='space-between' alignItems='center' mb={3}>
             <Typography variant='h5' fontWeight={600}>
-              {isEdit ? 'Edit' : 'Add'} Mileage
+              {isEdit ? 'Edit' : 'Add'} Body Type
             </Typography>
             <IconButton onClick={toggleDrawer}>
               <CloseIcon />
@@ -436,18 +522,60 @@ export default function BodyTypePage() {
             <Grid container spacing={4}>
               <Grid item xs={12}>
                 <GlobalTextField
-                  label='Mileage *'
+                  label='Mileage'
                   placeholder='e.g. 15-20 kmpl'
                   value={formData.name}
                   inputRef={nameRef}
                   onChange={e => handleFieldChange('name', e.target.value)}
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                   required
                 />
               </Grid>
+
+              {/* Upload Image */}
+              <Grid item xs={12}>
+                <Typography variant='subtitle2' sx={{ mb: 1 }}>
+                  Upload Image
+                </Typography>
+
+                {/* File Upload Component */}
+                <FileUploaderSingle
+                  value={formData.imageFile}
+                  onChange={file => handleFieldChange('imageFile', file)}
+                />
+
+                {/* Preview for existing image (only edit mode) */}
+                {isEdit && formData.imageUrl && !formData.imageFile && (
+                  <Box sx={{ mt: 2, textAlign: 'center' }}>
+                    <img
+                      src={
+                        formData.imageUrl.startsWith('http') ? formData.imageUrl : `${BASE_URL}/${formData.imageUrl}`
+                      }
+                      alt='existing preview'
+                      style={{
+                        width: 90,
+                        height: 90,
+                        objectFit: 'cover',
+                        borderRadius: 6,
+                        border: '1px solid #ddd'
+                      }}
+                    />
+                  </Box>
+                )}
+              </Grid>
+
               <Grid item xs={12}>
                 <GlobalTextarea
                   label='Description'
-                  rows={4}
+                  rows={3}
                   value={formData.description}
                   onChange={e => handleFieldChange('description', e.target.value)}
                 />

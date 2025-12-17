@@ -1,362 +1,738 @@
 'use client'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 
-import { useEffect, useState } from 'react'
+import {
+  Box,
+  Button,
+  Card,
+  CardHeader,
+  Typography,
+  Menu,
+  MenuItem,
+  IconButton,
+  Divider,
+  Drawer,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Breadcrumbs,
+  Checkbox,
+  FormControlLabel,
+  FormGroup,
+  TextField,
+  FormControl,
+  Select, // ADD THIS LINE
+  CircularProgress,
+  InputAdornment
+} from '@mui/material'
 
-import { useTheme } from '@mui/material/styles'
-import { toast } from 'react-toastify'
-
-import Swal from 'sweetalert2'
-import Checkbox from '@mui/material/Checkbox'
-import Card from '@mui/material/Card'
-import Button from '@mui/material/Button'
-import TablePagination from '@mui/material/TablePagination'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Grid2'
-import Autocomplete from '@mui/material/Autocomplete'
-import ButtonGroup from '@mui/material/ButtonGroup'
-
+import FileCopyIcon from '@mui/icons-material/FileCopy'
+import CustomTextFieldWrapper from '@/components/common/CustomTextField'
+import DialogCloseButton from '@components/dialogs/DialogCloseButton'
+import ProgressCircularCustomization from '@/components/common/ProgressCircularCustomization'
 import AddIcon from '@mui/icons-material/Add'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
-import FileCopyIcon from '@mui/icons-material/FileCopy'
+import DoneIcon from '@mui/icons-material/Done'
+
+// Component Imports
+
+import CustomAutocomplete from '@core/components/mui/Autocomplete'
+
+import CloseIcon from '@mui/icons-material/Close'
+import PrintIcon from '@mui/icons-material/Print'
+import FileDownloadIcon from '@mui/icons-material/FileDownload'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import SearchIcon from '@mui/icons-material/Search'
+import CustomTextField from '@core/components/mui/TextField'
+import TablePaginationComponent from '@/components/TablePaginationComponent'
+import classnames from 'classnames'
+import { rankItem } from '@tanstack/match-sorter-utils'
+import { showToast } from '@/components/common/Toasts'
+
+import {
+  getDealerRole,
+  addDealerRole,
+  updateDealerRole,
+  deleteDealerRole,
+  duplicateDealerRole
+} from '@/api/dealerRoles'
+
+import { getDealerPrivilege, updateDealerPrivilege } from '@/api/dealerPrivilege'
+import { getDealerModules } from '@/api/dealerModules'
 
 import {
   useReactTable,
   getCoreRowModel,
-  getPaginationRowModel,
-  flexRender,
-  createColumnHelper,
+  getFilteredRowModel,
   getSortedRowModel,
-  getFilteredRowModel
+  flexRender,
+  createColumnHelper
 } from '@tanstack/react-table'
-
-import TablePaginationComponent from '@components/TablePaginationComponent'
-import CustomTextField from '@core/components/mui/TextField'
-
-
-
 import styles from '@core/styles/table.module.css'
-import AddModelWindow from './AddModelWindow'
+import ChevronRight from '@menu/svg/ChevronRight'
 
-const columnHelper = createColumnHelper()
+// Debounced Input
+const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
+  const [value, setValue] = useState(initialValue)
+  useEffect(() => setValue(initialValue), [initialValue])
+  useEffect(() => {
+    const t = setTimeout(() => onChange(value), debounce)
+    return () => clearTimeout(t)
+  }, [value])
+  return <TextField {...props} value={value} onChange={e => setValue(e.target.value)} />
+}
 
-export default function DealerPriviledges() {
+// ───────────────────────────────────────────
+// Component
+// ───────────────────────────────────────────
+export default function UserPrivilegePage() {
+  const [rows, setRows] = useState([])
+  const [rowCount, setRowCount] = useState(0)
+  const [searchText, setSearchText] = useState('')
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 })
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [isEdit, setIsEdit] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, row: null })
+  const [exportAnchorEl, setExportAnchorEl] = useState(null)
+  const [modules, setModules] = useState([])
 
-  const theme = useTheme()
-
-  const [modulesData, setModulesData] = useState([])
   const [roles, setRoles] = useState([])
-  const [selectedRole, setSelectedRole] = useState(null)
-  const [openModal, setOpenModal] = useState(false)
-  const [editingRow, setEditingRow] = useState(null)
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [columnFilters, setColumnFilters] = useState([])
-  const [sorting, setSorting] = useState([])
+  const [selectedRole, setSelectedRole] = useState('')
+  const [selectedRoleId, setSelectedRoleId] = useState(null)
+  const [data, setData] = useState([])
 
-  const [headerCheckboxes, setHeaderCheckboxes] = useState({
+  const [privileges, setPrivileges] = useState([])
+
+  const [formData, setFormData] = useState({
+    id: null,
+    module: '',
+    description: '', // ✅ add this to prevent undefined issue
     create: false,
-    read: false,
+    view: false,
     update: false,
     delete: false
   })
 
-  // Fetch roles
-  const fetchRoles = async () => {
-    try {
-      const res = await getDealerRole()
+  const paginatedRows = useMemo(() => {
+    const start = pagination.pageIndex * pagination.pageSize
+    const end = start + pagination.pageSize
+    return rows.slice(start, end).map((row, index) => ({
+      ...row,
+      sno: start + index + 1 // ⭐ continuous S.No
+    }))
+  }, [rows, pagination])
 
-      setRoles(res || [])
-    } catch (error) {
-      console.error('Error fetching roles:', error)
-      toast.error('Failed to load Admin Roles.')
-    }
-  }
+  const moduleRef = useRef(null)
 
-  // Load modules
-  const loadModules = async () => {
-    try {
-      const res = await getDealerModulesList ()
-
-      setModulesData(res || [])
-    } catch (err) {
-      console.error('Error loading modules:', err)
-      toast.error('Failed to load Modules list.')
-    }
-  }
-
-  // Load permissions of selected role
-  const loadRolePermissions = async role => {
-    if (!role) {
-      // Clear modules if no role selected
-      await loadModules()
-
+  const handleUpdatePrivileges = async () => {
+    if (!selectedRole) {
+      showToast('warning', 'Select a role first')
       return
     }
 
+    setLoading(true)
+
     try {
-      const modulesList = await getDealerModulesList()
+      const payload = privileges.map(p => ({
+        module_id: p.module_id,
+        is_create: p.create ? 1 : 0,
+        is_read: p.view ? 1 : 0,
+        is_update: p.update ? 1 : 0,
+        is_delete: p.delete ? 1 : 0
+      }))
 
-      // Map modules with role permissions
-      const updatedModules = modulesList.map(module => {
-        const permission = role.permissions?.find(p => p.moduleId === module.id)
+      console.log('FINAL PAYLOAD:', payload)
 
+      const res = await updateDealerPrivilege({
+        role_id: selectedRole,
+        privileges: payload
+      })
+
+      if (res.status === 'success') {
+        showToast('success', 'Privileges updated successfully')
+      } else {
+        showToast('error', res.message || 'Backend update failed')
+      }
+    } catch (err) {
+      console.error(err)
+      showToast('error', 'Update failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Load rows
+  const loadRoles = async () => {
+    setLoading(true)
+    try {
+      const res = await getDealerRole() // returns {status, message, data: []}
+      setRoles(res.data || []) // FIXED
+    } catch (err) {
+      console.error(err)
+      showToast('error', 'Failed to fetch roles')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadModules = async () => {
+    try {
+      const res = await getDealerModules()
+      const list = res.data || []
+
+      const formatted = list.map((m, idx) => ({
+        sno: idx + 1,
+        module_id: m.id,
+        module: m.name,
+        create: false,
+        view: false,
+        update: false,
+        delete: false
+      }))
+
+      setModules(formatted) // Store master module list
+      setRows(formatted) // Show full list first time
+      setPrivileges(formatted)
+      setRowCount(formatted.length)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const loadPrivileges = async roleId => {
+    if (!roleId) {
+      // No role selected → show all modules with no privileges
+      setPrivileges(modules.map(m => ({ ...m, create: false, view: false, update: false, delete: false })))
+      setRows(modules)
+      setRowCount(modules.length)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await getDealerPrivilege(roleId)
+      console.log('API Response:', res?.data)
+
+      const savedPrivileges = res?.data?.data || []
+      if (!modules.length) return
+      // Create a map for fast lookup
+      const privilegeMap = new Map()
+      savedPrivileges.forEach(p => {
+        privilegeMap.set(p.module_id, {
+          create: p.is_create == 1 || p.create === true,
+          view: p.is_read == 1 || p.read === true,
+          update: p.is_update == 1 || p.update === true,
+          delete: p.is_delete == 1 || p.delete === true
+        })
+      })
+
+      // Merge with full module list
+      const merged = modules.map((module, idx) => {
+        const saved = privilegeMap.get(module.module_id) || {}
         return {
-          ...module,
-          create: permission?.create || 0,
-          read: permission?.read || 0,
-          update: permission?.update || 0,
-          delete: permission?.delete || 0
+          sno: idx + 1,
+          module_id: module.module_id,
+          module: module.module,
+          create: saved.create || false,
+          view: saved.view || false,
+          update: saved.update || false,
+          delete: saved.delete || false
         }
       })
 
-      setModulesData(updatedModules)
-    } catch (error) {
-      console.error('Error loading role permissions:', error)
-      toast.error('Failed to load permissions for this role.')
+      setPrivileges(merged)
+      setRows(merged)
+      setRowCount(merged.length)
+    } catch (err) {
+      console.error(err)
+      showToast('error', 'Failed to load privileges')
+      // Fallback to empty privileges
+      const empty = modules.map((m, idx) => ({
+        ...m,
+        sno: idx + 1,
+        create: false,
+        view: false,
+        update: false,
+        delete: false
+      }))
+      setPrivileges(empty)
+      setRows(empty)
+      setRowCount(empty.length)
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchRoles()
+    console.log('Privilege list:', privileges)
+  }, [privileges])
+
+  useEffect(() => {
+    loadRoles()
+  }, [])
+
+  useEffect(() => {
     loadModules()
   }, [])
 
-  // Sync header checkboxes
   useEffect(() => {
-    ;['create', 'read', 'update', 'delete'].forEach(col => {
-      const allChecked = modulesData.length > 0 && modulesData.every(row => row[col] === 1)
+    if (selectedRole) {
+      loadPrivileges(selectedRole)
+    }
+  }, [selectedRole])
 
-      setHeaderCheckboxes(prev => ({ ...prev, [col]: allChecked }))
+  const toggleDrawer = () => setDrawerOpen(p => !p)
+  const handleAdd = () => {
+    setIsEdit(false)
+    setFormData({
+      id: null,
+      module: '', // start blank for Add
+      description: '',
+      create: false,
+      view: false,
+      update: false,
+      delete: false
     })
-  }, [modulesData])
+    setDrawerOpen(true)
 
-  // Header checkbox change
-  const handleHeaderCheckboxChange = (columnId, checked) => {
-    setHeaderCheckboxes(prev => ({ ...prev, [columnId]: checked }))
-    setModulesData(prev =>
-      prev.map(row => ({
-        ...row,
-        [columnId]: checked ? 1 : 0
+    // Optional: Focus on input
+    setTimeout(() => {
+      moduleRef.current?.querySelector('input')?.focus()
+    }, 100)
+  }
+
+  const fetchPrivileges = async roleId => {
+    try {
+      const res = await getAdminPrivilege(roleId)
+
+      const formatted = (res.data?.data || []).map(item => ({
+        id: item.id,
+        module_id: item.module_id,
+        module: item.module_name,
+        create: item.is_create === 1,
+        view: item.is_read === 1,
+        update: item.is_update === 1,
+        delete: item.is_delete === 1
       }))
-    )
+
+      setPrivileges(formatted)
+    } catch (error) {
+      console.error('❌ Error fetching privileges:', error)
+    }
   }
 
-  // Role selection
-  const handleRoleSelect = (event, value) => {
-    setSelectedRole(value)
-    loadRolePermissions(value)
+  const handlePrivilegeChange = (moduleId, key, value) => {
+    // Update both privileges and rows correctly
+    setPrivileges(prev => prev.map(p => (p.module_id === moduleId ? { ...p, [key]: value } : p)))
+
+    setRows(prev => prev.map(r => (r.module_id === moduleId ? { ...r, [key]: value } : r)))
   }
 
-  // Columns
-  const columns = [
-    columnHelper.accessor('name', { header: 'MODULES', cell: info => info.getValue() }),
-    ...['create', 'read', 'update', 'delete'].map(col =>
-      columnHelper.accessor(col, {
-        header: () => (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+  const handleEdit = row => {
+    setIsEdit(true)
+    setFormData(row)
+    setDrawerOpen(true)
+
+    setTimeout(() => {
+      moduleRef.current?.querySelector('input')?.focus()
+    }, 100)
+  }
+  // ───────────────────────────────────────────
+  // Delete Role
+  const handleDeleteRole = async id => {
+    try {
+      if (!id) {
+        toast.error('No role selected for deletion.')
+        return
+      }
+
+      const result = await deleteDealerRole(id)
+
+      if (result.status === 'success') {
+        showToast('delete', result.message || 'UserRole deleted successfully')
+        await loadRoles()
+      } else {
+        showToast('error', result.message || 'Failed to delete user role')
+      }
+    } catch (error) {
+      console.error('❌ Delete error:', error)
+      toast.error('Something went wrong while deleting.')
+    }
+  }
+
+  // 🔴 Delete Handlers
+  const handleDelete = async row => {
+    try {
+      // you can call your delete API here (if backend delete endpoint exists)
+      showToast('delete', `${row.module} deleted successfully`)
+      setRows(prev => prev.filter(r => r.id !== row.id)) // instantly remove from UI
+    } catch (err) {
+      console.error(err)
+      showToast('error', 'Failed to delete')
+    }
+  }
+
+  // Confirm delete from dialog
+  const confirmDelete = async () => {
+    if (deleteDialog.row) {
+      await handleDelete(deleteDialog.row)
+    }
+    setDeleteDialog({ open: false, row: null })
+  }
+
+  // ───────────────────────────────────────────
+  // Duplicate Role
+  const handleDuplicateRole = async roleId => {
+    try {
+      if (!roleId) {
+        showToast('warning', 'Please select a role to duplicate.')
+        return
+      }
+
+      // 1️⃣ Fetch role details
+      const originalRole = roles.find(r => r.id === roleId)
+
+      if (!originalRole) {
+        showToast('error', 'Failed to fetch role details.')
+        return
+      }
+
+      // 2️⃣ Pre-fill drawer with role data for editing
+      setIsEdit(false) // This will trigger save (not update)
+      setFormData({
+        id: null, // because it's a new one
+        module: `${originalRole.name} Copy`,
+        description: originalRole.description || ''
+      })
+
+      // 3️⃣ Store reference of the original role for privileges
+      setSelectedRoleId(roleId) // keep old ID temporarily
+
+      setDrawerOpen(true) // ✅ open drawer only
+      showToast('info', `Editing duplicate of "${originalRole.name}"`)
+    } catch (error) {
+      console.error('❌ Duplicate setup error:', error)
+      showToast('error', 'Failed to open duplicate role drawer.')
+    }
+  }
+
+  // ───────────────────────────────────────────
+  const handleSubmit = async e => {
+    e.preventDefault()
+
+    if (!formData.module.trim()) {
+      showToast('warning', 'Role name is required')
+      return
+    }
+
+    setLoading(true)
+    try {
+      if (isEdit && formData.id) {
+        // 🟢 Normal update
+        const payload = {
+          name: formData.module,
+          description: formData.description || ''
+        }
+        await updateDealerRole(formData.id, payload)
+        showToast('success', 'Role updated successfully')
+      } else {
+        // 🟢 Duplicate mode or new role add
+        const payload = {
+          name: formData.module,
+          description: formData.description || ''
+        }
+
+        // 1️⃣ Create the new role
+        const newRole = await addDealerRole(payload)
+        const newRoleId = newRole?.data?.id
+
+        if (!newRoleId) {
+          showToast('error', 'Failed to create role.')
+          return
+        }
+
+        // 2️⃣ If it’s a duplicate, copy privileges
+        if (selectedRoleId) {
+          const privRes = await getDealerPrivilege(selectedRoleId)
+          const oldPrivileges = privRes?.results || []
+
+          const duplicatedPrivileges = oldPrivileges.map(p => ({
+            module_id: p.module_id,
+            create: p.is_create,
+            read: p.is_read,
+            update: p.is_update,
+            delete: p.is_delete
+          }))
+
+          await updateDealerPrivilege({
+            role_id: newRoleId,
+            privileges: duplicatedPrivileges
+          })
+
+          showToast('success', `Privileges duplicated from "${roles.find(r => r.id === selectedRoleId)?.name}"`)
+        } else {
+          showToast('success', 'New role added successfully')
+        }
+      }
+
+      toggleDrawer()
+      await loadRoles()
+    } catch (err) {
+      console.error('❌ Role save error:', err)
+      showToast('error', 'Failed to save role')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Table setup
+  const columnHelper = createColumnHelper()
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('sno', { header: 'S.No' }),
+
+      columnHelper.accessor('module', { header: 'Module' }),
+
+      columnHelper.accessor('create', {
+        header: 'Create',
+        cell: info => {
+          const row = info.row.original
+          return (
             <Checkbox
-              size='small'
-              checked={headerCheckboxes[col]}
-              onChange={e => handleHeaderCheckboxChange(col, e.target.checked)}
-              sx={{ ml: 1 }}
+              checked={!!row.create}
+              onChange={e => handlePrivilegeChange(row.module_id, 'create', e.target.checked)}
               disabled={!selectedRole}
             />
-            {col.toUpperCase()}
-          </Box>
-        ),
-        cell: info => (
-          <Checkbox
-            checked={info.getValue() === 1}
-            disabled={!selectedRole}
-            onChange={e => {
-              const rowIndex = info.row.index
+          )
+        }
+      }),
+      columnHelper.accessor('view', {
+        header: 'View',
+        cell: info => {
+          const row = info.row.original
+          return (
+            <Checkbox
+              checked={!!row.view}
+              onChange={e => handlePrivilegeChange(row.module_id, 'view', e.target.checked)}
+              disabled={!selectedRole}
+            />
+          )
+        }
+      }),
+      columnHelper.accessor('update', {
+        header: 'Add/Edit',
+        cell: info => {
+          const row = info.row.original
+          return (
+            <Checkbox
+              checked={!!row.update}
+              onChange={e => handlePrivilegeChange(row.module_id, 'update', e.target.checked)}
+              disabled={!selectedRole}
+            />
+          )
+        }
+      }),
 
-              setModulesData(prev => {
-                const newData = [...prev]
-
-                newData[rowIndex] = { ...newData[rowIndex], [col]: e.target.checked ? 1 : 0 }
-
-                return newData
-              })
-            }}
-          />
-        )
+      columnHelper.accessor('delete', {
+        header: 'Delete',
+        cell: info => {
+          const row = info.row.original
+          return (
+            <Checkbox
+              checked={!!row.delete}
+              onChange={e => handlePrivilegeChange(row.module_id, 'delete', e.target.checked)}
+              disabled={!selectedRole}
+            />
+          )
+        }
       })
-    )
-  ]
+    ],
+    [selectedRole]
+  )
+
+  const fuzzyFilter = (row, columnId, value, addMeta) => {
+    const itemRank = rankItem(row.getValue(columnId), value)
+    addMeta({ itemRank })
+    return itemRank.passed
+  }
 
   const table = useReactTable({
-    data: modulesData,
+    data: paginatedRows,
     columns,
-    state: { columnFilters, globalFilter, sorting },
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
+    manualPagination: true,
+    pageCount: Math.ceil(rowCount / pagination.pageSize),
+    state: { globalFilter: searchText, pagination },
+    onGlobalFilterChange: setSearchText,
+    onPaginationChange: setPagination,
+    globalFilterFn: fuzzyFilter,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel()
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel()
   })
 
-  // Update permissions
-  const handleUpdatePermissions = async () => {
-    if (!selectedRole) return
-
-    try {
-      const payload = {
-        roleId: selectedRole.id,
-        permissions: modulesData.map(module => ({
-          moduleId: module.id,
-          create: module.create,
-          read: module.read,
-          update: module.update,
-          delete: module.delete
-        }))
-      }
-
-      await updateAdminRole(selectedRole.id, payload)
-      toast.success(`Permissions for "${selectedRole.name}" updated successfully!`)
-      loadRolePermissions(selectedRole)
-      fetchRoles()
-    } catch (error) {
-      console.error('Error updating permissions:', error)
-      toast.error(error.response?.data?.message || 'Failed to update permissions.')
-    }
+  // Export Functions
+  const exportOpen = Boolean(exportAnchorEl)
+  const exportCSV = () => {
+    const headers = ['S.No', 'Module', 'Create', 'View', 'Edit/Update', 'Delete']
+    const csv = [
+      headers.join(','),
+      ...rows.map(r =>
+        [
+          r.sno,
+          `"${r.module}"`,
+          r.create ? 'Yes' : 'No',
+          r.view ? 'Yes' : 'No',
+          r.update ? 'Yes' : 'No',
+          r.delete ? 'Yes' : 'No'
+        ].join(',')
+      )
+    ].join('\n')
+    const link = document.createElement('a')
+    link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
+    link.download = 'user_privileges.csv'
+    link.click()
+    showToast('success', 'CSV downloaded')
   }
 
-  // Save role (Add / Update)
-  const handleSaveRole = async (formData, id) => {
-    try {
-      if (id) {
-        await updateDealerRole(id, formData)
-        toast.success('Admin Role updated successfully!')
-      } else {
-        await addDealerRole(formData)
-        toast.success('Admin Role added successfully!')
-      }
-
-      setOpenModal(false)
-      fetchRoles()
-    } catch (error) {
-      console.error('Error saving role:', error)
-      toast.error(`Failed to save Admin Role: ${error.response?.data?.message || 'Check console for details.'}`)
-    }
+  const exportPrint = () => {
+    const w = window.open('', '_blank')
+    const html = `
+      <html><head><title>User Privileges</title><style>
+      body{font-family:Arial;padding:24px;}
+      table{width:100%;border-collapse:collapse;}
+      th,td{border:1px solid #ccc;padding:8px;text-align:left;}
+      th{background:#f4f4f4;}
+      input[type=checkbox]{transform:scale(1.2);}
+      </style></head><body>
+      <h2>User Privilege List</h2>
+      <table><thead><tr>
+      <th>S.No</th><th>Module</th><th>Create</th><th>View</th><th>Edit/Update</th><th>Delete</th>
+      </tr></thead><tbody>
+      ${rows
+        .map(
+          r => `<tr>
+          <td>${r.sno}</td>
+          <td>${r.module}</td>
+          <td><input type="checkbox" ${r.create ? 'checked' : ''} disabled></td>
+          <td><input type="checkbox" ${r.view ? 'checked' : ''} disabled></td>
+          <td><input type="checkbox" ${r.update ? 'checked' : ''} disabled></td>
+          <td><input type="checkbox" ${r.delete ? 'checked' : ''} disabled></td>
+        </tr>`
+        )
+        .join('')}
+      </tbody></table></body></html>`
+    w.document.write(html)
+    w.document.close()
+    w.print()
   }
 
-  // Delete role
-  const handleDeleteRole = async id => {
-    Swal.fire({
-      text: 'Are you sure you want to delete this Role?',
-      showCancelButton: true,
-      confirmButtonText: 'Delete',
-      cancelButtonText: 'Cancel',
-      reverseButtons: true,
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: 'swal-confirm-btn',
-        cancelButton: 'swal-cancel-btn'
-      },
-      didOpen: () => {
-        const confirmBtn = Swal.getConfirmButton()
-        const cancelBtn = Swal.getCancelButton()
-
-        confirmBtn.style.textTransform = 'none'
-        cancelBtn.style.textTransform = 'none'
-        confirmBtn.style.borderRadius = '8px'
-        cancelBtn.style.borderRadius = '8px'
-        confirmBtn.style.padding = '8px 20px'
-        cancelBtn.style.padding = '8px 20px'
-        confirmBtn.style.marginLeft = '10px'
-        cancelBtn.style.marginRight = '10px'
-        confirmBtn.style.backgroundColor = '#212c62'
-        confirmBtn.style.color = '#fff'
-        confirmBtn.style.border = '1px solid #212c62'
-        cancelBtn.style.border = '1px solid #212c62'
-        cancelBtn.style.color = '#212c62'
-        cancelBtn.style.backgroundColor = 'transparent'
-      }
-    }).then(async result => {
-      if (result.isConfirmed) {
-        try {
-          await deleteDealerRole(id)
-          toast.success('Role deleted successfully!')
-          setSelectedRole(null)
-          fetchRoles()
-        } catch (error) {
-          console.error('Error deleting role:', error)
-          toast.error(error.response?.data?.message || 'Failed to delete role.')
-        }
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        toast.info('Role deletion cancelled.')
-      }
-    })
-  }
-
-  // Duplicate role
-  const handleDuplicateRole = async role => {
-    if (!role) return
-
-    try {
-      const duplicatedRole = await duplicateDealerRole({ id: role.id })
-
-      toast.success(`Role "${role.name}" duplicated successfully!`)
-      fetchRoles()
-      setEditingRow(duplicatedRole)
-      setOpenModal(true)
-      setSelectedRole(duplicatedRole)
-    } catch (error) {
-      console.error('Error duplicating role:', error)
-      toast.error(error.response?.data?.message || 'Check console.')
-    }
-  }
-
+  // ───────────────────────────────────────────
+  // Render
+  // ───────────────────────────────────────────
   return (
-    <>
-      <Card sx={{ p: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, pb: 2 }}>
-          <Typography variant='h6'>Dealer Privileges</Typography>
+    <Box>
+      <Breadcrumbs aria-label='breadcrumb' sx={{ mb: 2 }}>
+        <Link underline='hover' color='inherit' href='/'>
+          Home
+        </Link>
+        <Typography color='text.primary'>Dealer Privilege</Typography>
+      </Breadcrumbs>
+      <Card sx={{ p: 3 }}>
+        {/* 🔹 Page Header Title */}
+
+        <Box display='flex' alignItems='center' gap={2} mb={7}>
+          <Typography variant='h5' sx={{ fontWeight: 600 }}>
+            Dealer Privilege
+          </Typography>
         </Box>
 
-        <Grid container spacing={4} sx={{ mb: 3 }} alignItems='center'>
-          <Grid size={{ xs: 12, sm: 2 }}>
-            <Autocomplete
-              fullWidth
-              options={roles}
-              getOptionLabel={option => option.name || ''}
-              value={selectedRole}
-              onChange={handleRoleSelect}
-              renderInput={params => <CustomTextField {...params} label='Dealer Roles' />}
-            />
-          </Grid>
+        <Divider sx={{ mb: 5 }} />
 
-          <ButtonGroup variant='outlined' aria-label='action buttons' sx={{ mt: 4 }}>
-            <Button
-              variant='contained'
-              startIcon={<AddIcon />}
-              onClick={() => {
-                setEditingRow(null)
-                setOpenModal(true)
-              }}
-            >
+        {/* 🔹 Role Dropdown + Action Buttons */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end', // ⭐ FIX: Align by bottom (input line)
+            mb: 4,
+            gap: 2,
+            flexWrap: 'nowrap'
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'flex-end', // ⭐ FIX: Align bottom of all fields
+              gap: 2,
+              flexWrap: 'nowrap'
+            }}
+          >
+            {/* User Role Dropdown */}
+            <Box sx={{ minWidth: 250 }}>
+              <CustomAutocomplete
+                fullWidth
+                options={roles}
+                value={roles.find(r => r.id === selectedRole) || null}
+                getOptionLabel={option => option.name || ''}
+                onChange={(e, newValue) => {
+                  if (newValue) {
+                    setSelectedRole(newValue.id)
+                  } else {
+                    setSelectedRole('')
+                    setRows(modules)
+                  }
+                }}
+                renderInput={params => (
+                  <CustomTextField {...params} label='Dealer Role' placeholder='Choose a role...' />
+                )}
+              />
+            </Box>
+
+            {/* Buttons inline with dropdown */}
+            <Button variant='contained' startIcon={<AddIcon />} onClick={handleAdd}>
               Add
             </Button>
 
             <Button
+              variant='outlined'
               startIcon={<EditIcon />}
               disabled={!selectedRole}
-              onClick={() => {
-                if (selectedRole) {
-                  setEditingRow(selectedRole)
-                  setOpenModal(true)
-                }
+              onClick={async () => {
+                const res = roles.find(r => r.id === selectedRole)
+                if (!res) return
+
+                setIsEdit(true)
+                setFormData({
+                  id: res.id,
+                  module: res.name,
+                  description: res.description || ''
+                })
+
+                setDrawerOpen(true)
               }}
             >
               Edit
             </Button>
 
             <Button
+              variant='outlined'
+              color='error'
+              startIcon={<DeleteIcon />}
+              disabled={!selectedRole}
+              onClick={() => handleDeleteRole(selectedRole)}
+            >
+              Delete
+            </Button>
+
+            <Button
+              variant='outlined'
               color='secondary'
               startIcon={<FileCopyIcon />}
               disabled={!selectedRole}
@@ -366,85 +742,95 @@ export default function DealerPriviledges() {
             </Button>
 
             <Button
-              color='error'
-              startIcon={<DeleteIcon />}
+              variant='outlined'
+              color='info'
+              startIcon={<RefreshIcon />}
               disabled={!selectedRole}
-              onClick={() => selectedRole && handleDeleteRole(selectedRole.id)}
+              onClick={() => loadPrivileges(selectedRole)}
             >
-              Delete
-            </Button>
-
-            <Button color='info' startIcon={<RefreshIcon />} onClick={fetchRoles}>
               Refresh
             </Button>
-          </ButtonGroup>
+          </Box>
 
+          {/* 🔹 Right Section - Update Privileges */}
           <Button
             variant='contained'
-            sx={{ mt: 4, ml: 5 }}
-            startIcon={<i className='tabler-device-floppy' />}
-            disabled={!selectedRole}
-            onClick={handleUpdatePermissions} // ✅ Fixed
+            color='success'
+            startIcon={<DoneIcon />}
+            onClick={handleUpdatePrivileges}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+              whiteSpace: 'nowrap'
+            }}
           >
-            Update
+            Update Privileges
           </Button>
-        </Grid>
+        </Box>
 
-        {/* Table controls */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <p style={{ margin: 0, color: theme.palette.text.primary }}>Show</p>
-            <select
-              value={table.getState().pagination.pageSize}
-              onChange={e => {
-                table.setPageSize(Number(e.target.value))
-                table.setPageIndex(0)
-              }}
-              style={{
-                padding: '6px 8px',
-                borderRadius: 4,
-                border: `1px solid ${theme.palette.divider}`,
-                backgroundColor: theme.palette.background.paper,
-                color: theme.palette.text.primary
-              }}
+        <Divider sx={{ mb: 2 }} />
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+          <FormControl size='small' sx={{ width: 140 }}>
+            <Select
+              value={pagination.pageSize}
+              onChange={e => setPagination(p => ({ ...p, pageSize: Number(e.target.value), pageIndex: 0 }))}
             >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-            <p style={{ margin: 0, color: theme.palette.text.primary }}>entries</p>
-          </div>
-          <CustomTextField
-            value={globalFilter}
-            onChange={e => setGlobalFilter(e.target.value)}
-            placeholder='Search...'
+              {[5, 10, 25, 50].map(s => (
+                <MenuItem key={s} value={s}>
+                  {s} entries
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <DebouncedInput
+            value={searchText}
+            onChange={v => {
+              setSearchText(String(v))
+              setPagination(p => ({ ...p, pageIndex: 0 }))
+            }}
+            placeholder='Search module...'
+            sx={{ width: 360 }}
+            variant='outlined'
             size='small'
-            sx={{ width: '200px' }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position='start'>
+                    <SearchIcon />
+                  </InputAdornment>
+                )
+              }
+            }}
           />
-        </div>
-
-        {/* Table */}
-        <div className='overflow-x-auto '>
+        </Box>
+        <div className='overflow-x-auto'>
           <table className={styles.table}>
             <thead>
-              {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <th key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</th>
+              {table.getHeaderGroups().map(hg => (
+                <tr key={hg.id}>
+                  {hg.headers.map(h => (
+                    <th key={h.id}>
+                      <div
+                        className={classnames({
+                          'flex items-center': h.column.getIsSorted(),
+                          'cursor-pointer select-none': h.column.getCanSort()
+                        })}
+                        onClick={h.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                        {{
+                          asc: <ChevronRight fontSize='1.25rem' className='-rotate-90' />,
+                          desc: <ChevronRight fontSize='1.25rem' className='rotate-90' />
+                        }[h.column.getIsSorted()] ?? null}
+                      </div>
+                    </th>
                   ))}
                 </tr>
               ))}
             </thead>
-
             <tbody>
-              {table.getRowModel().rows.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length} style={{ textAlign: 'center' }}>
-                    No data available
-                  </td>
-                </tr>
-              ) : (
+              {rows.length ? (
                 table.getRowModel().rows.map(row => (
                   <tr key={row.id}>
                     {row.getVisibleCells().map(cell => (
@@ -452,21 +838,140 @@ export default function DealerPriviledges() {
                     ))}
                   </tr>
                 ))
+              ) : (
+                <tr>
+                  <td colSpan={columns.length} className='text-center py-4'>
+                    No results found
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
-
-        <TablePagination
-          component={() => <TablePaginationComponent table={table} />}
-          count={modulesData.length}
-          rowsPerPage={table.getState().pagination.pageSize}
-          page={table.getState().pagination.pageIndex}
-          onPageChange={(_, page) => table.setPageIndex(page)}
-        />
+        <TablePaginationComponent table={table} />
       </Card>
 
-      <AddModelWindow open={openModal} setOpen={setOpenModal} editingRow={editingRow} onSaveRole={handleSaveRole} />
-    </>
+      {/* Drawer */}
+      {/* Drawer */}
+      <Drawer anchor='right' open={drawerOpen} onClose={toggleDrawer}>
+        <Box sx={{ p: 5, width: 420 }}>
+          <Box display='flex' justifyContent='space-between' alignItems='center' mb={3}>
+            <Typography variant='h5' fontWeight={600}>
+              {isEdit ? 'Edit Module' : 'Add New Module'}
+            </Typography>
+            <IconButton onClick={toggleDrawer}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <CustomTextFieldWrapper
+                  ref={moduleRef}
+                  fullWidth
+                  label='Module Name'
+                  placeholder='Enter module name'
+                  value={formData.module}
+                  onChange={e => setFormData(prev => ({ ...prev, module: e.target.value }))}
+                />
+              </Grid>
+
+              {/* 🔹 Description field replaces checkboxes */}
+              <Grid item xs={12}>
+                <CustomTextFieldWrapper
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label='Description'
+                  placeholder='Enter description'
+                  value={formData.description}
+                  onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </Grid>
+            </Grid>
+
+            <Box mt={4} display='flex' gap={2}>
+              <Button type='submit' variant='contained' fullWidth disabled={loading}>
+                {loading ? 'Saving...' : isEdit ? 'Update' : 'Save'}
+              </Button>
+              <Button variant='outlined' fullWidth onClick={toggleDrawer}>
+                Cancel
+              </Button>
+            </Box>
+          </form>
+        </Box>
+      </Drawer>
+
+      <Dialog
+        onClose={() => setDeleteDialog({ open: false, row: null })}
+        aria-labelledby='customized-dialog-title'
+        open={deleteDialog.open}
+        closeAfterTransition={false}
+        PaperProps={{
+          sx: {
+            overflow: 'visible',
+            width: 420,
+            borderRadius: 1,
+            textAlign: 'center'
+          }
+        }}
+      >
+        {/* 🔴 Title with Warning Icon */}
+        <DialogTitle
+          id='customized-dialog-title'
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+            color: 'error.main',
+            fontWeight: 700,
+            pb: 1,
+            position: 'relative'
+          }}
+        >
+          <WarningAmberIcon color='error' sx={{ fontSize: 26 }} />
+          Confirm Delete
+          <DialogCloseButton
+            onClick={() => setDeleteDialog({ open: false, row: null })}
+            disableRipple
+            sx={{ position: 'absolute', right: 1, top: 1 }}
+          >
+            <i className='tabler-x' />
+          </DialogCloseButton>
+        </DialogTitle>
+
+        {/* Centered Text */}
+        <DialogContent sx={{ px: 5, pt: 1 }}>
+          <Typography sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.6 }}>
+            Are you sure you want to delete the module{' '}
+            <strong style={{ color: '#d32f2f' }}>{deleteDialog.row?.module || 'this module'}</strong>?
+            <br />
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+
+        {/* Centered Buttons */}
+        <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 3, pt: 2 }}>
+          <Button
+            onClick={() => setDeleteDialog({ open: false, row: null })}
+            variant='tonal'
+            color='secondary'
+            sx={{ minWidth: 100, textTransform: 'none', fontWeight: 500 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDelete}
+            variant='contained'
+            color='error'
+            sx={{ minWidth: 100, textTransform: 'none', fontWeight: 600 }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   )
 }

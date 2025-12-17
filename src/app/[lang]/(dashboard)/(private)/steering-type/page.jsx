@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+
 import {
   Box,
   Button,
@@ -22,70 +23,60 @@ import {
   Chip,
   TextField,
   Select,
-  FormControl,
-  InputLabel,
-  CircularProgress
+  FormControl
 } from '@mui/material'
 
-import DialogCloseButton from '@components/dialogs/DialogCloseButton'
-import ProgressCircularCustomization from '@/components/common/ProgressCircularCustomization'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
-import EditIcon from '@mui/icons-material/Edit'
-import DeleteIcon from '@mui/icons-material/Delete'
 import CloseIcon from '@mui/icons-material/Close'
-import PrintIcon from '@mui/icons-material/Print'
-import FileDownloadIcon from '@mui/icons-material/FileDownload'
-import TableChartIcon from '@mui/icons-material/TableChart'
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
-import FileCopyIcon from '@mui/icons-material/FileCopy'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import RefreshIcon from '@mui/icons-material/Refresh'
 
+import DialogCloseButton from '@components/dialogs/DialogCloseButton'
 import GlobalTextField from '@/components/common/GlobalTextField'
 import GlobalTextarea from '@/components/common/GlobalTextarea'
 import GlobalSelect from '@/components/common/GlobalSelect'
 import GlobalButton from '@/components/common/GlobalButton'
+import TablePaginationComponent from '@/components/TablePaginationComponent'
+import { showToast } from '@/components/common/Toasts'
+
+import { steeringList, steeringAdd, steeringUpdate, steeringDelete } from '@/api/steering'
 
 import classnames from 'classnames'
 import {
   useReactTable,
   getCoreRowModel,
-  getFilteredRowModel,
   getSortedRowModel,
   flexRender,
   createColumnHelper
 } from '@tanstack/react-table'
-import { rankItem } from '@tanstack/match-sorter-utils'
+
 import styles from '@core/styles/table.module.css'
 import ChevronRight from '@menu/svg/ChevronRight'
 
-import { toast } from 'react-toastify'
-import { showToast } from '@/components/common/Toasts'
-import TablePaginationComponent from '@/components/TablePaginationComponent'
-
-// ────────────────────────────── API Imports ──────────────────────────────
-import { addCategory, getCategoryList, updateCategory, deleteCategory } from '@/api/category'
-
-// ───────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // Debounced Input
-// ───────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
   const [value, setValue] = useState(initialValue)
+
   useEffect(() => setValue(initialValue), [initialValue])
+
   useEffect(() => {
     const t = setTimeout(() => onChange(value), debounce)
     return () => clearTimeout(t)
-  }, [value])
+  }, [value, debounce, onChange])
+
   return <TextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
-// ───────────────────────────────────────────────────────────────────────
-// Main Category Page
-// ───────────────────────────────────────────────────────────────────────
-export default function CategoryPage() {
+// ─────────────────────────────────────────────────────────────
+// Steering Type Page (UI-only, local state)
+// ─────────────────────────────────────────────────────────────
+export default function SteeringTypePage() {
+  const ENTITY = 'Steering Type'
+
   const [rows, setRows] = useState([])
-  const [rowCount, setRowCount] = useState(0)
   const [searchText, setSearchText] = useState('')
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 })
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -93,52 +84,48 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState({ open: false, row: null })
   const [exportAnchorEl, setExportAnchorEl] = useState(null)
-  const [unsavedAddData, setUnsavedAddData] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [unsavedAddData, setUnsavedAddData] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState(null)
 
   const [formData, setFormData] = useState({
     id: null,
     name: '',
     description: '',
-    status: 1
+    status: 1,
+    imageFile: null,
+    imageUrl: ''
   })
 
   const nameRef = useRef(null)
 
-  // ────────────────────────────── Load Categories ──────────────────────────────
-  const loadCategories = async () => {
+  // ────────────────────────────── Load (UI only) ──────────────────────────────
+  const loadItems = async () => {
     setLoading(true)
     try {
-      const res = await getCategoryList()
-      console.log('CATEGORY LIST RESPONSE:', res)
+      const res = await steeringList()
+      const list = res?.data?.data || []
 
-      const list = res?.data?.data || [] // ✅ Correct
-
-      if (!Array.isArray(list)) {
-        showToast('error', 'Invalid response format')
-        return
-      }
-
-      const normalized = list.map((item, index) => ({
+      const formatted = list.map((item, index) => ({
         sno: index + 1,
         id: item.id,
         name: item.name,
-        description: item.description ?? '',
-        is_active: item.is_active ?? 1
+        description: item.description || '',
+        image: item.image,
+        is_active: Number(item.is_active) // 🔥 convert to number always
       }))
 
-      setRows(normalized)
-      setRowCount(normalized.length)
-    } catch (err) {
-      console.error('CATEGORY LIST ERROR:', err.response?.data || err.message)
-      showToast('error', err.response?.data?.message || 'Failed to load categories')
+      setRows(formatted)
+    } catch {
+      showToast('error', 'Load failed')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadCategories()
+    loadItems()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ────────────────────────────── Drawer & Form ──────────────────────────────
@@ -149,7 +136,15 @@ export default function CategoryPage() {
     if (unsavedAddData) {
       setFormData(unsavedAddData)
     } else {
-      setFormData({ id: null, name: '', description: '', status: 1 })
+      setFormData({
+        id: null,
+        name: '',
+        description: '',
+        status: 1,
+        imageFile: null,
+        imageUrl: ''
+      })
+      setPreviewUrl(null)
     }
     setDrawerOpen(true)
     setTimeout(() => nameRef.current?.focus(), 100)
@@ -161,8 +156,9 @@ export default function CategoryPage() {
       id: row.id,
       name: row.name,
       description: row.description,
-      status: row.is_active
+      status: Number(row.is_active) // 🔥 always convert 1/0
     })
+    setPreviewUrl(row.image || '')
     setDrawerOpen(true)
   }
 
@@ -174,56 +170,69 @@ export default function CategoryPage() {
     })
   }
 
+  const handleImageChange = e => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+
+    setFormData(prev => {
+      const updated = { ...prev, imageFile: file }
+      if (!isEdit) setUnsavedAddData(updated)
+      return updated
+    })
+  }
+
   const handleCancel = () => {
-    setFormData({ id: null, name: '', description: '', status: 1 })
-    setUnsavedAddData(null)
     setDrawerOpen(false)
+    setFormData({
+      id: null,
+      name: '',
+      description: '',
+      status: 1,
+      imageFile: null,
+      imageUrl: ''
+    })
+    setPreviewUrl(null)
+    setUnsavedAddData(null)
   }
 
   // ────────────────────────────── Submit (Add / Update) ──────────────────────────────
+  // Build FormData for upload
+  const buildFormData = () => {
+    const fd = new FormData()
+    fd.append('name', formData.name.trim())
+    fd.append('description', formData.description || '')
+    fd.append('is_active', Number(formData.status)) // 🔥 IMPORTANT
+    if (formData.imageFile) fd.append('image', formData.imageFile)
+    return fd
+  }
+
   const handleSubmit = async e => {
     e.preventDefault()
 
     if (!formData.name.trim()) {
-      showToast('warning', 'Category name is required')
+      showToast('warning', `${ENTITY} name is required`)
       return
     }
 
-    // Duplicate check (only for Add)
-    if (!isEdit) {
-      const exists = rows.some(r => r.name.trim().toLowerCase() === formData.name.trim().toLowerCase())
-      if (exists) {
-        showToast('warning', 'Category with this name already exists')
-        return
-      }
-    }
-
-    setLoading(true)
     try {
-      const payload = {
-        name: formData.name.trim(),
-        description: formData.description?.trim() || '',
-        is_active: Number(formData.status)
-      }
+      setLoading(true)
+      const apiForm = buildFormData()
 
-      let res
       if (isEdit) {
-        res = await updateCategory(formData.id, payload)
+        await steeringUpdate(formData.id, apiForm)
+        showToast('success', `${ENTITY} updated`)
       } else {
-        res = await addCategory(payload)
+        await steeringAdd(apiForm)
+        showToast('success', `${ENTITY} added`)
       }
 
-      if (res.status === 'success' || res.message?.includes('success')) {
-        showToast('success', isEdit ? 'Category updated' : 'Category added')
-        setUnsavedAddData(null)
-        setDrawerOpen(false)
-        await loadCategories()
-      } else {
-        showToast('error', res.message || 'Operation failed')
-      }
+      await loadItems()
+      handleCancel()
     } catch (err) {
-      console.error('CATEGORY SAVE ERROR:', err.response?.data || err)
-      showToast('error', err.response?.data?.message || 'Failed to save category')
+      showToast('error', err.response?.data?.message || 'Failed to save')
     } finally {
       setLoading(false)
     }
@@ -233,38 +242,27 @@ export default function CategoryPage() {
   const confirmDelete = async () => {
     if (!deleteDialog.row) return
 
-    setDeleteLoading(true) // 🔥 disable delete button
+    setDeleteLoading(true) // 🔥 disable delete button while deleting
 
     try {
-      const res = await deleteCategory(deleteDialog.row.id)
+      const res = await steeringDelete(deleteDialog.row.id)
 
-      if (res.status === 'success' || res.message?.includes('success')) {
+      if (res?.data?.status === 'success' || res?.data?.message?.toLowerCase()?.includes('success')) {
         showToast('delete', `${deleteDialog.row.name} deleted`)
-        await loadCategories()
+        await loadItems() // 🔄 refresh data from DB
+      } else {
+        showToast('error', res?.data?.message || 'Delete failed')
       }
     } catch (err) {
+      console.error('STEERING DELETE ERROR:', err)
       showToast('error', err.response?.data?.message || 'Delete failed')
     } finally {
       setDeleteLoading(false)
-      setDeleteDialog({ open: false, row: null })
+      setDeleteDialog({ open: false, row: null }) // ❌ close dialog
     }
   }
 
-  // ────────────────────────────── Table Setup ──────────────────────────────
-  const filteredRows = useMemo(() => {
-    if (!searchText) return rows
-    return rows.filter(
-      r =>
-        r.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-        r.description?.toLowerCase().includes(searchText.toLowerCase())
-    )
-  }, [rows, searchText])
-
-  const paginatedRows = useMemo(() => {
-    const start = pagination.pageIndex * pagination.pageSize
-    return filteredRows.slice(start, start + pagination.pageSize)
-  }, [filteredRows, pagination])
-
+  // ────────────────────────────── Table Columns ──────────────────────────────
   const columnHelper = createColumnHelper()
   const columns = useMemo(
     () => [
@@ -287,8 +285,28 @@ export default function CategoryPage() {
           </Box>
         )
       }),
-      columnHelper.accessor('name', { header: ' Name' }),
-      columnHelper.accessor('description', { header: 'Description' }),
+      columnHelper.accessor('name', { header: `${ENTITY} Name` }),
+      columnHelper.accessor('image', {
+        header: 'Image',
+        cell: info => {
+          const img = info.getValue()
+          return img ? (
+            <img
+              src={img}
+              alt='steering-type'
+              style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 4 }}
+            />
+          ) : (
+            <Typography variant='caption' color='text.disabled'>
+              -
+            </Typography>
+          )
+        }
+      }),
+      columnHelper.accessor('description', {
+        header: 'Description',
+        cell: info => info.getValue() || '-'
+      }),
       columnHelper.accessor('is_active', {
         header: 'Status',
         cell: info => (
@@ -297,7 +315,7 @@ export default function CategoryPage() {
             size='small'
             sx={{
               color: '#fff',
-              bgcolor: info.getValue() == 1 ? 'success.main' : 'error.main',
+              bgcolor: info.getValue() == 1 ? 'success.main' : 'error.main', // 🔥 same as Category page
               fontWeight: 600,
               borderRadius: '6px',
               px: 1.5
@@ -308,6 +326,20 @@ export default function CategoryPage() {
     ],
     []
   )
+
+  const filteredRows = useMemo(() => {
+    if (!searchText) return rows
+    return rows.filter(
+      r =>
+        r.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        r.description?.toLowerCase().includes(searchText.toLowerCase())
+    )
+  }, [rows, searchText])
+
+  const paginatedRows = useMemo(() => {
+    const start = pagination.pageIndex * pagination.pageSize
+    return filteredRows.slice(start, start + pagination.pageSize)
+  }, [filteredRows, pagination])
 
   const table = useReactTable({
     data: paginatedRows,
@@ -321,91 +353,28 @@ export default function CategoryPage() {
     getSortedRowModel: getSortedRowModel()
   })
 
-  // ────────────────────────────── Export Functions ──────────────────────────────
-  const exportPrint = () => {
-    const w = window.open('', '_blank')
-    const html = `
-      <html><head><title>Category List</title><style>
-        body{font-family:Arial;padding:24px;}
-        table{width:100%;border-collapse:collapse;}
-        th,td{border:1px solid #ccc;padding:8px;text-align:left;}
-        th{background:#f4f4f4;}
-      </style></head><body>
-      <h2>Category List</h2>
-      <table><thead><tr>
-        <th>S.No</th><th>Category Name</th><th>Description</th><th>Status</th>
-      </tr></thead><tbody>
-      ${rows.map(r => `<tr><td>${r.sno}</td><td>${r.name}</td><td>${r.description}</td><td>${r.is_active == 1 ? 'Active' : 'Inactive'}</td></tr>`).join('')}
-      </tbody></table></body></html>`
-    w?.document.write(html)
-    w?.document.close()
-    w?.print()
-  }
-
-  const exportCSV = () => {
-    const headers = ['S.No', 'Category Name', 'Description', 'Status']
-    const csv = [
-      headers.join(','),
-      ...rows.map(r => [r.sno, r.name, r.description, r.is_active == 1 ? 'Active' : 'Inactive'].join(','))
-    ].join('\n')
-    const link = document.createElement('a')
-    link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
-    link.download = 'Category_List.csv'
-    link.click()
-    showToast('success', 'CSV downloaded')
-  }
-
-  const exportExcel = async () => {
-    if (typeof window === 'undefined') return
-    const { utils, writeFile } = await import('xlsx')
-    const ws = utils.json_to_sheet(
-      rows.map(r => ({
-        'S.No': r.sno,
-        'Category Name': r.name,
-        Description: r.description || '-',
-        Status: r.is_active == 1 ? 'Active' : 'Inactive'
-      }))
-    )
-    const wb = utils.book_new()
-    utils.book_append_sheet(wb, ws, 'Categories')
-    writeFile(wb, 'Category_List.xlsx')
-    showToast('success', 'Excel downloaded')
-  }
-
-  const exportPDF = async () => {
-    if (typeof window === 'undefined') return
-    const { jsPDF } = await import('jspdf')
-    const autoTable = (await import('jspdf-autotable')).default
-    const doc = new jsPDF()
-    doc.text('Category List', 14, 15)
-    autoTable(doc, {
-      startY: 25,
-      head: [['S.No', 'Category Name', 'Description', 'Status']],
-      body: rows.map(r => [r.sno, r.name, r.description || '-', r.is_active == 1 ? 'Active' : 'Inactive'])
-    })
-    doc.save('Category_List.pdf')
-    showToast('success', 'PDF exported')
-  }
-
-  const exportCopy = () => {
-    const text = rows
-      .map(r => `${r.sno}. ${r.name} | ${r.description || '-'} | ${r.is_active == 1 ? 'Active' : 'Inactive'}`)
-      .join('\n')
-    navigator.clipboard.writeText(text)
-    showToast('info', 'Copied to clipboard')
-  }
-
   const exportOpen = Boolean(exportAnchorEl)
 
+  // Export actions – only UI messages now
+  const exportPrint = () => showToast('info', 'Print (UI only)')
+  const exportCSV = () => showToast('info', 'CSV (UI only)')
+  const exportExcel = () => showToast('info', 'Excel (UI only)')
+  const exportPDF = () => showToast('info', 'PDF (UI only)')
+  const exportCopy = () => showToast('info', 'Copy (UI only)')
+
+  // ────────────────────────────── Render ──────────────────────────────
   return (
     <Box>
       {/* Breadcrumbs */}
       <Box sx={{ mb: 2 }}>
         <Breadcrumbs aria-label='breadcrumb'>
-          <Link underline='hover' color='inherit' href='/'>
+          <Link href='/' className='text-primary'>
             Home
           </Link>
-          <Typography color='text.primary'>Category</Typography>
+          <Link href='/masters' className='text-primary'>
+            Masters
+          </Link>
+          <Typography color='text.primary'>{ENTITY}</Typography>
         </Breadcrumbs>
       </Box>
 
@@ -414,7 +383,7 @@ export default function CategoryPage() {
           title={
             <Box display='flex' alignItems='center' gap={2}>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Category
+                {ENTITY}
               </Typography>
               <GlobalButton
                 startIcon={
@@ -429,7 +398,7 @@ export default function CategoryPage() {
                   />
                 }
                 disabled={loading}
-                onClick={loadCategories}
+                onClick={loadItems}
               >
                 Refresh
               </GlobalButton>
@@ -449,80 +418,57 @@ export default function CategoryPage() {
               <Menu anchorEl={exportAnchorEl} open={exportOpen} onClose={() => setExportAnchorEl(null)}>
                 <MenuItem
                   onClick={() => {
-                    setExportAnchorEl(null)
                     exportPrint()
+                    setExportAnchorEl(null)
                   }}
                 >
-                  <PrintIcon fontSize='small' sx={{ mr: 1 }} /> Print
+                  Print
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
-                    setExportAnchorEl(null)
                     exportCSV()
-                  }}
-                >
-                  <FileDownloadIcon fontSize='small' sx={{ mr: 1 }} /> CSV
-                </MenuItem>
-                <MenuItem
-                  onClick={async () => {
                     setExportAnchorEl(null)
-                    await exportExcel()
                   }}
                 >
-                  <TableChartIcon fontSize='small' sx={{ mr: 1 }} /> Excel
-                </MenuItem>
-                <MenuItem
-                  onClick={async () => {
-                    setExportAnchorEl(null)
-                    await exportPDF()
-                  }}
-                >
-                  <PictureAsPdfIcon fontSize='small' sx={{ mr: 1 }} /> PDF
+                  CSV
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
+                    exportExcel()
                     setExportAnchorEl(null)
-                    exportCopy()
                   }}
                 >
-                  <FileCopyIcon fontSize='small' sx={{ mr: 1 }} /> Copy
+                  Excel
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    exportPDF()
+                    setExportAnchorEl(null)
+                  }}
+                >
+                  PDF
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    exportCopy()
+                    setExportAnchorEl(null)
+                  }}
+                >
+                  Copy
                 </MenuItem>
               </Menu>
 
               <GlobalButton startIcon={<AddIcon />} onClick={handleAdd}>
-                Add Category
+                Add {ENTITY}
               </GlobalButton>
             </Box>
           }
           sx={{ pb: 1.5, pt: 1.5, '& .MuiCardHeader-action': { m: 0, alignItems: 'center' } }}
         />
 
-        {/* Loading Overlay */}
-        {/* {loading && (
-          <Box
-            sx={{
-              position: 'fixed',
-              inset: 0,
-              bgcolor: 'rgba(255,255,255,0.7)',
-              backdropFilter: 'blur(2px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 2000
-            }}
-          >
-            <Box textAlign='center'>
-              <ProgressCircularCustomization size={60} thickness={5} />
-              <Typography mt={2} fontWeight={600} color='primary'>
-                Loading...
-              </Typography>
-            </Box>
-          </Box>
-        )} */}
-
         <Divider sx={{ mb: 2 }} />
 
-        {/* Entries & Search */}
+        {/* Top controls */}
         <Box
           sx={{
             mb: 3,
@@ -540,7 +486,7 @@ export default function CategoryPage() {
             <FormControl size='small' sx={{ width: 140 }}>
               <Select
                 value={pagination.pageSize}
-                onChange={e => setPagination(p => ({ ...p, pageSize: Number(e.target.value) }))}
+                onChange={e => setPagination(p => ({ ...p, pageSize: Number(e.target.value), pageIndex: 0 }))}
               >
                 {[5, 10, 25, 50, 100].map(v => (
                   <MenuItem key={v} value={v}>
@@ -554,7 +500,7 @@ export default function CategoryPage() {
           <DebouncedInput
             value={searchText}
             onChange={v => setSearchText(String(v))}
-            placeholder='Search category...'
+            placeholder='Search steering type...'
             sx={{ width: 360 }}
             variant='outlined'
             size='small'
@@ -615,7 +561,7 @@ export default function CategoryPage() {
         />
       </Card>
 
-      {/* ────────────────────────────── Drawer (Add/Edit) ────────────────────────────── */}
+      {/* Drawer - Add/Edit */}
       <Drawer
         anchor='right'
         open={drawerOpen}
@@ -625,7 +571,7 @@ export default function CategoryPage() {
         <Box sx={{ p: 5, display: 'flex', flexDirection: 'column', height: '100%' }}>
           <Box display='flex' justifyContent='space-between' alignItems='center' mb={3}>
             <Typography variant='h5' fontWeight={600}>
-              {isEdit ? 'Edit Category' : 'Add Category'}
+              {isEdit ? `Edit ${ENTITY}` : `Add ${ENTITY}`}
             </Typography>
             <IconButton onClick={toggleDrawer} size='small'>
               <CloseIcon />
@@ -637,21 +583,12 @@ export default function CategoryPage() {
             <Grid container spacing={4}>
               <Grid item xs={12}>
                 <GlobalTextField
-                  label='Name'
-                  placeholder='Enter category name'
+                  label={`${ENTITY} Name *`}
+                  placeholder={`Enter ${ENTITY.toLowerCase()} name`}
                   value={formData.name}
                   inputRef={nameRef}
                   required
                   onChange={e => handleFieldChange('name', e.target.value)}
-                  sx={{
-                    '& .MuiFormLabel-asterisk': {
-                      color: '#e91e63 !important',
-                      fontWeight: 700
-                    },
-                    '& .MuiInputLabel-root.Mui-required': {
-                      color: 'inherit'
-                    }
-                  }}
                 />
               </Grid>
 
@@ -659,17 +596,42 @@ export default function CategoryPage() {
                 <GlobalTextarea
                   label='Description'
                   placeholder='Optional description...'
-                  rows={3}
+                  rows={4}
                   value={formData.description}
                   onChange={e => handleFieldChange('description', e.target.value)}
                 />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant='subtitle2' sx={{ mb: 1 }}>
+                  Image
+                </Typography>
+                <Button variant='outlined' component='label' size='small' sx={{ textTransform: 'none', mb: 2 }}>
+                  Choose Image
+                  <input type='file' hidden accept='image/*' onChange={handleImageChange} />
+                </Button>
+                {previewUrl && (
+                  <Box sx={{ mt: 1 }}>
+                    <img
+                      src={previewUrl}
+                      alt='Preview'
+                      style={{
+                        width: 80,
+                        height: 80,
+                        objectFit: 'contain',
+                        borderRadius: 4,
+                        border: '1px solid #e0e0e0'
+                      }}
+                    />
+                  </Box>
+                )}
               </Grid>
 
               {isEdit && (
                 <Grid item xs={12}>
                   <GlobalSelect
                     label='Status'
-                    value={formData.status === 1 ? 'Active' : 'Inactive'}
+                    value={formData.status == 1 ? 'Active' : 'Inactive'}
                     onChange={e => handleFieldChange('status', e.target.value === 'Active' ? 1 : 0)}
                     options={[
                       { value: 'Active', label: 'Active' },
@@ -692,24 +654,13 @@ export default function CategoryPage() {
         </Box>
       </Drawer>
 
-      {/* ────────────────────────────── Delete Confirmation Dialog ────────────────────────────── */}
+      {/* Delete Confirmation Dialog */}
       <Dialog
-        onClose={() => setDeleteDialog({ open: false, row: null })}
-        aria-labelledby='customized-dialog-title'
         open={deleteDialog.open}
-        closeAfterTransition={false}
-        PaperProps={{
-          sx: {
-            overflow: 'visible',
-            width: 420,
-            borderRadius: 1,
-            textAlign: 'center'
-          }
-        }}
+        onClose={() => setDeleteDialog({ open: false, row: null })}
+        PaperProps={{ sx: { overflow: 'visible', width: 420, borderRadius: 1, textAlign: 'center' } }}
       >
-        {/* 🔴 Title with Warning Icon */}
         <DialogTitle
-          id='customized-dialog-title'
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -723,24 +674,20 @@ export default function CategoryPage() {
         >
           <WarningAmberIcon color='error' sx={{ fontSize: 26 }} />
           Confirm Delete
-          {/* ❌ Close Button */}
           <DialogCloseButton onClick={() => setDeleteDialog({ open: false, row: null })} disableRipple>
             <i className='tabler-x' />
           </DialogCloseButton>
         </DialogTitle>
 
-        {/* Centered text */}
         <DialogContent sx={{ px: 5, pt: 1 }}>
           <Typography sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.6 }}>
             Are you sure you want to delete{' '}
-            <strong style={{ color: '#d32f2f' }}>{deleteDialog.row?.name || 'this category'}</strong>
-            ?
+            <strong style={{ color: '#d32f2f' }}>{deleteDialog.row?.name || `this ${ENTITY}`}</strong>?
             <br />
             This action cannot be undone.
           </Typography>
         </DialogContent>
 
-        {/* Centered Buttons */}
         <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 3, pt: 2 }}>
           <GlobalButton
             variant='outlined'
@@ -749,13 +696,7 @@ export default function CategoryPage() {
           >
             Cancel
           </GlobalButton>
-
-          <GlobalButton
-            variant='contained'
-            color='error'
-            onClick={confirmDelete}
-            disabled={deleteLoading} // 🔥 disable during delete
-          >
+          <GlobalButton variant='contained' color='error' onClick={confirmDelete} disabled={deleteLoading}>
             {deleteLoading ? 'Deleting...' : 'Delete'}
           </GlobalButton>
         </DialogActions>

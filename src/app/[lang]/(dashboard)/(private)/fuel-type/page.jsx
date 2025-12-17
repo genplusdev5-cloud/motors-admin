@@ -13,6 +13,8 @@ import {
   Divider,
   Drawer,
   Grid,
+  FormControl,
+  Select,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -32,6 +34,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import FileCopyIcon from '@mui/icons-material/FileCopy'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import TextField from '@mui/material/TextField'
 
 import GlobalTextField from '@/components/common/GlobalTextField'
 import GlobalTextarea from '@/components/common/GlobalTextarea'
@@ -56,12 +59,24 @@ import { getFuelList, addFuel, updateFuel, deleteFuel } from '@/api/fuel'
 
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
   const [value, setValue] = useState(initialValue)
+
   useEffect(() => setValue(initialValue), [initialValue])
+
   useEffect(() => {
     const t = setTimeout(() => onChange(value), debounce)
     return () => clearTimeout(t)
   }, [value])
-  return <input {...props} value={value} onChange={e => setValue(e.target.value)} className='w-full' />
+
+  return (
+    <TextField
+      {...props}
+      value={value}
+      onChange={e => setValue(e.target.value)}
+      size='small'
+      variant='outlined'
+      fullWidth
+    />
+  )
 }
 
 export default function FuelTypePage() {
@@ -315,6 +330,7 @@ export default function FuelTypePage() {
             <Box display='flex' gap={2}>
               <GlobalButton
                 variant='outlined'
+                 color='secondary'
                 endIcon={<ArrowDropDownIcon />}
                 onClick={e => setExportAnchorEl(e.currentTarget)}
               >
@@ -372,26 +388,40 @@ export default function FuelTypePage() {
 
         <Divider sx={{ mb: 2 }} />
 
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Entries & Search */}
+        <Box
+          sx={{
+            mb: 3,
+            display: 'flex',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant='body2'>Show</Typography>
-            <select
-              value={pagination.pageSize}
-              onChange={e => setPagination(p => ({ ...p, pageSize: Number(e.target.value) }))}
-            >
-              {[10, 25, 50, 100].map(v => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-            <Typography variant='body2'>entries</Typography>
+            <Typography variant='body2' color='text.secondary'>
+              Show
+            </Typography>
+            <FormControl size='small' sx={{ width: 140 }}>
+              <Select
+                value={pagination.pageSize}
+                onChange={e => setPagination(p => ({ ...p, pageSize: Number(e.target.value) }))}
+              >
+                {[5, 10, 25, 50, 100].map(v => (
+                  <MenuItem key={v} value={v}>
+                    {v} entries
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
+
           <DebouncedInput
             value={searchText}
-            onChange={value => setSearchText(value)}
+            onChange={setSearchText}
             placeholder='Search fuel type...'
-            className='w-full'
+            sx={{ width: 360 }}
+            size='small'
           />
         </Box>
 
@@ -440,7 +470,7 @@ export default function FuelTypePage() {
       <Drawer anchor='right' open={drawerOpen} onClose={handleCancel} PaperProps={{ sx: { width: 400 } }}>
         <Box sx={{ p: 5 }}>
           <Box display='flex' justifyContent='space-between' alignItems='center'>
-            <Typography variant='h6'>{isEdit ? 'Edit Gearbox' : 'Add Gearbox'}</Typography>
+            <Typography variant='h6'>{isEdit ? 'Edit Fuel Type' : 'Add Fuel Type'}</Typography>
             <IconButton onClick={handleCancel}>
               <CloseIcon />
             </IconButton>
@@ -452,10 +482,20 @@ export default function FuelTypePage() {
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <GlobalTextField
-                  label='Gearbox Name *'
-                  placeholder='Enter gearbox name'
+                  label=' Name '
+                  placeholder='Enter fuel type  name'
+                  required
                   value={formData.name}
                   onChange={e => handleFieldChange('name', e.target.value)}
+                  sx={{
+                    '& .MuiFormLabel-asterisk': {
+                      color: '#e91e63 !important',
+                      fontWeight: 700
+                    },
+                    '& .MuiInputLabel-root.Mui-required': {
+                      color: 'inherit'
+                    }
+                  }}
                   inputRef={nameRef}
                 />
               </Grid>
