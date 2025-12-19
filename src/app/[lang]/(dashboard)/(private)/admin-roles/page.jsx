@@ -204,6 +204,8 @@ export default function UserPrivilegePage() {
     }
   }
 
+  const toBool = v => v === 1 || v === '1' || v === true
+
   const loadPrivileges = async roleId => {
     if (!roleId) {
       // No role selected → show all modules with no privileges
@@ -218,16 +220,16 @@ export default function UserPrivilegePage() {
       const res = await getAdminPrivilege(roleId)
       console.log('API Response:', res?.data)
 
-      const savedPrivileges = res?.data?.data || []
-      if (!modules.length) return
+      const savedPrivileges = Array.isArray(res?.data?.data) ? res.data.data : Array.isArray(res?.data) ? res.data : []
+
       // Create a map for fast lookup
       const privilegeMap = new Map()
       savedPrivileges.forEach(p => {
-        privilegeMap.set(p.module_id, {
-          create: p.is_create == 1 || p.create === true,
-          view: p.is_read == 1 || p.read === true,
-          update: p.is_update == 1 || p.update === true,
-          delete: p.is_delete == 1 || p.delete === true
+        privilegeMap.set(Number(p.module_id), {
+          create: toBool(p.is_create),
+          view: toBool(p.is_read),
+          update: toBool(p.is_update),
+          delete: toBool(p.is_delete)
         })
       })
 
@@ -281,10 +283,10 @@ export default function UserPrivilegePage() {
   }, [])
 
   useEffect(() => {
-    if (selectedRole) {
+    if (selectedRole && modules.length) {
       loadPrivileges(selectedRole)
     }
-  }, [selectedRole])
+  }, [selectedRole, modules])
 
   const toggleDrawer = () => setDrawerOpen(p => !p)
   const handleAdd = () => {
@@ -459,14 +461,18 @@ export default function UserPrivilegePage() {
         // 2️⃣ If it’s a duplicate, copy privileges
         if (selectedRoleId) {
           const privRes = await getAdminPrivilege(selectedRoleId)
-          const oldPrivileges = privRes?.results || []
+          const oldPrivileges = Array.isArray(privRes?.data?.data)
+            ? privRes.data.data
+            : Array.isArray(privRes?.data)
+              ? privRes.data
+              : []
 
           const duplicatedPrivileges = oldPrivileges.map(p => ({
             module_id: p.module_id,
-            create: p.is_create,
-            read: p.is_read,
-            update: p.is_update,
-            delete: p.is_delete
+            is_create: p.is_create,
+            is_read: p.is_read,
+            is_update: p.is_update,
+            is_delete: p.is_delete
           }))
 
           await updateAdminPrivilege({

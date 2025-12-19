@@ -226,10 +226,10 @@ export default function UserPrivilegePage() {
       const privilegeMap = new Map()
       savedPrivileges.forEach(p => {
         privilegeMap.set(p.module_id, {
-          create: p.is_create == 1 || p.create === true,
-          view: p.is_read == 1 || p.read === true,
-          update: p.is_update == 1 || p.update === true,
-          delete: p.is_delete == 1 || p.delete === true
+          create: Number(p.is_create) === 1,
+          view: Number(p.is_read) === 1,
+          update: Number(p.is_update) === 1,
+          delete: Number(p.is_delete) === 1
         })
       })
 

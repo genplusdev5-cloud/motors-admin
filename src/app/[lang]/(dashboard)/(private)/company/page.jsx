@@ -1,28 +1,32 @@
-
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Box, Typography } from '@mui/material'
 
 import { useRouter } from 'next/navigation'
 
 import { openDB } from 'idb'
-import { toast } from 'react-toastify'
+import { showToast } from '@/components/common/Toasts'
 
 // MUI imports
 import { styled, useTheme } from '@mui/material/styles'
 import Grid from '@mui/material/Grid2'
 import Button from '@mui/material/Button'
-import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
-import { Box } from '@mui/material'
+
+import CloseIcon from '@mui/icons-material/Close'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import GlobalButton from '@/components/common/GlobalButton'
+import GlobalDialog from '@/components/common/GlobalDialog'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 
 // Assuming this path to your services file
 
 import Link from '@/components/Link'
 import CustomTextField from '@core/components/mui/TextField'
 
-
+import { getCompanyData, updateCompanyData } from '@/api/company'
 
 // --- Label styling (unchanged)
 const LabelWithStar = styled('span')({
@@ -44,38 +48,52 @@ const getCompanyDB = async () => {
   })
 }
 
-
 const Company = () => {
   const theme = useTheme()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [editCompanyId, setEditCompanyId] = useState(null)
+  const [initialData, setInitialData] = useState(null)
+  const [isDirty, setIsDirty] = useState(false)
+  const [previewImage, setPreviewImage] = useState(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const MAX_FILE_SIZE = 1048576 // 1MB in bytes
 
- /**
- * Formats a raw 10-digit number into the specified display format.
- * @param {string} number - The raw 10-digit string (e.g., "9876543210").
- * @param {'phone' | 'mobile'} format - The required format type.
- * @returns {string} The formatted string (e.g., "98765 43210").
- */
-const formatPhoneNumber = (number, format) => {
-  const digits = String(number || '').replace(/\D/g, '')
-  if (digits.length === 0) return ''
+  /**
+   * Formats a raw 10-digit number into the specified display format.
+   * @param {string} number - The raw 10-digit string (e.g., "9876543210").
+   * @param {'phone' | 'mobile'} format - The required format type.
+   * @returns {string} The formatted string (e.g., "98765 43210").
+   */
+  const formatPhoneNumber = (number, format) => {
+    const digits = String(number || '').replace(/\D/g, '')
+    if (digits.length === 0) return ''
 
-  // ... (phone formatting logic)
+    // ... (phone formatting logic)
 
-  if (format === 'mobile') {
-    // Apply 5 + 5 format: XXXXX XXXXX
-    let formatted = ''
-    formatted += digits.substring(0, 5) // First 5 digits
-    if (digits.length > 5) formatted += ` ${digits.substring(5, 10)}` // Space + next 5 digits
+    if (format === 'mobile') {
+      // Apply 5 + 5 format: XXXXX XXXXX
+      let formatted = ''
+      formatted += digits.substring(0, 5) // First 5 digits
+      if (digits.length > 5) formatted += ` ${digits.substring(5, 10)}` // Space + next 5 digits
 
-    return formatted
+      return formatted
+    }
+
+    return digits
   }
 
-  return digits
-}
+  const openPreview = image => {
+    if (!image) return
+    setPreviewImage(getLogoSrc(image))
+    setPreviewOpen(true)
+  }
+
+  const closePreview = () => {
+    setPreviewOpen(false)
+    setPreviewImage(null)
+  }
 
   // ✅ FIX: Use dedicated refs for each file input
   const logoInputRef = useRef(null)
@@ -209,8 +227,7 @@ const formatPhoneNumber = (number, format) => {
       const data = await getCompanyData()
 
       if (Object.keys(data).length) {
-        setData(prev => ({
-          ...prev,
+        const normalizedData = {
           name: data.name || '',
           company_code: data.company_code || '',
           email: data.email || '',
@@ -222,34 +239,65 @@ const formatPhoneNumber = (number, format) => {
           city: data.city || '',
           state: data.state || '',
           pincode: data.pincode || '',
-
-          // Ensure raw digits are set for phone/mobile
-          phone: String(data.phone || '').replace(/\D/g, '') || '',
-          mobile: String(data.mobile || '').replace(/\D/g, '') || '',
+          phone: String(data.phone || '').replace(/\D/g, ''),
+          mobile: String(data.mobile || '').replace(/\D/g, ''),
           fax: data.fax || '',
           logo: data.logo || '',
           logo_small: data.logo_small || '',
           logo_invoice: data.logo_invoice || ''
-        }))
+        }
+
+        // Remove file objects from IDB if any (sanity check)
+        const idbData = { ...normalizedData }
+        if (idbData.logo instanceof File) idbData.logo = ''
+        if (idbData.logo_small instanceof File) idbData.logo_small = ''
+        if (idbData.logo_invoice instanceof File) idbData.logo_invoice = ''
+
+        setData(normalizedData)
+        setInitialData(normalizedData) // 🔥 IMPORTANT
+        setIsDirty(false) // 🔒 Disable update
         setEditCompanyId(data.id)
+
+        // Update IDB with fresh data
+        const db = await getCompanyDB()
+        await db.put('companies', { ...idbData, id: data.id })
       } else {
         loadFromIndexedDB(1)
       }
     } catch (err) {
       if (err.response?.status === 401) {
-        toast.error('Session expired. Please login again.')
+        showToast('warning', 'Session expired. Please login again.', 'error')
+
         router.push('/login')
 
         return
       }
 
       console.error('API fetch failed:', err)
-      toast.error('Failed to fetch company data.')
+
+      showToast('error', 'Failed to fetch company data.')
+
       loadFromIndexedDB(1)
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!initialData) return
+
+    const hasChanges = Object.keys(initialData).some(key => {
+      const current = data[key]
+      const initial = initialData[key]
+
+      // File compare
+      if (current instanceof File) return true
+
+      return current !== initial
+    })
+
+    setIsDirty(hasChanges)
+  }, [data, initialData])
 
   useEffect(() => {
     fetchCompanyData()
@@ -263,47 +311,71 @@ const formatPhoneNumber = (number, format) => {
   const handleSubmit = async () => {
     try {
       setLoading(true)
+
       const db = await getCompanyDB()
       const formData = new FormData()
       const companyId = editCompanyId || 1
 
-      Object.entries(data).forEach(([key, value]) => {
-        if (key === 'id') return
+      // 🔴 REQUIRED FIELDS (MUST MATCH BACKEND)
+      const REQUIRED_FIELDS = ['name', 'company_code', 'email', 'mobile', 'city', 'state']
 
-        // Append File objects directly to FormData
-        if (value instanceof File) {
-          formData.append(key, value)
-        }
-
-        // Skip keys related to logos if they are URLs (string) or empty strings,
-        // as the API handles file uploads separately from text fields.
-        else if (['logo', 'logo_small', 'logo_invoice'].includes(key)) {
-          // Do nothing if it's a string (URL) or empty, meaning no new file selected
-          return
-        }
-
-        // Append all other non-null, non-empty string data
-        else if (value != null && value !== '') {
-          formData.append(key, value)
+      REQUIRED_FIELDS.forEach(key => {
+        if (data[key]) {
+          formData.append(key, data[key])
         }
       })
 
-      // Debug log
-      for (let [key, val] of formData.entries()) console.log(`${key}:`, val)
+      // 🟡 OPTIONAL TEXT FIELDS
+      const OPTIONAL_FIELDS = ['gst', 'cin', 'statecode', 'address_line_1', 'address_line_2', 'pincode', 'phone', 'fax']
+
+      OPTIONAL_FIELDS.forEach(key => {
+        if (data[key]) {
+          formData.append(key, data[key])
+        }
+      })
+
+      // 🟢 FILE UPLOADS (ONLY IF USER SELECTED)
+      if (data.logo instanceof File) {
+        formData.append('logo', data.logo)
+      }
+
+      if (data.logo_small instanceof File) {
+        formData.append('logo_small', data.logo_small)
+      }
+
+      if (data.logo_invoice instanceof File) {
+        formData.append('logo_invoice', data.logo_invoice)
+      }
+
+      // ✅ DEBUG (REMOVE LATER)
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1])
+      }
 
       const updatedData = await updateCompanyData(companyId, formData)
 
-      // Update state with server response (which should contain new logo URLs if updated)
-      setData(prev => ({ ...prev, ...updatedData }))
+      // 🔥 MERGE BACKEND IMAGE URLS
+      const mergedData = {
+        ...data,
+        ...updatedData
+      }
 
-      // Update IndexedDB for caching
-      await db.put('companies', { ...data, ...updatedData, id: companyId })
-      toast.success('Company updated successfully!')
+      setData(mergedData)
+      setInitialData(mergedData)
+      setIsDirty(false)
+
+      // ✅ STORE ONLY STRINGS IN INDEXEDDB
+      const idbData = { ...mergedData }
+      if (idbData.logo instanceof File) idbData.logo = ''
+      if (idbData.logo_small instanceof File) idbData.logo_small = ''
+      if (idbData.logo_invoice instanceof File) idbData.logo_invoice = ''
+
+      await db.put('companies', { ...idbData, id: companyId })
+
+      showToast('success', 'Company updated successfully!')
     } catch (err) {
-      console.error('Error updating company:', err)
-      const msg = err.response?.data?.message || err.message || 'Error updating company.'
-
-      toast.error(msg)
+      console.error(err)
+      showToast(err.response?.data?.message ||'error', 'Update failed')
     } finally {
       setLoading(false)
     }
@@ -327,14 +399,20 @@ const formatPhoneNumber = (number, format) => {
 
   // Helper function to get the display source for the image preview
   const getLogoSrc = fileValue => {
+    if (typeof window === 'undefined') return null
+
     if (fileValue instanceof File) {
-      // Create a temporary URL for immediate preview of a newly selected file
       return URL.createObjectURL(fileValue)
     }
 
-    // Assume it's a string (URL) from the API/initial state
-    if (fileValue && typeof fileValue === 'string') {
-      return fileValue
+    if (typeof fileValue === 'string' && fileValue) {
+      // If absolute URL, return as is
+      if (fileValue.startsWith('http')) {
+        return `${fileValue}?t=${Date.now()}`
+      }
+      // If relative, prepend API URL
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') || ''
+      return `${apiUrl}${fileValue.startsWith('/') ? '' : '/'}${fileValue}?t=${Date.now()}`
     }
 
     return null
@@ -557,16 +635,13 @@ const formatPhoneNumber = (number, format) => {
               </Grid>
 
               {/* Mobile (Required & 5 + 5 digits formatting) - Index 12 */}
-            <Grid size={{ xs: 12, sm: 4 }}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <CustomTextField
                   fullWidth
                   label={<>Mobile</>}
-
                   value={formatPhoneNumber(data.mobile, 'mobile')}
-
                   onChange={e => handleChange('mobile', e.target.value)}
                   onBlur={() => handleBlur('mobile')}
-
                 />
               </Grid>
 
@@ -625,19 +700,7 @@ const formatPhoneNumber = (number, format) => {
 
               <Grid size={{ xs: 12, sm: 4 }}>
                 <Box sx={{ width: '100%' }}>
-                  <label
-                    htmlFor='logo-upload'
-                    style={{
-                      display: 'block',
-                      marginBottom: '1px',
-
-                      fontWeight: 200,
-                      fontSize: '0.8rem',
-                      color: '#111'
-                    }}
-                  >
-                    Logo
-                  </label>
+                  <label style={{ fontSize: '0.8rem', color: '#111' }}>Logo</label>
 
                   <input
                     type='file'
@@ -646,59 +709,31 @@ const formatPhoneNumber = (number, format) => {
                     ref={logoInputRef}
                     onChange={e => {
                       const file = e.target.files?.[0]
+                      if (!file) return
 
-                      if (file) {
-                        // ✅ Image size validation (This is your requested check)
-                        if (file.size > MAX_FILE_SIZE) {
-                          toast.error('Logo file size must be under 1MB.')
-                          e.target.value = null
-
-                          return
-                        }
-
-                        setData(prev => ({
-                          ...prev,
-                          logo: file
-                        }))
+                      if (file.size > MAX_FILE_SIZE) {
+                        showToast('error', 'Logo must be under 1MB' )
+                        return
                       }
+
+                      setData(prev => ({ ...prev, logo: file }))
                     }}
                   />
 
-                  <Button
-                    variant='outlined'
-                    fullWidth
-                    onClick={() => logoInputRef.current?.click()}
-                    sx={{
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      borderStyle: 'solid',
-                      borderWidth: 1,
-                      padding: 1.5,
-                      height: 38,
-                      textTransform: 'none',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      overflow: 'hidden',
-                      position: 'relative'
-                    }}
-                  >
-                    {data.logo ? (
-                      <img
-                        src={data.logo}
-                        alt='Logo Preview'
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'contain',
-                          borderRadius: 6
-                        }}
-                      />
-                    ) : (
-                      <Typography variant='body2' color='text.secondary'>
-                        {getFileDisplay(data.logo)}
-                      </Typography>
-                    )}
-                  </Button>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant='outlined'
+                      fullWidth
+                      onClick={() => logoInputRef.current?.click()}
+                      sx={{ height: 38, textTransform: 'none' }}
+                    >
+                      {data.logo ? 'Change Logo' : 'Click to Upload'}
+                    </Button>
+
+                    <IconButton onClick={() => openPreview(data.logo)} disabled={!data.logo}>
+                      <VisibilityIcon />
+                    </IconButton>
+                  </Box>
                 </Box>
               </Grid>
 
@@ -739,19 +774,7 @@ const formatPhoneNumber = (number, format) => {
 
               <Grid size={{ xs: 12, sm: 4 }}>
                 <Box sx={{ width: '100%' }}>
-                  <label
-                    htmlFor='logo-upload'
-                    style={{
-                      display: 'block',
-                      marginBottom: '1px',
-
-                      fontWeight: 200,
-                      fontSize: '0.8rem',
-                      color: '#111'
-                    }}
-                  >
-                    Small Logo
-                  </label>
+                  <label style={{ fontSize: '0.8rem', color: '#111' }}>Small Logo</label>
 
                   <input
                     type='file'
@@ -760,52 +783,24 @@ const formatPhoneNumber = (number, format) => {
                     ref={logoSmallInputRef}
                     onChange={e => {
                       const file = e.target.files?.[0]
-
-                      if (file) {
-                        setData(prev => ({
-                          ...prev,
-                          logo_small: file,
-                          logoPreview: URL.createObjectURL(file)
-                        }))
-                      }
+                      if (file) setData(prev => ({ ...prev, logo_small: file }))
                     }}
                   />
 
-                  <Button
-                    variant='outlined'
-                    fullWidth
-                    onClick={() => logoSmallInputRef.current?.click()}
-                    sx={{
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      borderStyle: 'solid',
-                      borderWidth: 1,
-                      padding: 1.5,
-                      height: 40,
-                      textTransform: 'none',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      overflow: 'hidden',
-                      position: 'relative'
-                    }}
-                  >
-                    {data.logo_small ? (
-                      <img
-                        src={data.logo_small}
-                        alt='Logo Preview'
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'contain',
-                          borderRadius: 6
-                        }}
-                      />
-                    ) : (
-                      <Typography variant='body2' color='text.secondary'>
-                        {getFileDisplay(data.logo_small)}
-                      </Typography>
-                    )}
-                  </Button>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant='outlined'
+                      fullWidth
+                      onClick={() => logoSmallInputRef.current?.click()}
+                      sx={{ height: 38, textTransform: 'none' }}
+                    >
+                      {data.logo_small ? 'Change Small Logo' : 'Click to Upload'}
+                    </Button>
+
+                    <IconButton onClick={() => openPreview(data.logo_small)} disabled={!data.logo_small}>
+                      <VisibilityIcon />
+                    </IconButton>
+                  </Box>
                 </Box>
               </Grid>
 
@@ -846,19 +841,7 @@ const formatPhoneNumber = (number, format) => {
 
               <Grid size={{ xs: 12, sm: 4 }}>
                 <Box sx={{ width: '100%' }}>
-                  <label
-                    htmlFor='logo-upload'
-                    style={{
-                      display: 'block',
-                      marginBottom: '1px',
-
-                      fontWeight: 200,
-                      fontSize: '0.8rem',
-                      color: '#111'
-                    }}
-                  >
-                    Logo Invoice
-                  </label>
+                  <label style={{ fontSize: '0.8rem', color: '#111' }}>Logo Invoice</label>
 
                   <input
                     type='file'
@@ -867,52 +850,24 @@ const formatPhoneNumber = (number, format) => {
                     ref={logoInvoiceInputRef}
                     onChange={e => {
                       const file = e.target.files?.[0]
-
-                      if (file) {
-                        setData(prev => ({
-                          ...prev,
-                          logo_invoice: file,
-                          logoPreview: URL.createObjectURL(file)
-                        }))
-                      }
+                      if (file) setData(prev => ({ ...prev, logo_invoice: file }))
                     }}
                   />
 
-                  <Button
-                    variant='outlined'
-                    fullWidth
-                    onClick={() => logoInvoiceInputRef.current?.click()}
-                    sx={{
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      borderStyle: 'solid',
-                      borderWidth: 1,
-                      padding: 1.5,
-                      height: 40,
-                      textTransform: 'none',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      overflow: 'hidden',
-                      position: 'relative'
-                    }}
-                  >
-                    {data.logo_invoice ? (
-                      <img
-                        src={data.logo_invoice}
-                        alt='Logo Preview'
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'contain',
-                          borderRadius: 6
-                        }}
-                      />
-                    ) : (
-                      <Typography variant='body2' color='text.secondary'>
-                        {getFileDisplay(data.logo_invoice)}
-                      </Typography>
-                    )}
-                  </Button>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant='outlined'
+                      fullWidth
+                      onClick={() => logoInvoiceInputRef.current?.click()}
+                      sx={{ height: 38, textTransform: 'none' }}
+                    >
+                      {data.logo_invoice ? 'Change Invoice Logo' : 'Click to Upload'}
+                    </Button>
+
+                    <IconButton onClick={() => openPreview(data.logo_invoice)} disabled={!data.logo_invoice}>
+                      <VisibilityIcon />
+                    </IconButton>
+                  </Box>
                 </Box>
               </Grid>
             </Grid>
@@ -955,7 +910,7 @@ const formatPhoneNumber = (number, format) => {
                   }}
                   onClick={handleSubmit}
                   ref={submitButtonRef}
-                  disabled={loading}
+                  disabled={loading || !isDirty}
                 >
                   {loading ? 'Updating...' : 'Update'}
                 </Button>
@@ -964,6 +919,33 @@ const formatPhoneNumber = (number, format) => {
           </form>
         </CardContent>
       </div>
+      <GlobalDialog open={previewOpen} title='Image Preview' onClose={closePreview} hideActions maxWidth='sm'>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: 300
+          }}
+        >
+          {previewImage ? (
+            <img
+              src={previewImage}
+              alt='Preview'
+              style={{
+                maxWidth: '100%',
+                maxHeight: '70vh',
+                objectFit: 'contain',
+                borderRadius: 8
+              }}
+            />
+          ) : (
+            <Typography variant='body2' color='text.secondary'>
+              No image available
+            </Typography>
+          )}
+        </Box>
+      </GlobalDialog>
     </Card>
   )
 }

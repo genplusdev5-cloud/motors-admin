@@ -115,12 +115,12 @@ export default function LoginWithTabs() {
       // payload: include role so backend can distinguish if needed
       const payload = {
         email: formData.email,
-        password: formData.password,
-        role: selectedRole
+        password: formData.password
       }
 
+      console.log('Sending login payload:', payload)
       const apiResponse = await adminLoginApi(payload)
-      // console.log('API response', apiResponse)
+      console.log('Login API Response:', apiResponse)
 
       if (apiResponse?.status !== 'success') {
         const msg = apiResponse?.message || 'Login failed'

@@ -25,10 +25,13 @@ import '@/app/globals.css'
 import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
-  title: '',
-  description:
-    ' '
+  title: {
+    default: 'Motor-Match Admin',
+    template: '%s | Motor-Match Admin'
+  },
+  description: 'Motor Match Admin Dashboard'
 }
+
 
 const RootLayout = async props => {
   const params = await props.params
