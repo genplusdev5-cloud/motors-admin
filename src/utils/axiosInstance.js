@@ -13,6 +13,7 @@ const api = axios.create({
 api.interceptors.request.use(
   config => {
     if (typeof window !== 'undefined') {
+      delete config.headers['Content-Type'] // 🔥 MUST
       const token = getAccessToken()
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
