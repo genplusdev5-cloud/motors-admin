@@ -1,8 +1,7 @@
-// src/middleware.js
 import { NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-export async function middleware(req) {
+export async function proxy(req) {
   const { pathname } = req.nextUrl
 
   // Static / public files – skip
@@ -47,4 +46,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|images|public|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.svg$).*)'
   ]
 }
-

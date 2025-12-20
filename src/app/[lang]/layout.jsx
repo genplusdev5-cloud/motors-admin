@@ -30,6 +30,8 @@ export const metadata = {
     ' '
 }
 
+import Providers from '@components/Providers'
+
 const RootLayout = async props => {
   const params = await props.params
   const { children } = props
@@ -44,7 +46,9 @@ const RootLayout = async props => {
       <html id='__next' lang={params.lang} dir={direction} suppressHydrationWarning>
         <body className='flex is-full min-bs-full flex-auto flex-col'>
           <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
-          {children}
+          <Providers direction={direction}>
+            {children}
+          </Providers>
         </body>
       </html>
     </TranslationWrapper>
