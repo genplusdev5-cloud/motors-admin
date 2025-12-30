@@ -158,7 +158,7 @@ export default function LoginWithTabs() {
       }
 
       showToast('success', 'Login successful!')
-      router.replace(getLocalizedUrl('/dashboard', locale))
+      router.replace(getLocalizedUrl('/admin/dashboard', locale))
     } catch (err) {
       // normalize message
       const msg = err?.response?.data?.message || err.message || 'Invalid email or password.'

@@ -12,32 +12,32 @@ const verticalMenuData = dictionary => [
       {
         label: dictionary['navigation'].crm,
         icon: 'tabler-circle',
-        href: '/dashboards/crm'
+        href: '/admin/dashboards/crm'
       },
       {
         label: dictionary['navigation'].analytics,
         icon: 'tabler-circle',
-        href: '/dashboards/analytics'
+        href: '/admin/dashboards/analytics'
       },
       {
         label: dictionary['navigation'].eCommerce,
         icon: 'tabler-circle',
-        href: '/dashboards/ecommerce'
+        href: '/admin/dashboards/ecommerce'
       },
       {
         label: dictionary['navigation'].academy,
         icon: 'tabler-circle',
-        href: '/dashboards/academy'
+        href: '/admin/dashboards/academy'
       },
       {
         label: dictionary['navigation'].logistics,
         icon: 'tabler-circle',
-        href: '/dashboards/logistics'
+        href: '/admin/dashboards/logistics'
       },
         {
         label: dictionary['navigation'].logistics,
         icon: 'tabler-circle',
-        href: '/dashboards/logistics'
+        href: '/admin/dashboards/logistics'
       },
 
 
@@ -91,22 +91,22 @@ const verticalMenuData = dictionary => [
         children: [
           {
             label: dictionary['navigation'].dashboard,
-            href: '/apps/ecommerce/dashboard'
+            href: '/admin/apps/ecommerce/dashboard'
           },
           {
             label: dictionary['navigation'].products,
             children: [
               {
                 label: dictionary['navigation'].list,
-                href: '/apps/ecommerce/products/list'
+                href: '/admin/apps/ecommerce/products/list'
               },
               {
                 label: dictionary['navigation'].add,
-                href: '/apps/ecommerce/products/add'
+                href: '/admin/apps/ecommerce/products/add'
               },
               {
                 label: dictionary['navigation'].category,
-                href: '/apps/ecommerce/products/category'
+                href: '/admin/apps/ecommerce/products/category'
               }
             ]
           },
@@ -115,11 +115,11 @@ const verticalMenuData = dictionary => [
             children: [
               {
                 label: dictionary['navigation'].list,
-                href: '/apps/ecommerce/orders/list'
+                href: '/admin/apps/ecommerce/orders/list'
               },
               {
                 label: dictionary['navigation'].details,
-                href: '/apps/ecommerce/orders/details/5434',
+                href: '/admin/apps/ecommerce/orders/details/5434',
                 exactMatch: false,
                 activeUrl: '/apps/ecommerce/orders/details'
               }
@@ -130,11 +130,11 @@ const verticalMenuData = dictionary => [
             children: [
               {
                 label: dictionary['navigation'].list,
-                href: '/apps/ecommerce/customers/list'
+                href: '/admin/apps/ecommerce/customers/list'
               },
               {
                 label: dictionary['navigation'].details,
-                href: '/apps/ecommerce/customers/details/879861',
+                href: '/admin/apps/ecommerce/customers/details/879861',
                 exactMatch: false,
                 activeUrl: '/apps/ecommerce/customers/details'
               }
@@ -142,15 +142,15 @@ const verticalMenuData = dictionary => [
           },
           {
             label: dictionary['navigation'].manageReviews,
-            href: '/apps/ecommerce/manage-reviews'
+            href: '/admin/apps/ecommerce/manage-reviews'
           },
           {
             label: dictionary['navigation'].referrals,
-            href: '/apps/ecommerce/referrals'
+            href: '/admin/apps/ecommerce/referrals'
           },
           {
             label: dictionary['navigation'].settings,
-            href: '/apps/ecommerce/settings'
+            href: '/admin/apps/ecommerce/settings'
           }
         ]
       },
@@ -160,15 +160,15 @@ const verticalMenuData = dictionary => [
         children: [
           {
             label: dictionary['navigation'].dashboard,
-            href: '/apps/academy/dashboard'
+            href: '/admin/apps/academy/dashboard'
           },
           {
             label: dictionary['navigation'].myCourses,
-            href: '/apps/academy/my-courses'
+            href: '/admin/apps/academy/my-courses'
           },
           {
             label: dictionary['navigation'].courseDetails,
-            href: '/apps/academy/course-details'
+            href: '/admin/apps/academy/course-details'
           }
         ]
       },
@@ -178,35 +178,35 @@ const verticalMenuData = dictionary => [
         children: [
           {
             label: dictionary['navigation'].dashboard,
-            href: '/apps/logistics/dashboard'
+            href: '/admin/apps/logistics/dashboard'
           },
           {
             label: dictionary['navigation'].fleet,
-            href: '/apps/logistics/fleet'
+            href: '/admin/apps/logistics/fleet'
           }
         ]
       },
       {
         label: dictionary['navigation'].email,
         icon: 'tabler-mail',
-        href: '/apps/email',
+        href: '/admin/apps/email',
         exactMatch: false,
         activeUrl: '/apps/email'
       },
       {
         label: dictionary['navigation'].chat,
         icon: 'tabler-message-circle-2',
-        href: '/apps/chat'
+        href: '/admin/apps/chat'
       },
       {
         label: dictionary['navigation'].calendar,
         icon: 'tabler-calendar',
-        href: '/apps/calendar'
+        href: '/admin/apps/calendar'
       },
       {
         label: dictionary['navigation'].kanban,
         icon: 'tabler-copy',
-        href: '/apps/kanban'
+        href: '/admin/apps/kanban'
       },
       {
         label: dictionary['navigation'].invoice,
@@ -215,26 +215,26 @@ const verticalMenuData = dictionary => [
           {
             label: dictionary['navigation'].list,
             icon: 'tabler-circle',
-            href: '/apps/invoice/list'
+            href: '/admin/apps/invoice/list'
           },
           {
             label: dictionary['navigation'].preview,
             icon: 'tabler-circle',
-            href: '/apps/invoice/preview/4987',
+            href: '/admin/apps/invoice/preview/4987',
             exactMatch: false,
             activeUrl: '/apps/invoice/preview'
           },
           {
             label: dictionary['navigation'].edit,
             icon: 'tabler-circle',
-            href: '/apps/invoice/edit/4987',
+            href: '/admin/apps/invoice/edit/4987',
             exactMatch: false,
             activeUrl: '/apps/invoice/edit'
           },
           {
             label: dictionary['navigation'].add,
             icon: 'tabler-circle',
-            href: '/apps/invoice/add'
+            href: '/admin/apps/invoice/add'
           }
         ]
       },
@@ -245,12 +245,12 @@ const verticalMenuData = dictionary => [
           {
             label: dictionary['navigation'].list,
             icon: 'tabler-circle',
-            href: '/apps/user/list'
+            href: '/admin/apps/user/list'
           },
           {
             label: dictionary['navigation'].view,
             icon: 'tabler-circle',
-            href: '/apps/user/view'
+            href: '/admin/apps/user/view'
           }
         ]
       },
@@ -261,12 +261,12 @@ const verticalMenuData = dictionary => [
           {
             label: dictionary['navigation'].roles,
             icon: 'tabler-circle',
-            href: '/apps/roles'
+            href: '/admin/apps/roles'
           },
           {
             label: dictionary['navigation'].permissions,
             icon: 'tabler-circle',
-            href: '/apps/permissions'
+            href: '/admin/apps/permissions'
           }
         ]
       },
@@ -277,22 +277,22 @@ const verticalMenuData = dictionary => [
           {
             label: dictionary['navigation'].userProfile,
             icon: 'tabler-circle',
-            href: '/pages/user-profile'
+            href: '/admin/pages/user-profile'
           },
           {
             label: dictionary['navigation'].accountSettings,
             icon: 'tabler-circle',
-            href: '/pages/account-settings'
+            href: '/admin/pages/account-settings'
           },
           {
             label: dictionary['navigation'].faq,
             icon: 'tabler-circle',
-            href: '/pages/faq'
+            href: '/admin/pages/faq'
           },
           {
             label: dictionary['navigation'].pricing,
             icon: 'tabler-circle',
-            href: '/pages/pricing'
+            href: '/admin/pages/pricing'
           },
           {
             label: dictionary['navigation'].miscellaneous,
@@ -301,25 +301,25 @@ const verticalMenuData = dictionary => [
               {
                 label: dictionary['navigation'].comingSoon,
                 icon: 'tabler-circle',
-                href: '/pages/misc/coming-soon',
+                href: '/admin/pages/misc/coming-soon',
                 target: '_blank'
               },
               {
                 label: dictionary['navigation'].underMaintenance,
                 icon: 'tabler-circle',
-                href: '/pages/misc/under-maintenance',
+                href: '/admin/pages/misc/under-maintenance',
                 target: '_blank'
               },
               {
                 label: dictionary['navigation'].pageNotFound404,
                 icon: 'tabler-circle',
-                href: '/pages/misc/404-not-found',
+                href: '/admin/pages/misc/404-not-found',
                 target: '_blank'
               },
               {
                 label: dictionary['navigation'].notAuthorized401,
                 icon: 'tabler-circle',
-                href: '/pages/misc/401-not-authorized',
+                href: '/admin/pages/misc/401-not-authorized',
                 target: '_blank'
               }
             ]
@@ -337,13 +337,13 @@ const verticalMenuData = dictionary => [
               {
                 label: dictionary['navigation'].loginV1,
                 icon: 'tabler-circle',
-                href: '/pages/auth/login-v1',
+                href: '/admin/pages/auth/login-v1',
                 target: '_blank'
               },
               {
                 label: dictionary['navigation'].loginV2,
                 icon: 'tabler-circle',
-                href: '/pages/auth/login-v2',
+                href: '/admin/pages/auth/login-v2',
                 target: '_blank'
               }
             ]
@@ -355,19 +355,19 @@ const verticalMenuData = dictionary => [
               {
                 label: dictionary['navigation'].registerV1,
                 icon: 'tabler-circle',
-                href: '/pages/auth/register-v1',
+                href: '/admin/pages/auth/register-v1',
                 target: '_blank'
               },
               {
                 label: dictionary['navigation'].registerV2,
                 icon: 'tabler-circle',
-                href: '/pages/auth/register-v2',
+                href: '/admin/pages/auth/register-v2',
                 target: '_blank'
               },
               {
                 label: dictionary['navigation'].registerMultiSteps,
                 icon: 'tabler-circle',
-                href: '/pages/auth/register-multi-steps',
+                href: '/admin/pages/auth/register-multi-steps',
                 target: '_blank'
               }
             ]
@@ -379,13 +379,13 @@ const verticalMenuData = dictionary => [
               {
                 label: dictionary['navigation'].verifyEmailV1,
                 icon: 'tabler-circle',
-                href: '/pages/auth/verify-email-v1',
+                href: '/admin/pages/auth/verify-email-v1',
                 target: '_blank'
               },
               {
                 label: dictionary['navigation'].verifyEmailV2,
                 icon: 'tabler-circle',
-                href: '/pages/auth/verify-email-v2',
+                href: '/admin/pages/auth/verify-email-v2',
                 target: '_blank'
               }
             ]
@@ -397,13 +397,13 @@ const verticalMenuData = dictionary => [
               {
                 label: dictionary['navigation'].forgotPasswordV1,
                 icon: 'tabler-circle',
-                href: '/pages/auth/forgot-password-v1',
+                href: '/admin/pages/auth/forgot-password-v1',
                 target: '_blank'
               },
               {
                 label: dictionary['navigation'].forgotPasswordV2,
                 icon: 'tabler-circle',
-                href: '/pages/auth/forgot-password-v2',
+                href: '/admin/pages/auth/forgot-password-v2',
                 target: '_blank'
               }
             ]
@@ -415,13 +415,13 @@ const verticalMenuData = dictionary => [
               {
                 label: dictionary['navigation'].resetPasswordV1,
                 icon: 'tabler-circle',
-                href: '/pages/auth/reset-password-v1',
+                href: '/admin/pages/auth/reset-password-v1',
                 target: '_blank'
               },
               {
                 label: dictionary['navigation'].resetPasswordV2,
                 icon: 'tabler-circle',
-                href: '/pages/auth/reset-password-v2',
+                href: '/admin/pages/auth/reset-password-v2',
                 target: '_blank'
               }
             ]
@@ -433,13 +433,13 @@ const verticalMenuData = dictionary => [
               {
                 label: dictionary['navigation'].twoStepsV1,
                 icon: 'tabler-circle',
-                href: '/pages/auth/two-steps-v1',
+                href: '/admin/pages/auth/two-steps-v1',
                 target: '_blank'
               },
               {
                 label: dictionary['navigation'].twoStepsV2,
                 icon: 'tabler-circle',
-                href: '/pages/auth/two-steps-v2',
+                href: '/admin/pages/auth/two-steps-v2',
                 target: '_blank'
               }
             ]
@@ -453,24 +453,24 @@ const verticalMenuData = dictionary => [
           {
             label: dictionary['navigation'].checkout,
             icon: 'tabler-circle',
-            href: '/pages/wizard-examples/checkout'
+            href: '/admin/pages/wizard-examples/checkout'
           },
           {
             label: dictionary['navigation'].propertyListing,
             icon: 'tabler-circle',
-            href: '/pages/wizard-examples/property-listing'
+            href: '/admin/pages/wizard-examples/property-listing'
           },
           {
             label: dictionary['navigation'].createDeal,
             icon: 'tabler-circle',
-            href: '/pages/wizard-examples/create-deal'
+            href: '/admin/pages/wizard-examples/create-deal'
           }
         ]
       },
       {
         label: dictionary['navigation'].dialogExamples,
         icon: 'tabler-square',
-        href: '/pages/dialog-examples'
+        href: '/admin/pages/dialog-examples'
       },
       {
         label: dictionary['navigation'].widgetExamples,
@@ -478,26 +478,26 @@ const verticalMenuData = dictionary => [
         children: [
           {
             label: dictionary['navigation'].basic,
-            href: '/pages/widget-examples/basic'
+            href: '/admin/pages/widget-examples/basic'
           },
           {
             label: dictionary['navigation'].advanced,
             icon: 'tabler-circle',
-            href: '/pages/widget-examples/advanced'
+            href: '/admin/pages/widget-examples/advanced'
           },
           {
             label: dictionary['navigation'].statistics,
             icon: 'tabler-circle',
-            href: '/pages/widget-examples/statistics'
+            href: '/admin/pages/widget-examples/statistics'
           },
           {
             label: dictionary['navigation'].charts,
             icon: 'tabler-circle',
-            href: '/pages/widget-examples/charts'
+            href: '/admin/pages/widget-examples/charts'
           },
           {
             label: dictionary['navigation'].actions,
-            href: '/pages/widget-examples/actions'
+            href: '/admin/pages/widget-examples/actions'
           }
         ]
       }
@@ -510,22 +510,22 @@ const verticalMenuData = dictionary => [
       {
         label: dictionary['navigation'].formLayouts,
         icon: 'tabler-layout',
-        href: '/forms/form-layouts'
+        href: '/admin/forms/form-layouts'
       },
       {
         label: dictionary['navigation'].formValidation,
         icon: 'tabler-checkup-list',
-        href: '/forms/form-validation'
+        href: '/admin/forms/form-validation'
       },
       {
         label: dictionary['navigation'].formWizard,
         icon: 'tabler-git-merge',
-        href: '/forms/form-wizard'
+        href: '/admin/forms/form-wizard'
       },
       {
         label: dictionary['navigation'].reactTable,
         icon: 'tabler-table',
-        href: '/react-table'
+        href: '/admin/react-table'
       },
       {
         label: dictionary['navigation'].formELements,
@@ -554,12 +554,12 @@ const verticalMenuData = dictionary => [
           {
             label: dictionary['navigation'].apex,
             icon: 'tabler-circle',
-            href: '/charts/apex-charts'
+            href: '/admin/charts/apex-charts'
           },
           {
             label: dictionary['navigation'].recharts,
             icon: 'tabler-circle',
-            href: '/charts/recharts'
+            href: '/admin/charts/recharts'
           }
         ]
       },

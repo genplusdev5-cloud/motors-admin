@@ -34,7 +34,7 @@ export async function proxy(req) {
 
   // If logged in and trying to access login page → redirect to dashboard
   if (token && isAuthRoute) {
-    const dashboardUrl = new URL(`/${lang}/dashboard`, req.url)
+    const dashboardUrl = new URL(`/${lang}/admin/dashboard`, req.url)
     return NextResponse.redirect(dashboardUrl)
   }
 

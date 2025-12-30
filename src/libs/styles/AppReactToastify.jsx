@@ -7,7 +7,7 @@ import { styled } from '@mui/material/styles'
 
 // Third-party Imports
 import 'react-toastify/dist/ReactToastify.css'
-import { ToastContainer } from 'react-toastify'
+import { ToastContainer, Bounce } from 'react-toastify'
 
 // Config Imports
 import themeConfig from '@configs/themeConfig'
@@ -106,7 +106,12 @@ const AppReactToastify = props => {
 
   return (
     <ToastifyWrapper {...boxProps}>
-      <ToastContainer rtl={direction === 'rtl'} position={position} {...rest} />
+      <ToastContainer
+        transition={Bounce}
+        {...rest}
+        rtl={direction === 'rtl'}
+        position={position}
+      />
     </ToastifyWrapper>
   )
 }

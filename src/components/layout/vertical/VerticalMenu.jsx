@@ -59,57 +59,57 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
         renderExpandedMenuItemIcon={{ icon: <i className='tabler-circle text-xs' /> }}
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
-        <MenuItem href={`/${locale}/dashboard`} icon={<i className='tabler-smart-home' />}>
+        <MenuItem href={`/${locale}/admin/dashboard`} icon={<i className='tabler-smart-home' />}>
           Dashboard
         </MenuItem>
 
         <SubMenu label='Masters' icon={<i className='tabler-database' />}>
-          <MenuItem href={`/${locale}/company`}>{'Company'}</MenuItem>
-          <MenuItem href={`/${locale}/category`}>{'Category'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/company`}>{'Company'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/category`}>{'Category'}</MenuItem>
 
-          <MenuItem href={`/${locale}/vehicle-make`}>{'Vehicle Make'}</MenuItem>
-          <MenuItem href={`/${locale}/colors`}>{'Colors'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/vehicle-make`}>{'Vehicle Make'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/colors`}>{'Colors'}</MenuItem>
 
-          <MenuItem href={`/${locale}/body-type`}>{'Body Type'}</MenuItem>
-          <MenuItem href={`/${locale}/engine-type`}>{'Engine Type'}</MenuItem>
-          <MenuItem href={`/${locale}/fuel-type`}>{'Fuel Type'}</MenuItem>
-          <MenuItem href={`/${locale}/vehicle-model`}>{'Vehicle Model'}</MenuItem>
-          <MenuItem href={`/${locale}/subscription-type`}>{'Subscription Type'}</MenuItem>
-          <MenuItem href={`/${locale}/bank-finance`}>{'Bank & Finance'}</MenuItem>
-          <MenuItem href={`/${locale}/insurance`}>{'Insurance'}</MenuItem>
-          <MenuItem href={`/${locale}/settings`}>{'Settings'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/body-type`}>{'Body Type'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/engine-type`}>{'Engine Type'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/fuel-type`}>{'Fuel Type'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/vehicle-model`}>{'Vehicle Model'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/subscription-type`}>{'Subscription Type'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/bank-finance`}>{'Bank & Finance'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/insurance`}>{'Insurance'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/settings`}>{'Settings'}</MenuItem>
 
           {/* 🔽 New masters */}
-          <MenuItem href={`/${locale}/suspension-type`}>{'Suspension Type'}</MenuItem>
-          <MenuItem href={`/${locale}/steering-type`}>{'Steering Type'}</MenuItem>
-          <MenuItem href={`/${locale}/tyre-size`}>{'Tyre Size'}</MenuItem>
-          <MenuItem href={`/${locale}/tyre-type`}>{'Tyre Type'}</MenuItem>
-          <MenuItem href={`/${locale}/garage`}>{'Garage'}</MenuItem>
-          <MenuItem href={`/${locale}/variant`}>{'Variant'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/suspension-type`}>{'Suspension Type'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/steering-type`}>{'Steering Type'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/tyre-size`}>{'Tyre Size'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/tyre-type`}>{'Tyre Type'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/garage`}>{'Garage'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/variant`}>{'Variant'}</MenuItem>
         </SubMenu>
 
         <SubMenu label='User Roles' icon={<i className='tabler-users' />}>
-          <MenuItem href={`/${locale}/admin-roles`}>{'Admin Roles'}</MenuItem>
-          <MenuItem href={`/${locale}/dealer-user-role`}>{'Dealer Roles'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/admin-roles`}>{'Admin Roles'}</MenuItem>
+          <MenuItem href={`/${locale}/admin/dealer-user-role`}>{'Dealer Roles'}</MenuItem>
         </SubMenu>
 
-        <MenuItem href={`/${locale}/plans`} icon={<i className='tabler-credit-card' />}>
+        <MenuItem href={`/${locale}/admin/plans`} icon={<i className='tabler-credit-card' />}>
           Plans
         </MenuItem>
 
-        <MenuItem href={`/${locale}/subscription`} icon={<i className='tabler-table' />}>
+        <MenuItem href={`/${locale}/admin/subscription`} icon={<i className='tabler-table' />}>
           Subscription
         </MenuItem>
 
-        <MenuItem href={`/${locale}/dealership`} icon={<i className='tabler-building-store' />}>
+        <MenuItem href={`/${locale}/admin/dealership`} icon={<i className='tabler-building-store' />}>
           DealerShip
         </MenuItem>
 
-        <MenuItem href={`/${locale}/buyer`} icon={<i className='tabler-shopping-cart' />}>
+        <MenuItem href={`/${locale}/admin/buyer`} icon={<i className='tabler-shopping-cart' />}>
           Buyer
         </MenuItem>
 
-        <MenuItem href={`/${locale}/seller`} icon={<i className='tabler-package' />}>
+        <MenuItem href={`/${locale}/admin/seller`} icon={<i className='tabler-package' />}>
           Seller
         </MenuItem>
       </Menu>

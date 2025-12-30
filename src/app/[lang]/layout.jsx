@@ -25,9 +25,11 @@ import '@/app/globals.css'
 import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
-  title: '',
-  description:
-    ' '
+  title: {
+    default: 'Motor Match-Admin',
+    template: '%s | Motor Match'
+  },
+  description: 'Motor Match Admin Dashboard'
 }
 
 import Providers from '@components/Providers'
@@ -46,9 +48,7 @@ const RootLayout = async props => {
       <html id='__next' lang={params.lang} dir={direction} suppressHydrationWarning>
         <body className='flex is-full min-bs-full flex-auto flex-col'>
           <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
-          <Providers direction={direction}>
-            {children}
-          </Providers>
+          <Providers direction={direction}>{children}</Providers>
         </body>
       </html>
     </TranslationWrapper>

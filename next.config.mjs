@@ -5,7 +5,7 @@ const nextConfig = {
     return [
       {
         source: '/',
-        destination: '/en/dashboard',
+        destination: '/en/admin/dashboard',
 
         permanent: true,
         locale: false
@@ -13,26 +13,23 @@ const nextConfig = {
 
       {
         source: '/:lang(en|fr|ar)',
-        destination: '/:lang/dashboard',
-
+        destination: '/:lang/admin/dashboard',
         permanent: true,
         locale: false
       },
-
-     {
-      source:'/:path*',
-      has:[
-        {
-          type:'header',
-          key:'accept',
-          value:'text/html',
-        },
-      ],
-      destination:'/en/:path*',
-      permanent:true,
-
-        locale:false
+      {
+        source: '/:path((?!api|_next/static|_next/image|favicon.ico|images|public|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.svg$|\\.well-known).*)',
+        has: [
+          {
+            type: 'header',
+            key: 'accept',
+            value: 'text/html',
           },
+        ],
+        destination: '/en/admin/:path',
+        permanent: true,
+        locale: false
+      },
     ]
   },
   allowedDevOrigins: ['192.168.1.34', 'localhost:3000'],
