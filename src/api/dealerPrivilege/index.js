@@ -2,7 +2,9 @@ import api from '@/utils/axiosInstance'
 
 // Get privileges by role
 export const getDealerPrivilege = async role_id => {
-  const res = await api.get(`/api/dealer/privilege/?role_id=${role_id}`)
+  const res = await api.get('/api/dealer/privilege/', {
+    params: { role_id }
+  })
   return res.data
 }
 

@@ -168,7 +168,7 @@ export default function UserPrivilegePage() {
     }
   }
 
-  // Load rows
+  // Load roles
   const loadRoles = async () => {
     setLoading(true)
     try {
@@ -198,31 +198,27 @@ export default function UserPrivilegePage() {
       }))
 
       setModules(formatted) // Store master module list
-      setRows(formatted) // Show full list first time
-      setPrivileges(formatted)
-      setRowCount(formatted.length)
+      // Only set initial rows if no role is selected
+      if (!selectedRole) {
+        setRows(formatted)
+        setPrivileges(formatted)
+        setRowCount(formatted.length)
+      }
     } catch (error) {
       console.error(error)
     }
   }
 
   const loadPrivileges = async roleId => {
-    if (!roleId) {
-      // No role selected → show all modules with no privileges
-      setPrivileges(modules.map(m => ({ ...m, create: false, view: false, update: false, delete: false })))
-      setRows(modules)
-      setRowCount(modules.length)
-      return
-    }
+    if (!roleId) return
 
     setLoading(true)
     try {
       const res = await getDealerPrivilege(roleId)
-      console.log('API Response:', res?.data)
 
-      const savedPrivileges = res?.data?.data || []
-      if (!modules.length) return
-      // Create a map for fast lookup
+      // Use res.data directly as per requirements
+      const savedPrivileges = res?.data || []
+
       const privilegeMap = new Map()
       savedPrivileges.forEach(p => {
         privilegeMap.set(p.module_id, {
@@ -233,13 +229,12 @@ export default function UserPrivilegePage() {
         })
       })
 
-      // Merge with full module list
-      const merged = modules.map((module, idx) => {
-        const saved = privilegeMap.get(module.module_id) || {}
+      const merged = modules.map((m, idx) => {
+        const saved = privilegeMap.get(m.module_id) || {}
         return {
           sno: idx + 1,
-          module_id: module.module_id,
-          module: module.module,
+          module_id: m.module_id,
+          module: m.module,
           create: saved.create || false,
           view: saved.view || false,
           update: saved.update || false,
@@ -253,40 +248,21 @@ export default function UserPrivilegePage() {
     } catch (err) {
       console.error(err)
       showToast('error', 'Failed to load privileges')
-      // Fallback to empty privileges
-      const empty = modules.map((m, idx) => ({
-        ...m,
-        sno: idx + 1,
-        create: false,
-        view: false,
-        update: false,
-        delete: false
-      }))
-      setPrivileges(empty)
-      setRows(empty)
-      setRowCount(empty.length)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    console.log('Privilege list:', privileges)
-  }, [privileges])
-
-  useEffect(() => {
     loadRoles()
-  }, [])
-
-  useEffect(() => {
     loadModules()
   }, [])
 
   useEffect(() => {
-    if (selectedRole) {
+    if (selectedRole && modules.length > 0) {
       loadPrivileges(selectedRole)
     }
-  }, [selectedRole])
+  }, [selectedRole, modules])
 
   const toggleDrawer = () => setDrawerOpen(p => !p)
   const handleAdd = () => {
@@ -306,26 +282,6 @@ export default function UserPrivilegePage() {
     setTimeout(() => {
       moduleRef.current?.querySelector('input')?.focus()
     }, 100)
-  }
-
-  const fetchPrivileges = async roleId => {
-    try {
-      const res = await getAdminPrivilege(roleId)
-
-      const formatted = (res.data?.data || []).map(item => ({
-        id: item.id,
-        module_id: item.module_id,
-        module: item.module_name,
-        create: item.is_create === 1,
-        view: item.is_read === 1,
-        update: item.is_update === 1,
-        delete: item.is_delete === 1
-      }))
-
-      setPrivileges(formatted)
-    } catch (error) {
-      console.error('❌ Error fetching privileges:', error)
-    }
   }
 
   const handlePrivilegeChange = (moduleId, key, value) => {
@@ -461,14 +417,14 @@ export default function UserPrivilegePage() {
         // 2️⃣ If it’s a duplicate, copy privileges
         if (selectedRoleId) {
           const privRes = await getDealerPrivilege(selectedRoleId)
-          const oldPrivileges = privRes?.results || []
+          const oldPrivileges = privRes?.data || []
 
           const duplicatedPrivileges = oldPrivileges.map(p => ({
             module_id: p.module_id,
-            create: p.is_create,
-            read: p.is_read,
-            update: p.is_update,
-            delete: p.is_delete
+            is_create: p.is_create,
+            is_read: p.is_read,
+            is_update: p.is_update,
+            is_delete: p.is_delete
           }))
 
           await updateDealerPrivilege({
